@@ -12,6 +12,14 @@ To make it faster, I pair it with a TLD search to quickly filter some if I reall
 
 making up brand names based on how they sound and feel, with a .com check to filter some out.
 
+## Research direction
+
+Can we invent words by moving through the feelings their sounds evoke?
+We're exploring example-based pronunciation changes, generation from perceptual
+dimensions, and combinations of both. Read the
+[research direction](docs/research-direction.md) for the hypotheses, approaches,
+and related projects.
+
 ## Run
 
 Python 3.9+, no dependencies.
