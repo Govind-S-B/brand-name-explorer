@@ -13,9 +13,10 @@ spelling, familiar words, or personal experience. We want to investigate which
 properties are shared, extract useful relationships, and use them to guide
 new word formation.
 
-A user could start from examples like **anvil, archon, figma, zook, zudio,
-feluchi, hissie, or wizzie**. Or they could start directly with a desired
-impression: more energetic, less harsh, substantial but still welcoming.
+The examples raised during discussion—**anvil, archon, figma, zook, zudio,
+feluchi, hissie, and wizzie**—were illustrative words, not a target set to imitate
+or evidence for the dimensions. A user could start from other examples or
+directly with a desired impression: more energetic, less harsh, substantial but still welcoming.
 
 There is value in multiple approaches. We do not need to settle on one generator
 or assume that every approach answers the same research question.
@@ -182,10 +183,12 @@ Otherwise availability could silently change which sound patterns we evaluate.
 
 ## Current status and next step
 
-The implemented generator uses explicit letter-pattern presets and cached domain
-checks. It does not yet learn dimensions, infer profiles from examples, or blend
-perceptual targets. This document records directions for research, not a claim
-that those features already work or a commitment to one architecture.
+The generator now offers experimental energy, weight, and novelty dials, editable
+mood recipes, and blends of their sampling settings, alongside the original
+letter-pattern presets and cached domain checks. See [sound dials](sound-dials.md).
+It does not learn dimensions from new listener data or infer profiles from
+example words. The dials implement research-informed hypotheses; they do not
+validate the broader perceptual model described here.
 
 A useful first study would compare a small set of example-guided transformations
 with dimension-guided candidates for two selected qualities. Confirm reference

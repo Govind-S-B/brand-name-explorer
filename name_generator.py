@@ -2,16 +2,14 @@
 """Generate spelling-based faux names. Requires Python 3.9+, no dependencies.
 
 Examples:
-    python3 name_generator.py
-    python3 name_generator.py --style calm --length 6 --seed 42 --check-com --hide-registered --count 200 --page 2
-    python3 name_generator.py --seed 123 --no-check-com --page 3
-    python3 name_generator.py --style calm --length 6 --seed 42
-    python3 name_generator.py --list-variants
-    python3 name_generator.py --style expansive --count 50 > names.txt
+    python3 name_generator.py --mood playful --no-check-com --count 20
+    python3 name_generator.py --mood calm --energy 7 --weight 3 --novelty 6 --no-check-com --count 20
+    python3 name_generator.py --mood grounded --blend playful:0.3 --no-check-com --count 20
+    python3 name_generator.py --list-moods
+    python3 name_generator.py --list-dials
 
-Edit PRESETS to adjust the letter sets. Distinct consonants are required
-within each name; vowels may repeat. Outputs are not checked against real
-words, names, trademarks, or pronunciation dictionaries.
+Dials are experimental sound preferences, not measured emotional probabilities.
+See docs/sound-dials.md. Names are not screened for real words or trademarks.
 """
 
 import argparse
@@ -25,6 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+from sound_profiles import DIALS, MOODS, MoodSpace
 
 
 PRESETS = {
@@ -134,6 +134,7 @@ def check_com(domain):
             return "registered"
         return "unknown (unexpected registry response)"
     except HTTPError as error:
+        error.close()
         if error.code == 404:
             return "possibly available"
         if error.code == 429:
@@ -194,13 +195,27 @@ class DomainLookup:
                             "Progress saved; rerun without --refresh to retry this domain.")
 
 
+class LegacySpace:
+    """Keep the original preset sequences and saved session identities intact."""
+    def __init__(self, style, seed=42, length=None):
+        pattern, _, _, self.capacity = name_space(style, length)
+        self.style, self.seed, self.length = style, seed, len(pattern)
+        self.settings = {"version": 1, "style": style, "length": len(pattern),
+                         "seed": seed, "preset": PRESETS[style]}
+
+    def names(self):
+        return ordered_names(self.style, self.seed, self.length)
+
+    def describe(self):
+        return f"style={self.style} length={self.length} seed={self.seed}"
+
+
 class BrowseSession:
     """Persist the checked prefix and available results, independent of page size."""
-    def __init__(self, cache_path, style, seed, length=None, refresh=False):
-        self.style, self.seed, self.length = style, seed, length
-        pattern, _, _, self.capacity = name_space(style, length)
-        settings = {"version": 1, "style": style, "length": len(pattern),
-                    "seed": seed, "preset": PRESETS[style]}
+    def __init__(self, cache_path, style="calm", seed=42, length=None, refresh=False, space=None):
+        self.space = space if space is not None else LegacySpace(style, seed, length)
+        self.capacity = self.space.capacity
+        settings = self.space.settings
         key = hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()
         self.path = cache_path.parent / (cache_path.stem + "_sessions") / (key + ".json")
         self.lookup = DomainLookup(cache_path)
@@ -227,7 +242,7 @@ class BrowseSession:
             yield [row[0], row[1], "saved", row[3]]
         if len(matches) >= stop:
             return
-        names = itertools.islice(ordered_names(self.style, self.seed, self.length),
+        names = itertools.islice(self.space.names(),
                                  self.state["cursor"], None)
         for name in names:
             row = self.lookup.get(name.lower() + ".com", self.state.get("fresh_since"))
@@ -251,8 +266,14 @@ class BrowseSession:
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--style", choices=PRESETS, default="calm")
-    parser.add_argument("--length", type=int, help="exact character count; defaults: calm 6, flowing 5, expansive 7")
+    parser.add_argument("--mood", choices=MOODS, help="sound recipe (default: calm); dials override the recipe")
+    parser.add_argument("--blend", metavar="MOOD:FRACTION", help="blend recipe dials, e.g. playful:0.3; keep base ending")
+    for dial, (low, high) in DIALS.items():
+        parser.add_argument("--" + dial, type=float, metavar="0..10", help=f"0 = {low}; 10 = {high}; 5 = no directional bias")
+    parser.add_argument("--style", choices=PRESETS, help="original letter-pattern engine; cannot combine with mood controls")
+    parser.add_argument("--length", type=int, help="exact character count; mood default 6 (3–14); legacy defaults calm 6, flowing 5, expansive 7")
+    parser.add_argument("--syllables", type=int, help="mood grammar vowel groups, 1–5; default: automatic")
+    parser.add_argument("--ending", choices=("open", "closed", "either"), help="vowel or consonant ending; default from mood")
     parser.add_argument("--seed", type=int, default=42, help="sequence seed (default: 42)")
     parser.add_argument("--check-com", action=argparse.BooleanOptionalAction, default=True,
                         help="check .com registration (default: on); --no-check-com also bypasses filtering")
@@ -264,12 +285,27 @@ def build_parser():
     parser.add_argument("--count", type=int, default=200, help="results per page (default: 200)")
     parser.add_argument("--page", type=int, default=1, help="1-based result page (default: 1)")
     parser.add_argument("--list-variants", action="store_true", help="show styles, letters, and allowed lengths")
+    parser.add_argument("--list-moods", action="store_true", help="show recipes and exit without lookups")
+    parser.add_argument("--list-dials", action="store_true", help="show dial endpoints and exit without lookups")
+    parser.add_argument("--explain", action="store_true", help="show effective settings and space size; do not generate or look up")
     return parser
 
 
 def main():
     parser = build_parser()
     args = parser.parse_args()
+    if args.list_moods:
+        print("mood\tenergy\tweight\tnovelty\tending")
+        for mood, profile in MOODS.items():
+            print("\t".join([mood] + [str(profile[d]) for d in DIALS] + [profile['ending']]))
+        print("Recipes are hypotheses. Dials override recipes; --blend blends dials and keeps the base ending.")
+        return
+    if args.list_dials:
+        for dial, (low, high) in DIALS.items():
+            print(f"--{dial}: 0 = {low}; 5 = no directional bias; 10 = {high}")
+        print("These correlated preferences guide sampling; they are not emotional probabilities.")
+        print("--syllables 1..5 and --ending open|closed|either independently control structure.")
+        return
     if args.list_variants:
         for style, config in PRESETS.items():
             vowel_first = config["pattern"].startswith("V")
@@ -279,28 +315,45 @@ def main():
                   f"endings {config['endings']}")
         return
     try:
-        capacity = name_space(args.style, args.length)[3]
-        page_bounds(args.count, args.page, capacity)
+        mood_controls = (args.mood, args.blend, args.energy, args.weight, args.novelty, args.syllables, args.ending)
+        if args.style and any(value is not None for value in mood_controls):
+            raise ValueError("--style uses the original engine; use --mood to combine mood dials and structure controls")
+        if args.style:
+            space = LegacySpace(args.style, args.seed, args.length)
+        else:
+            space = MoodSpace(args.mood or 'calm', args.length if args.length is not None else 6,
+                              args.seed, args.blend, args.energy, args.weight, args.novelty,
+                              args.syllables, args.ending)
+        capacity = space.capacity
+        start, stop = page_bounds(args.count, args.page, capacity)
     except ValueError as error:
         parser.error(str(error))
+    if args.explain:
+        print(space.describe())
+        print(f"possible_names={capacity:,}; count={args.count}; page={args.page}")
+        print(f"lookup={'on' if args.check_com else 'off'}; filter={'possibly available' if args.check_com and args.hide_registered else 'none'}")
+        if not args.style:
+            print("Evidence: energy/activity, weight/potency, novelty; docs/sound-dials.md.")
+            print("Recipe weights and richer word structures are experimental extrapolations.")
+        return
     filtered = args.check_com and args.hide_registered
     pages = "?" if filtered else str((capacity + args.count - 1) // args.count)
-    print(f"style={args.style} length={args.length or len(PRESETS[args.style]['pattern'])} seed={args.seed} "
+    print(f"{space.describe()} "
           f"page={args.page}/{pages} possible_names={capacity:,} page_size={args.count}", file=sys.stderr)
     if not args.check_com:
-        print("\n".join(generate(args.style, args.count, args.seed, args.length, args.page)))
+        print("\n".join(itertools.islice(space.names(), start, stop)))
         return
     print("domain\tstatus\tsource\tchecked_at_utc", flush=True)
     session = None
     shown = 0
     try:
         if filtered:
-            session = BrowseSession(args.cache, args.style, args.seed, args.length, args.refresh)
+            session = BrowseSession(args.cache, refresh=args.refresh, space=space)
             rows = session.page(args.count, args.page)
         else:
             lookup = DomainLookup(args.cache)
             fresh_since = datetime.now(timezone.utc).isoformat() if args.refresh else None
-            names = generate(args.style, args.count, args.seed, args.length, args.page)
+            names = itertools.islice(space.names(), start, stop)
             rows = (lookup.get(name.lower() + ".com", fresh_since) for name in names)
         for row in rows:
             print("\t".join(row), flush=True)

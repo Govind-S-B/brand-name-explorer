@@ -156,12 +156,12 @@ class BrowseTests(unittest.TestCase):
 
     def test_defaults(self):
         args = g.build_parser().parse_args([])
-        self.assertEqual((args.style, args.seed, args.count, args.page), ('calm', 42, 200, 1))
-        self.assertEqual(len(g.name_space(args.style, args.length)[0]), 6)
+        self.assertEqual((args.style, args.seed, args.count, args.page), (None, 42, 200, 1))
+        self.assertEqual(g.MoodSpace(args.mood or 'calm').length, 6)
         self.assertTrue(args.check_com and args.hide_registered)
 
     def test_cli_filter_off_checks_only_requested_page(self):
-        out, err = self.run_cli(['--length', '2', '--no-hide-registered', '--count', '3', '--page', '2'])
+        out, err = self.run_cli(['--style', 'calm', '--length', '2', '--no-hide-registered', '--count', '3', '--page', '2'])
         self.assertEqual([c.args[0] for c in self.check.call_args_list], self.domains[3:6])
         self.assertEqual(len(out.splitlines()), 4)
         self.assertIn('page=2/10', err)
@@ -170,12 +170,12 @@ class BrowseTests(unittest.TestCase):
     def test_cli_no_lookup_bypasses_default_filter_and_state(self):
         out, err = self.run_cli(['--no-check-com', '--count', '3', '--page', '2'])
         self.check.assert_not_called()
-        self.assertEqual(out.splitlines(), g.generate(count=3, page=2))
+        self.assertEqual(out.splitlines(), list(__import__('itertools').islice(g.MoodSpace().names(), 3, 6)))
         self.assertFalse(self.cache.exists())
-        self.assertIn('page=2/7000', err)
+        self.assertIn(f'page=2/{(g.MoodSpace().capacity + 2) // 3}', err)
 
     def test_cli_filter_fills_page(self):
-        out, err = self.run_cli(['--length', '2', '--count', '3', '--page', '2'])
+        out, err = self.run_cli(['--style', 'calm', '--length', '2', '--count', '3', '--page', '2'])
         self.assertEqual([line.split('\t')[0] for line in out.splitlines()[1:]], self.domains[7:12:2])
         self.assertIn('page=2/?', err)
         self.assertEqual(self.check.call_count, 12)
