@@ -172,6 +172,10 @@ Original calm accepts even lengths 2–14 (default 6), flowing odd lengths 3–1
 
 ## Research
 
+The [project comparison](docs/project-comparison.md) shows concrete inputs and
+outputs from Wuggy, UniPseudo, Lexifer, LEX-ICON, and our generator, explaining
+what each approach lets you control.
+
 The [research direction](docs/research-direction.md) describes example-based
 transformation, generation from perceptual dimensions, and combinations of both.
 The [control hierarchy](docs/control-hierarchy.md) explains the interface and
