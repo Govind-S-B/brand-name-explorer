@@ -3,8 +3,8 @@
 
 Examples:
     python3 name_generator.py
-    python3 name_generator.py --page 2 --hide-registered
-    python3 name_generator.py --no-check-com --seed 123 --page 3
+    python3 name_generator.py --style calm --length 6 --seed 42 --check-com --hide-registered --count 200 --page 2
+    python3 name_generator.py --seed 123 --no-check-com --page 3
     python3 name_generator.py --style calm --length 6 --seed 42
     python3 name_generator.py --list-variants
     python3 name_generator.py --style expansive --count 50 > names.txt
@@ -15,6 +15,7 @@ words, names, trademarks, or pronunciation dictionaries.
 """
 
 import argparse
+import hashlib
 import itertools
 import random
 import json
@@ -91,29 +92,35 @@ def candidates(style, length=None):
         yield name_at(index, pattern, consonants, pools)
 
 
-def generate(style="calm", count=200, seed=42, length=None, page=1):
-    """Slice a seeded permutation; count is the page size, not a refill target."""
-    if count < 1 or page < 1:
-        raise ValueError("count and page must be at least 1")
+def ordered_names(style="calm", seed=42, length=None):
+    """One permutation independent of page size, lookup, and filtering."""
     pattern, consonants, pools, capacity = name_space(style, length)
-    start = (page - 1) * count
-    if start >= capacity:
-        raise ValueError(f"page {page} is past the {capacity:,} names available; "
-                         f"last page is {(capacity + count - 1) // count}")
-    stop = min(start + count, capacity)
     rng = random.Random(seed)
-    # Sparse Fisher-Yates: only visit the prefix needed for this page.
     swaps = {}
-    names = []
-    for index in range(stop):
+    for index in range(capacity):
         chosen = rng.randrange(index, capacity)
         value = swaps.get(chosen, chosen)
         replacement = swaps.pop(index, index)
         if chosen != index:
             swaps[chosen] = replacement
-        if index >= start:
-            names.append(name_at(value, pattern, consonants, pools))
-    return names
+        yield name_at(value, pattern, consonants, pools)
+
+
+def generate(style="calm", count=200, seed=42, length=None, page=1):
+    """Select an unfiltered page from the shared sequence."""
+    capacity = name_space(style, length)[3]
+    start, stop = page_bounds(count, page, capacity)
+    return list(itertools.islice(ordered_names(style, seed, length), start, stop))
+
+
+def page_bounds(count, page, capacity):
+    if count < 1 or page < 1:
+        raise ValueError("count and page must be at least 1")
+    start = (page - 1) * count
+    if start >= capacity:
+        raise ValueError(f"page {page} is past the {capacity:,} possible names; "
+                         f"last unfiltered page is {(capacity + count - 1) // count}")
+    return start, page * count
 
 
 def check_com(domain):
@@ -123,7 +130,7 @@ def check_com(domain):
     try:
         with urlopen(request, timeout=15) as response:
             record = json.load(response)
-        if str(record.get("ldhName", "")).lower() == domain:
+        if isinstance(record, dict) and str(record.get("ldhName", "")).lower() == domain:
             return "registered"
         return "unknown (unexpected registry response)"
     except HTTPError as error:
@@ -157,56 +164,112 @@ def save_cache(path, cache):
     temporary.replace(path)
 
 
-def domain_results(names, cache_path, refresh=False):
-    cache = load_cache(cache_path)
-    requested = False
-    for name_index, name in enumerate(names):
-        domain = name.lower() + ".com"
-        if not refresh and domain in cache:
-            record = cache[domain]
-            yield domain, record["status"], "cache", record["checked_at"]
-            continue
-        if requested:
-            time.sleep(1)
-        status = check_com(domain)
-        requested = True
-        checked_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        if status in ("registered", "possibly available"):
-            cache[domain] = {"status": status, "checked_at": checked_at}
-            save_cache(cache_path, cache)
-        elif refresh and domain in cache:
-            del cache[domain]
-            save_cache(cache_path, cache)
-        yield domain, status, "live", checked_at
-        if status == "unknown (rate limited)":
-            for remaining in names[name_index + 1:]:
-                domain = remaining.lower() + ".com"
-                if not refresh and domain in cache:
-                    record = cache[domain]
-                    yield domain, record["status"], "cache", record["checked_at"]
-                else:
-                    yield domain, "unknown (skipped after rate limit)", "skipped", ""
+class LookupFailure(Exception):
+    pass
+
+
+class DomainLookup:
+    def __init__(self, path):
+        self.path = path
+        self.cache = load_cache(path)
+        self.requested = False
+
+    def get(self, domain, fresh_since=None):
+        record = self.cache.get(domain)
+        if record and (fresh_since is None or record["checked_at"] >= fresh_since):
+            return [domain, record["status"], "cache", record["checked_at"]]
+        for attempt in range(3):
+            if attempt:
+                time.sleep(2 ** attempt)
+            elif self.requested:
+                time.sleep(1)
+            status = check_com(domain)
+            self.requested = True
+            if status in ("registered", "possibly available"):
+                checked_at = datetime.now(timezone.utc).isoformat()
+                self.cache[domain] = {"status": status, "checked_at": checked_at}
+                save_cache(self.path, self.cache)
+                return [domain, status, "live", checked_at]
+        raise LookupFailure(f"{domain}: {status} after 3 attempts. "
+                            "Progress saved; rerun without --refresh to retry this domain.")
+
+
+class BrowseSession:
+    """Persist the checked prefix and available results, independent of page size."""
+    def __init__(self, cache_path, style, seed, length=None, refresh=False):
+        self.style, self.seed, self.length = style, seed, length
+        pattern, _, _, self.capacity = name_space(style, length)
+        settings = {"version": 1, "style": style, "length": len(pattern),
+                    "seed": seed, "preset": PRESETS[style]}
+        key = hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()
+        self.path = cache_path.parent / (cache_path.stem + "_sessions") / (key + ".json")
+        self.lookup = DomainLookup(cache_path)
+        if self.path.exists() and not refresh:
+            self.state = json.loads(self.path.read_text())
+            state = self.state
+            if (not isinstance(state, dict) or state.get("settings") != settings
+                    or not isinstance(state.get("cursor"), int)
+                    or not 0 <= state["cursor"] <= self.capacity
+                    or not isinstance(state.get("matches"), list)
+                    or len(state["matches"]) > state["cursor"]
+                    or any(not isinstance(row, list) or len(row) != 4
+                           or row[1] != "possibly available" for row in state["matches"])):
+                raise ValueError(f"Invalid browsing progress: {self.path}")
+        else:
+            self.state = {"settings": settings, "cursor": 0, "matches": [],
+                          "fresh_since": datetime.now(timezone.utc).isoformat() if refresh else None}
+            save_cache(self.path, self.state)
+
+    def page(self, count, page):
+        start, stop = page_bounds(count, page, self.capacity)
+        matches = self.state["matches"]
+        for row in matches[start:stop]:
+            yield [row[0], row[1], "saved", row[3]]
+        if len(matches) >= stop:
             return
+        names = itertools.islice(ordered_names(self.style, self.seed, self.length),
+                                 self.state["cursor"], None)
+        for name in names:
+            row = self.lookup.get(name.lower() + ".com", self.state.get("fresh_since"))
+            available = row[1] == "possibly available"
+            if available:
+                matches.append(row)
+            self.state["cursor"] += 1
+            save_cache(self.path, self.state)
+            if available and len(matches) > start:
+                yield row
+            if len(matches) >= stop:
+                return
+
+    def summary(self, count, page):
+        found = len(self.state["matches"])
+        checked = self.state["cursor"]
+        total = str((found + count - 1) // count) if checked == self.capacity else "?"
+        return (f"page={page}/{total} matches_found={found:,} "
+                f"candidates_checked={checked:,}/{self.capacity:,}")
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--style", choices=PRESETS, default="calm")
+    parser.add_argument("--length", type=int, help="exact character count; defaults: calm 6, flowing 5, expansive 7")
+    parser.add_argument("--seed", type=int, default=42, help="sequence seed (default: 42)")
+    parser.add_argument("--check-com", action=argparse.BooleanOptionalAction, default=True,
+                        help="check .com registration (default: on); --no-check-com also bypasses filtering")
+    parser.add_argument("--cache", type=Path, default=Path(__file__).resolve().with_name("domain_cache.json"),
+                        help="domain cache; browsing progress is saved in a sibling <cache-stem>_sessions folder")
+    parser.add_argument("--refresh", action="store_true", help="rebuild this filtered session with fresh lookups; may change pages")
+    parser.add_argument("--hide-registered", "--exclude-registered", action=argparse.BooleanOptionalAction,
+                        default=True, help="show only possibly available domains (default: on); --no-hide-registered shows all")
+    parser.add_argument("--count", type=int, default=200, help="results per page (default: 200)")
+    parser.add_argument("--page", type=int, default=1, help="1-based result page (default: 1)")
+    parser.add_argument("--list-variants", action="store_true", help="show styles, letters, and allowed lengths")
+    return parser
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--style", choices=PRESETS, default="calm")
-    parser.add_argument("--count", type=int, default=200, help="candidates per page (default: 200)")
-    parser.add_argument("--seed", type=int, default=42, help="reproducible sequence seed (default: 42)")
-    parser.add_argument("--length", type=int, help="exact character count; defaults: calm 6, flowing 5, expansive 7")
-    parser.add_argument("--list-variants", action="store_true", help="show styles, letters, and allowed lengths")
-    parser.add_argument("--page", type=int, default=1, help="1-based page in the seeded sequence (default: 1)")
-    parser.add_argument("--check-com", action=argparse.BooleanOptionalAction, default=True,
-                        help="check .com registration (default: enabled; use --no-check-com to skip)")
-    parser.add_argument("--hide-registered", "--exclude-registered", action="store_true",
-                        help="hide registered domains within this page; unknown results remain visible")
-    parser.add_argument("--cache", type=Path, default=Path(__file__).resolve().with_name("domain_cache.json"),
-                        help="cache file (default: domain_cache.json beside this script)")
-    parser.add_argument("--refresh", action="store_true", help="repeat lookups instead of using cached results")
+    parser = build_parser()
     args = parser.parse_args()
-    if args.hide_registered and not args.check_com:
-        parser.error("--hide-registered requires .com checking")
     if args.list_variants:
         for style, config in PRESETS.items():
             vowel_first = config["pattern"].startswith("V")
@@ -216,24 +279,41 @@ def main():
                   f"endings {config['endings']}")
         return
     try:
-        names = generate(args.style, args.count, args.seed, args.length, args.page)
+        capacity = name_space(args.style, args.length)[3]
+        page_bounds(args.count, args.page, capacity)
     except ValueError as error:
         parser.error(str(error))
-    capacity = name_space(args.style, args.length)[3]
-    pages = (capacity + args.count - 1) // args.count
-    print(f"seed={args.seed} style={args.style} length={args.length or len(PRESETS[args.style]['pattern'])} "
-          f"page={args.page}/{pages} total_names={capacity:,} page_size={args.count} candidates={len(names)}", file=sys.stderr)
+    filtered = args.check_com and args.hide_registered
+    pages = "?" if filtered else str((capacity + args.count - 1) // args.count)
+    print(f"style={args.style} length={args.length or len(PRESETS[args.style]['pattern'])} seed={args.seed} "
+          f"page={args.page}/{pages} possible_names={capacity:,} page_size={args.count}", file=sys.stderr)
     if not args.check_com:
-        print("\n".join(names))
+        print("\n".join(generate(args.style, args.count, args.seed, args.length, args.page)))
         return
     print("domain\tstatus\tsource\tchecked_at_utc", flush=True)
+    session = None
+    shown = 0
     try:
-        for result in domain_results(names, args.cache, args.refresh):
-            if not args.hide_registered or result[1] != "registered":
-                print("\t".join(result), flush=True)
-    except (OSError, ValueError) as error:
-        parser.exit(1, f"Cache error: {error}\n")
-    print("RDAP absence does not guarantee registration availability. Cached results persist until --refresh.", file=sys.stderr)
+        if filtered:
+            session = BrowseSession(args.cache, args.style, args.seed, args.length, args.refresh)
+            rows = session.page(args.count, args.page)
+        else:
+            lookup = DomainLookup(args.cache)
+            fresh_since = datetime.now(timezone.utc).isoformat() if args.refresh else None
+            names = generate(args.style, args.count, args.seed, args.length, args.page)
+            rows = (lookup.get(name.lower() + ".com", fresh_since) for name in names)
+        for row in rows:
+            print("\t".join(row), flush=True)
+            shown += 1
+    except (LookupFailure, OSError, ValueError, KeyboardInterrupt) as error:
+        if session:
+            print(session.summary(args.count, args.page), file=sys.stderr)
+        parser.exit(1, f"Stopped after {shown} displayed results. {error or 'Interrupted; rerun to resume.'}\n")
+    if session:
+        print(session.summary(args.count, args.page), file=sys.stderr)
+        if shown == 0:
+            print("No matches on this page; the name space has been exhausted.", file=sys.stderr)
+    print("RDAP absence does not guarantee registration availability. Saved results persist until --refresh.", file=sys.stderr)
 
 
 if __name__ == "__main__":

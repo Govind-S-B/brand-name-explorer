@@ -18,61 +18,108 @@ Python 3.9+, no dependencies.
 
 ```bash
 python3 name_generator.py
-python3 name_generator.py --page 2
-python3 name_generator.py --page 3 --hide-registered
 ```
 
-Defaults: calm, 6 characters, 200 candidates per page, seed 42, and .com checks on.
-The default space contains 21,000 unique names across 105 pages.
-The CLI reports the current page, total pages, and total names before checking domains.
+Defaults: **calm, 6 characters, seed 42, .com checks on, registered domains hidden,
+200 results per page, page 1**.
+
+The full command, in processing order:
 
 ```bash
-# Explore without network requests
-python3 name_generator.py --no-check-com
-
-# Start a different sequence, or adjust the page size
-python3 name_generator.py --seed 123 --count 50 --page 2
-
-# Other sound sets (each has its own default length)
-python3 name_generator.py --style flowing --length 7
-python3 name_generator.py --style expansive --length 9
-python3 name_generator.py --list-variants
-
-# Recheck domains even if cached
-python3 name_generator.py --refresh
+python3 name_generator.py --style calm --length 6 --seed 42 --check-com --hide-registered --count 200 --page 1
 ```
 
-### Pages
+| Step | Flags | What they do |
+| --- | --- | --- |
+| Define names | `--style`, `--length` | Choose the valid combinations |
+| Order | `--seed` | Set a repeatable order, independent of count and filtering |
+| Look up | `--check-com` / `--no-check-com`, `--cache`, `--refresh` | Use saved domain checks or make new ones |
+| Filter | `--hide-registered` / `--no-hide-registered` | Show only possibly available domains, or include registered ones |
+| Paginate | `--count`, `--page` | Slice the results into pages |
 
-Pages are slices of one seeded permutation. Keep the seed, style, length, and
-count unchanged when moving between pages: names will not repeat across pages.
-The final page can be shorter; a page beyond the end reports an error.
-No generated index files are needed. Deep pages take more work because the
-sequence is replayed up to that page. Changing the generator rules or code may
-change the sequence.
+```bash
+# Browse the next pages with the defaults
+python3 name_generator.py --page 2
+python3 name_generator.py --page 3
 
-`--hide-registered` (also `--exclude-registered`) hides registered domains from
-the current page. It does not refill from later pages, so page boundaries stay
-stable. Unknown or failed checks remain visible. Total pages describe generated
-candidates, not the number of unregistered domains.
+# Change the ordering and page size
+python3 name_generator.py --seed 123 --count 50 --page 2
 
-### Domain checks and local state
+# Include registered domains: check only the names on this page
+python3 name_generator.py --no-hide-registered --count 200 --page 2
+
+# No domain lookups or availability filtering: show generated names immediately
+python3 name_generator.py --no-check-com --count 200 --page 2
+
+# Other sound sets
+python3 name_generator.py --style flowing --length 7 --seed 42 --count 50 --page 1
+python3 name_generator.py --style expansive --length 9 --seed 42 --count 50 --page 1
+python3 name_generator.py --list-variants
+
+# Rebuild this browsing session with fresh domain checks
+python3 name_generator.py --refresh --count 200 --page 1
+```
+
+Calm accepts even lengths from 2 to 14 (default 6). Flowing accepts odd lengths
+from 3 to 13 (default 5). Expansive accepts odd lengths from 3 to 15 (default 7).
+`--exclude-registered` is an alias for `--hide-registered`. Use `--help` for all flags.
+
+### How browsing works
+
+Style, length, and seed define one ordered sequence. With filtering on, we check
+names in order, reuse the domain cache, and save possibly available results in
+that same order. We stop as soon as there are enough matches for the requested
+page. Page 2 with 200 results needs 400 saved matches. Returning to page 1 uses
+saved results; jumping to page 5 fills the list up to 1,000 matches.
+
+Count only changes how that list is sliced. It does not regenerate names or
+change the browsing session. Keep count fixed while moving between pages to
+avoid overlapping slices. With the same generation settings, page size, and
+filter, pages do not repeat names. Switching filters shows a different view of
+the same underlying sequence.
+
+With `--no-hide-registered`, we check only the requested page's names and display
+both statuses. With `--no-check-com`, we bypass both lookups and filtering, even
+if `--hide-registered` is set. No cache or session files are read or written in
+that mode.
+
+The default name space has **21,000 combinations**, or **105 unfiltered pages**
+of 200. The total number of filtered pages is unknown until all candidates have
+been checked. The CLI shows matches found and candidates checked, with `?` for
+the total filtered pages until then. The final page may be short or empty.
+If too few matches exist, finding the requested page may check the entire space.
+
+### Lookups, errors, and saved progress
 
 Checks use public Verisign RDAP with no API key. New lookups are sequential,
-with a one-second pause between requests; 200 uncached checks can take several
-minutes. A rate limit stops further network lookups for that run.
+with a one-second pause between domains. A failing lookup gets three attempts
+in total, with two- and four-second waits before retries. If it still fails,
+we stop, report the error at the end, and exit with a nonzero status. Successful
+checks and progress are saved. Rerun without `--refresh` to retry the failed
+domain and finish the page. Failed lookups are never displayed as availability
+results and do not advance browsing progress.
 
-Successful results are stored by full domain in `domain_cache.json` beside the
-script. Repeated runs reuse them until `--refresh`; network failures are not
-cached. The cache includes lookup timestamps and is ignored by Git, along with
-Python caches and `names*.txt`, `names*.tsv`, and `names*.csv` output files.
-Use `--cache PATH` for another location (add your own ignore rule if needed).
-Run one checking process at a time against a cache file.
+`domain_cache.json` stores successful checks by full domain across sessions.
+`domain_cache_sessions/` stores progress and an ordered snapshot of matching
+results for each style, length, and seed. These files are local and gitignored,
+along with Python caches and `names*.txt`, `names*.tsv`, and `names*.csv` outputs.
+Use `--cache PATH` for another location; its session folder is
+`<cache-stem>_sessions/` alongside it. Add your own ignore rule for a custom cache
+filename if it doesn't match the supplied rules. Run one checking process at a
+time against a cache file.
 
-“Possibly available” means RDAP returned no registration record. Confirm with
-a registrar before buying; cached results can become stale. Names are not
-screened for existing words, trademarks, or meanings. Mood labels are exploratory
-sound preferences, not guarantees about how everyone will perceive a name.
+Saved matches stay stable while browsing, even if another session updates the
+shared domain cache. `--refresh` resets the current filtered session and requires
+fresh checks as it rebuilds up to the requested page; its pages can change.
+A later run without `--refresh` resumes that rebuild, including after failure.
+In unfiltered mode, refresh only rechecks the requested page. Other saved
+browsing sessions remain unchanged. Changing generator rules may start a new
+session or change the sequence.
+
+“Possibly available” means RDAP returned no registration record. Confirm with a
+registrar before buying; cached results can become stale. Names are not screened
+for existing words, trademarks, or meanings. Mood labels are exploratory sound
+preferences, not guarantees about how everyone will perceive a name.
 
 ## Checks
 

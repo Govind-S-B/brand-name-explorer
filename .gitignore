@@ -1,6 +1,7 @@
 # Local lookup state and generated output
 domain_cache.json*
 *_cache.json*
+*_sessions/
 .cache/
 names*.txt
 names*.tsv
