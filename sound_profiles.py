@@ -121,11 +121,15 @@ class MoodSpace:
     VERSION = 1
 
     def __init__(self, mood='calm', length=6, seed=42, blend=None, energy=None,
-                 weight=None, novelty=None, syllables=None, ending=None):
+                 weight=None, novelty=None, syllables=None, ending=None, opening=None):
         if not 3 <= length <= 14:
             raise ValueError('mood length must be from 3 to 14 characters')
         if syllables is not None and not 1 <= syllables <= 5:
             raise ValueError('--syllables must be from 1 to 5')
+        opening = 'any' if opening is None else opening
+        if opening not in ('vowel', 'consonant', 'cluster', 'any'):
+            raise ValueError('opening must be vowel, consonant, cluster, or any')
+        self.opening = opening
         self.profile = resolve_profile(mood, blend, energy, weight, novelty, ending)
         self.length, self.seed = length, seed
         self.mood, self.syllables, self.blend = mood, syllables, blend
@@ -144,13 +148,22 @@ class MoodSpace:
                 tokens.append(Token(text, math.exp(1.5 * score) * cluster))
             return tuple(tokens)
 
-        onset, middle, coda = map(consonants, (ONSETS, MIDDLES, CODAS))
+        onset_items = ONSETS
+        if opening == 'consonant':
+            onset_items = [(text, sounds) for text, sounds in ONSETS if len(sounds) == 1]
+        elif opening == 'cluster':
+            onset_items = [(text, sounds) for text, sounds in ONSETS if len(sounds) > 1]
+        onset, middle, coda = map(consonants, (onset_items, MIDDLES, CODAS))
         vowels = tuple(Token(v, math.exp(.9 * (targets[0] - targets[1]) *
                                         (1 if v in FRONT_VOWELS else -1)) *
                             (.25 if len(v) > 1 else 1)) for v in VOWELS)
         shapes = []
         for size in ([syllables] if syllables else range(1, 6)):
             for starts in (False, True):
+                if opening == 'vowel' and starts:
+                    continue
+                if opening in ('consonant', 'cluster') and not starts:
+                    continue
                 for ends in (False, True):
                     if self.profile['ending'] != 'either' and ends != (self.profile['ending'] == 'closed'):
                         continue
@@ -168,12 +181,16 @@ class MoodSpace:
         self.shapes = shapes
         self.capacity = sum(s.count for s in shapes)
         if not self.capacity:
-            raise ValueError('no words fit this length, syllable count, and ending; adjust those constraints')
+            raise ValueError(f'no words fit opening={opening}, syllables={syllables or "auto"}, '
+                             f'ending={self.profile["ending"]}, length={length}; relax a structural or length constraint')
         grammar = {'classes': CLASSES, 'onsets': ONSETS, 'middles': MIDDLES,
                    'codas': CODAS, 'vowels': VOWELS, 'effects': EFFECTS}
         self.settings = {'engine': 'mood', 'version': self.VERSION, 'length': length,
                          'seed': seed, 'syllables': syllables, 'profile': self.profile,
                          'grammar': hashlib.sha256(json.dumps(grammar, sort_keys=True).encode()).hexdigest()}
+        # Keep existing default sequences and session keys when no opening is forced.
+        if opening != 'any':
+            self.settings['opening'] = opening
 
     def names(self):
         """Weighted permutation, lazily sampled without replacement; no disk state."""
@@ -224,5 +241,5 @@ class MoodSpace:
 
     def describe(self):
         values = ' '.join(f'{d}={self.profile[d]:g}' for d in DIALS)
-        return (f'mood={self.mood} {values} ending={self.profile["ending"]} '
+        return (f'mood={self.mood} {values} opening={self.opening} ending={self.profile["ending"]} '
                 f'syllables={self.syllables or "auto"} length={self.length} seed={self.seed}')

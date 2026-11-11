@@ -44,10 +44,10 @@ These are editable recipes, not scientifically validated emotional categories.
 python3 name_generator.py --mood grounded --blend playful:0.3 --no-check-com --count 20
 
 # Control the shape separately: one syllable with a consonant ending
-python3 name_generator.py --mood bold --length 4 --syllables 1 --ending closed --seed 42 --no-check-com --count 20
+python3 name_generator.py --mood bold --syllables 1 --ending closed --length 4 --seed 42 --no-check-com --count 20
 
 # Longer, open-ending words
-python3 name_generator.py --mood lyrical --length 7 --syllables 3 --ending open --seed 42 --no-check-com --count 20
+python3 name_generator.py --mood lyrical --syllables 3 --ending open --length 7 --seed 42 --no-check-com --count 20
 
 # Inspect the recipes, dials, or effective settings without any lookups
 python3 name_generator.py --list-moods
@@ -59,6 +59,29 @@ python3 name_generator.py --mood calm --blend bold:0.5 --explain
 intended vowel groups; when omitted, the grammar chooses automatically.
 `--ending` accepts `open`, `closed`, or `either`. Pronunciation can vary by reader.
 Blend first, then explicit dial overrides; blend fractions are from 0 to 1.
+
+## Control hierarchy
+
+1. **Mood** supplies a starting recipe.
+2. **Perceptual dials** adjust energy, weight, and novelty.
+3. **Sound structure** constrains opening, syllables, and ending.
+4. **Spelling constraints** set character length. Alternate spellings of a fixed
+   pronunciation are not supported yet.
+
+Explicit settings override their corresponding defaults. Seed, lookup, filtering,
+and pagination are separate run controls. See the [control hierarchy](docs/control-hierarchy.md)
+for defaults, the research review, internal cluster/repetition behavior, and future gaps.
+
+For example, keep calm's weight and novelty but raise energy and require a vowel opening:
+
+```bash
+python3 name_generator.py --mood calm --energy 8 --opening vowel --syllables 3 --ending open --length 7 --seed 42 --no-check-com --count 20 --page 1
+```
+
+Use `--opening vowel|consonant|cluster|any` (default `any`). Consonant means one
+sound, including sh/ch; cluster means multiple sounds such as br/st. This affects
+only the beginning. `any` keeps existing preferences rather than balancing types
+equally. Add `--explain` to see the effective values and where each came from.
 
 ## Defaults and processing order
 
@@ -76,7 +99,8 @@ and pagination. Flag order is for readability; argparse accepts any order.
 | Step | Flags | Effect |
 | --- | --- | --- |
 | Define sound preferences | `--mood`, `--blend`, `--energy`, `--weight`, `--novelty` | Choose a recipe, blend settings, then override dials |
-| Define structure | `--length`, `--syllables`, `--ending` | Constrain word shape |
+| Define structure | `--opening`, `--syllables`, `--ending` | Constrain word shape |
+| Constrain spelling | `--length` | Exact character count |
 | Order | `--seed` | Repeatable weighted ordering without repeated spellings |
 | Look up | `--check-com` / `--no-check-com`, `--cache`, `--refresh` | Reuse domain checks or make new ones |
 | Filter | `--hide-registered` / `--no-hide-registered` | Possibly available domains only, or include registered ones |
@@ -150,7 +174,8 @@ Original calm accepts even lengths 2–14 (default 6), flowing odd lengths 3–1
 
 The [research direction](docs/research-direction.md) describes example-based
 transformation, generation from perceptual dimensions, and combinations of both.
-The [sound-dial research and implementation notes](docs/sound-dials.md) explain
+The [control hierarchy](docs/control-hierarchy.md) explains the interface and
+structural decisions. The [sound-dial research and implementation notes](docs/sound-dials.md) explain
 why these three dials were chosen, the underlying study, extrapolations, recipe
 values, sampling algorithm, and remaining validation work.
 

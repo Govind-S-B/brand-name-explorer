@@ -1,6 +1,7 @@
 import contextlib
 import io
 import itertools
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -121,6 +122,70 @@ class SoundProfileTests(unittest.TestCase):
                  contextlib.redirect_stderr(io.StringIO()):
                 g.main()
                 self.assertTrue(out.getvalue())
+
+    def test_opening_categories_partition_the_space(self):
+        sets = {}
+        for opening in ('vowel', 'consonant', 'cluster'):
+            space = MoodSpace(length=3, opening=opening)
+            words = list(space.names())
+            self.assertEqual(len(words), space.capacity)
+            self.assertEqual(len(set(words)), len(words))
+            sets[opening] = set(words)
+            for word in words:
+                match = re.match('[^aeiou]+', word.lower())
+                onset = match.group() if match else ''
+                if opening == 'vowel':
+                    self.assertEqual(onset, '')
+                elif opening == 'consonant':
+                    self.assertTrue(len(onset) == 1 or onset in ('sh', 'ch'), word)
+                else:
+                    self.assertGreater(len(onset), 1)
+                    self.assertNotIn(onset, ('sh', 'ch'))
+        self.assertTrue(any(w.startswith('Sh') for w in sets['consonant']))
+        self.assertTrue(any(w.startswith('Ch') for w in sets['consonant']))
+        union = set().union(*sets.values())
+        self.assertEqual(sum(map(len, sets.values())), len(union))
+        self.assertEqual(union, set(MoodSpace(length=3).names()))
+
+    def test_opening_is_independent_of_energy(self):
+        for energy in (0, 5, 10):
+            words = take(MoodSpace(energy=energy, opening='vowel', length=7,
+                                   syllables=3, ending='open'), 200)
+            self.assertTrue(all(w[0].lower() in 'aeiou' and w[-1] in 'aeiou' for w in words))
+        self.assertEqual(MoodSpace().settings, MoodSpace(opening='any').settings)
+        self.assertEqual(take(MoodSpace(), 200), take(MoodSpace(opening='any'), 200))
+        with self.assertRaises(ValueError):
+            MoodSpace(opening='unknown')
+        with self.assertRaisesRegex(ValueError, 'opening=cluster'):
+            MoodSpace(opening='cluster', length=3, syllables=3)
+
+    def test_opening_session_identity_and_shared_cache(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cache = Path(folder) / 'domain_cache.json'
+            default = g.BrowseSession(cache, space=MoodSpace())
+            any_opening = g.BrowseSession(cache, space=MoodSpace(opening='any'))
+            forced = g.BrowseSession(cache, space=MoodSpace(opening='vowel'))
+            self.assertEqual(default.path, any_opening.path)
+            self.assertNotEqual(default.path, forced.path)
+            self.assertEqual(default.lookup.path, forced.lookup.path)
+
+    def test_grouped_help_and_explanation(self):
+        help_text = g.build_parser().format_help()
+        labels = ('1. Mood', '2. Perceptual dials', '3. Sound structure', '4. Spelling constraints',
+                  'Reproducibility:', 'Domain lookup and cache:', 'Availability filtering:', 'Pagination:')
+        positions = [help_text.index(label) for label in labels]
+        self.assertEqual(positions, sorted(positions))
+        with patch('sys.argv', ['name_generator.py', '--mood', 'calm', '--blend', 'bold:0.5',
+                               '--energy', '8', '--opening', 'vowel', '--length', '7', '--explain']), \
+             patch.object(g, 'DomainLookup', side_effect=AssertionError('unexpected lookup')), \
+             contextlib.redirect_stdout(io.StringIO()) as output:
+            g.main()
+        text = output.getvalue()
+        self.assertIn('energy=8 (explicit)', text)
+        self.assertIn('weight=6 (blend)', text)
+        self.assertIn('opening=vowel (explicit)', text)
+        self.assertIn('ending=open (base mood)', text)
+        self.assertIn('length=7 (explicit)', text)
 
     def test_cli_rejects_mixed_engines(self):
         with patch('sys.argv', ['name_generator.py', '--style', 'calm', '--energy', '2']), \

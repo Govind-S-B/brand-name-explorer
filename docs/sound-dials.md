@@ -5,7 +5,8 @@
 ## Research decision
 
 Use **energy**, **weight**, and **novelty** as the first perceptual controls.
-Add **syllable count** and **ending** as independent structural controls. Provide
+Use **opening**, **syllable count**, and **ending** as explicit structural constraints.
+See the [control hierarchy](control-hierarchy.md) for their relationship to the dials. Provide
 named moods as editable starting recipes, not discrete psychological categories.
 
 The reference words mentioned during discussion were illustrative, not a training
@@ -111,7 +112,7 @@ Apply controls in this order:
 1. Choose the base mood, default `calm`.
 2. Optionally blend its three dial values with another mood.
 3. Override any individual dials.
-4. Set length, optional syllables, and optional ending.
+4. Set opening, syllables, and ending; then the character-length constraint.
 5. Choose seed, then domain lookup/filter behavior, then count and page.
 
 `--blend playful:0.3` interpolates the numeric recipe values: 70% base recipe,
@@ -121,6 +122,10 @@ linearly. An equivalent final configuration produces the same sequence, regardle
 of which preset labels were used to reach it.
 
 ### Structure and pronunciation
+
+- `--opening vowel|consonant|cluster|any` constrains the initial sounds (default any).
+  Consonant means one sound, including sh/ch; cluster means multiple sounds.
+  It is independent of the dial settings and only constrains the beginning.
 
 - `--length 3..14` is an exact ASCII character count; default 6.
 - `--syllables 1..5` selects vowel groups in the grammar. Automatic mode prefers
@@ -169,7 +174,7 @@ sequence. Different spellings may still be homophones. Near numerical exhaustion
 a small floating-point floor preserves access to remaining candidates; this can
 slightly perturb the intended weighting, while integer counts preserve uniqueness.
 
-The sequence depends on effective dials, length, syllables, ending, grammar
+The sequence depends on effective dials, opening, length, syllables, ending, grammar
 version, and seed. Count and filtering do not change generation. A changed
 configuration gets separate browsing progress. Equivalent effective settings
 share a session, and the global domain cache remains shared.

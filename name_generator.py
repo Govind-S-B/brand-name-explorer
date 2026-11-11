@@ -3,7 +3,7 @@
 
 Examples:
     python3 name_generator.py --mood playful --no-check-com --count 20
-    python3 name_generator.py --mood calm --energy 7 --weight 3 --novelty 6 --no-check-com --count 20
+    python3 name_generator.py --mood calm --energy 8 --opening vowel --syllables 3 --ending open --length 7 --seed 42 --no-check-com --count 20
     python3 name_generator.py --mood grounded --blend playful:0.3 --no-check-com --count 20
     python3 name_generator.py --list-moods
     python3 name_generator.py --list-dials
@@ -266,29 +266,65 @@ class BrowseSession:
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--mood", choices=MOODS, help="sound recipe (default: calm); dials override the recipe")
-    parser.add_argument("--blend", metavar="MOOD:FRACTION", help="blend recipe dials, e.g. playful:0.3; keep base ending")
+    mood = parser.add_argument_group("1. Mood — starting recipe")
+    mood.add_argument("--mood", choices=MOODS, help="default: calm; supplies dials and ending")
+    mood.add_argument("--blend", metavar="MOOD:FRACTION", help="blend recipe dials, e.g. playful:0.3; retain base structure defaults")
+    dials = parser.add_argument_group("2. Perceptual dials — explicit values override the recipe")
     for dial, (low, high) in DIALS.items():
-        parser.add_argument("--" + dial, type=float, metavar="0..10", help=f"0 = {low}; 10 = {high}; 5 = no directional bias")
-    parser.add_argument("--style", choices=PRESETS, help="original letter-pattern engine; cannot combine with mood controls")
-    parser.add_argument("--length", type=int, help="exact character count; mood default 6 (3–14); legacy defaults calm 6, flowing 5, expansive 7")
-    parser.add_argument("--syllables", type=int, help="mood grammar vowel groups, 1–5; default: automatic")
-    parser.add_argument("--ending", choices=("open", "closed", "either"), help="vowel or consonant ending; default from mood")
-    parser.add_argument("--seed", type=int, default=42, help="sequence seed (default: 42)")
-    parser.add_argument("--check-com", action=argparse.BooleanOptionalAction, default=True,
-                        help="check .com registration (default: on); --no-check-com also bypasses filtering")
-    parser.add_argument("--cache", type=Path, default=Path(__file__).resolve().with_name("domain_cache.json"),
-                        help="domain cache; browsing progress is saved in a sibling <cache-stem>_sessions folder")
-    parser.add_argument("--refresh", action="store_true", help="rebuild this filtered session with fresh lookups; may change pages")
-    parser.add_argument("--hide-registered", "--exclude-registered", action=argparse.BooleanOptionalAction,
-                        default=True, help="show only possibly available domains (default: on); --no-hide-registered shows all")
-    parser.add_argument("--count", type=int, default=200, help="results per page (default: 200)")
-    parser.add_argument("--page", type=int, default=1, help="1-based result page (default: 1)")
-    parser.add_argument("--list-variants", action="store_true", help="show styles, letters, and allowed lengths")
-    parser.add_argument("--list-moods", action="store_true", help="show recipes and exit without lookups")
-    parser.add_argument("--list-dials", action="store_true", help="show dial endpoints and exit without lookups")
-    parser.add_argument("--explain", action="store_true", help="show effective settings and space size; do not generate or look up")
+        dials.add_argument("--" + dial, type=float, metavar="0..10", help=f"0 = {low}; 10 = {high}; 5 = no directional bias")
+    structure = parser.add_argument_group("3. Sound structure")
+    structure.add_argument("--opening", choices=("vowel", "consonant", "cluster", "any"),
+                           help="first sound(s); consonant means one sound, including sh/ch; default: any")
+    structure.add_argument("--syllables", type=int, help="intended vowel groups, 1–5; default: automatic")
+    structure.add_argument("--ending", choices=("open", "closed", "either"), help="vowel, consonant, or unrestricted ending; default from mood")
+    spelling = parser.add_argument_group("4. Spelling constraints")
+    spelling.add_argument("--length", type=int, help="exact characters; mood default 6 (3–14); original style defaults vary")
+    reproducibility = parser.add_argument_group("Reproducibility")
+    reproducibility.add_argument("--seed", type=int, default=42, help="sequence seed (default: 42)")
+    lookup = parser.add_argument_group("Domain lookup and cache")
+    lookup.add_argument("--check-com", action=argparse.BooleanOptionalAction, default=True,
+                        help="check .com (default: on); --no-check-com also bypasses availability filtering")
+    lookup.add_argument("--cache", type=Path, default=Path(__file__).resolve().with_name("domain_cache.json"),
+                        help="domain cache; progress is in a sibling <cache-stem>_sessions folder")
+    lookup.add_argument("--refresh", action="store_true", help="rebuild this filtered session with fresh lookups; pages may change")
+    filtering = parser.add_argument_group("Availability filtering")
+    filtering.add_argument("--hide-registered", "--exclude-registered", action=argparse.BooleanOptionalAction,
+                           default=True, help="show possibly available domains only (default: on)")
+    pagination = parser.add_argument_group("Pagination")
+    pagination.add_argument("--count", type=int, default=200, help="results per page (default: 200)")
+    pagination.add_argument("--page", type=int, default=1, help="1-based result page (default: 1)")
+    inspection = parser.add_argument_group("Inspect without generating or looking up domains")
+    inspection.add_argument("--list-moods", action="store_true", help="show recipe defaults")
+    inspection.add_argument("--list-dials", action="store_true", help="show dial endpoints")
+    inspection.add_argument("--explain", action="store_true", help="show resolved controls, their sources, and space size")
+    original = parser.add_argument_group("Original engine")
+    original.add_argument("--style", choices=PRESETS, help="original letter-pattern engine; cannot combine with mood/structure controls")
+    original.add_argument("--list-variants", action="store_true", help="show original styles and allowed lengths")
     return parser
+
+
+def explain_controls(args, space):
+    if isinstance(space, LegacySpace):
+        print("Original engine: " + space.describe())
+        print("Structure is fixed by the selected original style.")
+    else:
+        print(f"1. Mood: {args.mood or 'calm'}" + (f"; blend={args.blend}" if args.blend else ""))
+        print("2. Perceptual dials:")
+        for dial in DIALS:
+            source = 'explicit' if getattr(args, dial) is not None else 'blend' if args.blend else 'mood'
+            print(f"   {dial}={space.profile[dial]:g} ({source})")
+        print("3. Sound structure:")
+        print(f"   opening={space.opening} ({'explicit' if args.opening is not None else 'base default'})")
+        print(f"   syllables={space.syllables or 'auto'} ({'explicit' if args.syllables is not None else 'length/ending heuristic'})")
+        print(f"   ending={space.profile['ending']} ({'explicit' if args.ending is not None else 'base mood'})")
+        print("   clusters: allowed; frequency includes a novelty heuristic; opening restriction takes priority")
+        print("   repetition: allowed; stress: unspecified; spelling variants: not supported")
+        print(f"4. Spelling: length={space.length} ({'explicit' if args.length is not None else 'base default'})")
+    print(f"Reproducibility: seed={args.seed}")
+    print(f"Lookup: {'on' if args.check_com else 'off'}; filter: {'possibly available' if args.check_com and args.hide_registered else 'none'}")
+    print(f"Pagination: count={args.count}; page={args.page}; possible_names={space.capacity:,}")
+    if not args.style:
+        print("Sound preferences are experimental; see docs/control-hierarchy.md and docs/sound-dials.md.")
 
 
 def main():
@@ -304,7 +340,7 @@ def main():
         for dial, (low, high) in DIALS.items():
             print(f"--{dial}: 0 = {low}; 5 = no directional bias; 10 = {high}")
         print("These correlated preferences guide sampling; they are not emotional probabilities.")
-        print("--syllables 1..5 and --ending open|closed|either independently control structure.")
+        print("Structure controls: --opening, --syllables, --ending; see --help for groups.")
         return
     if args.list_variants:
         for style, config in PRESETS.items():
@@ -315,7 +351,7 @@ def main():
                   f"endings {config['endings']}")
         return
     try:
-        mood_controls = (args.mood, args.blend, args.energy, args.weight, args.novelty, args.syllables, args.ending)
+        mood_controls = (args.mood, args.blend, args.energy, args.weight, args.novelty, args.syllables, args.ending, args.opening)
         if args.style and any(value is not None for value in mood_controls):
             raise ValueError("--style uses the original engine; use --mood to combine mood dials and structure controls")
         if args.style:
@@ -323,18 +359,13 @@ def main():
         else:
             space = MoodSpace(args.mood or 'calm', args.length if args.length is not None else 6,
                               args.seed, args.blend, args.energy, args.weight, args.novelty,
-                              args.syllables, args.ending)
+                              args.syllables, args.ending, args.opening)
         capacity = space.capacity
         start, stop = page_bounds(args.count, args.page, capacity)
     except ValueError as error:
         parser.error(str(error))
     if args.explain:
-        print(space.describe())
-        print(f"possible_names={capacity:,}; count={args.count}; page={args.page}")
-        print(f"lookup={'on' if args.check_com else 'off'}; filter={'possibly available' if args.check_com and args.hide_registered else 'none'}")
-        if not args.style:
-            print("Evidence: energy/activity, weight/potency, novelty; docs/sound-dials.md.")
-            print("Recipe weights and richer word structures are experimental extrapolations.")
+        explain_controls(args, space)
         return
     filtered = args.check_com and args.hide_registered
     pages = "?" if filtered else str((capacity + args.count - 1) // args.count)
