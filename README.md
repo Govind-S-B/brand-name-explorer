@@ -178,8 +178,14 @@ what each approach lets you control.
 It also covers [other brand-naming projects](docs/project-comparison.md#other-work-in-the-brand-name-generation-space),
 including two LLM naming skills and how their direction overlaps with ours.
 
-The [research direction](docs/research-direction.md) describes example-based
-transformation, generation from perceptual dimensions, and combinations of both.
+The [research direction](docs/research-direction.md) has four topics:
+
+1. **Richer expressibility** — finer sound qualities and interactions.
+2. **Reverse lookup** — word/pronunciation to estimated profile and configurations.
+3. **Learned, mixable generation** — encode, blend, and steer a sound space to generate words.
+4. **Teacher-assisted enrichment** — use an LLM to supply examples beyond our rule coverage.
+
+These are research directions; the current generator remains rule-based.
 The [control hierarchy](docs/control-hierarchy.md) explains the interface and
 structural decisions. The [sound-dial research and implementation notes](docs/sound-dials.md) explain
 why these three dials were chosen, the underlying study, extrapolations, recipe

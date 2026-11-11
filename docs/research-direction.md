@@ -1,200 +1,214 @@
 # Inventing words from the feelings of sound
 
-Research direction · 11 November 2026 · Exploratory
+Research direction · Updated 12 November 2026 · Exploratory
 
-## What we want to explore
+## The thesis
 
 Can we learn a perceptual space of word sounds, then invent words by moving
 through that space and combining selected qualities?
 
-The starting intuition is that sounds and their combinations can evoke feelings.
-Some associations may be shared across cultures; others may depend on language,
-spelling, familiar words, or personal experience. We want to investigate which
-properties are shared, extract useful relationships, and use them to guide
-new word formation.
+Our starting belief is that a good invented name can work across product
+categories when the feelings match. It need not describe a product or originate
+from industry vocabulary. Sound can supply a character, while the product builds
+meaning around it. How far those impressions travel across categories, languages,
+and listeners is a research question, not an assumption of universality.
 
-The examples raised during discussion—**anvil, archon, figma, zook, zudio,
-feluchi, hissie, and wizzie**—were illustrative words, not a target set to imitate
-or evidence for the dimensions. A user could start from other examples or
-directly with a desired impression: more energetic, less harsh, substantial but still welcoming.
+The project has four research topics. These replace the earlier three-approach
+outline as the main research agenda. Reference-word transformations and
+rule-based generation remain useful methods within it.
 
-There is value in multiple approaches. We do not need to settle on one generator
-or assume that every approach answers the same research question.
+| Topic | Main question | Intended result |
+| --- | --- | --- |
+| 1. Richer expressibility | What finer sound qualities and interactions can we represent? | A richer research-informed vocabulary, rules, and scoring |
+| 2. Reverse lookup | Where does an existing word sit, and what settings approximate it? | Word/pronunciation → estimated profile and candidate configurations |
+| 3. Learned, mixable generation | Can we encode, blend, steer, and decode those representations? | A learned sound space navigated through dials and reference words |
+| 4. Teacher-assisted enrichment | Can an LLM supply useful examples beyond our rule coverage? | Curated synthetic examples and judgments for a smaller model |
 
-## Three complementary approaches
+We do not currently have capacity for our own listener study. Initial work can
+use existing research, rule-generated data, and provisional model annotations.
+We will keep agreement with rules, agreement with a teacher model, and agreement
+with people distinct.
 
-### 1. Start with words and transform their pronunciation
+## 1. Richer expressibility
 
-Use a reference word or a collection of words as the starting material. Describe
-their pronunciation, syllables, stress, and recurring patterns. Then make
-plausible substitutions or structural changes while preserving chosen features.
+Expand the current energy, weight, and novelty preferences with finer descriptions
+of sound character. Candidate contrasts include sharp–round, hard–soft,
+harsh–mellow, abrupt–continuous, and tense–relaxed. These are research candidates,
+not a commitment to add a CLI flag for each one.
 
-For example: keep a two-syllable rhythm and the ending, but change the opening
-sound; or preserve the general shape while moving toward a different vowel
-quality. “Legal” here means permitted by the chosen language or sound grammar,
-not universally valid across all languages.
+The useful question is whether we can distinguish combinations such as **light
+and mellow** from **light and sharp**, or change texture while approximately
+preserving weight. More labels do not automatically mean more independent
+controls: several judgments may respond to the same sound features.
 
-This approach answers: **What other words can have a similar sound structure?**
-It can work before we have a reliable model of perceived mood. Similarity in
-structure does not, by itself, prove similarity in feeling.
+LEX-ICON and the underlying Sidhu study provide a starting vocabulary. [3][5]
+For constructed words, LEX-ICON averages phoneme-category coefficients from prior
+human research and retains sufficiently non-neutral associations. This is a
+formula-based extension of earlier findings, not independent human ratings for
+all its invented words. Averaging the same phonemes also leaves scores unchanged
+when their order changes; it cannot capture all effects of rhythm or sequence.
 
-Wuggy is a relevant precedent for template-based pseudoword generation.
-UniPseudo is a related route: learn recurring transitions from an example word
-list rather than explicitly mutate each reference word. [1][2]
+We want to investigate sound classes, vowels, neighboring sounds, ordering,
+repetition, rhythm, and structural constraints. Each proposed relationship should
+be identified as empirical evidence, an extrapolation, or a design heuristic.
+Phonetic structure and spelling should be distinguished where possible.
 
-### 2. Start with perceptual dimensions and generate toward a target
+**Initial work:** identify finer contrasts supported by available research,
+construct controlled examples, and check which differences the current grammar
+can actually express. Preserve the current rule-based engine as a baseline.
 
-Represent desired impressions as coordinates in a multidimensional space.
-For a simplified illustration, use two dimensions:
+## 2. Reverse lookup: word → profile/configuration
 
-- Restful ↔ energetic
-- Gentle ↔ forceful
+Start with an existing or invented word and its intended pronunciation. Estimate
+its structural properties and sound character, then suggest generator settings
+that could produce words with a similar character.
 
-Set some dimensions high, some low, and leave others unconstrained. Then favor
-sounds and combinations that are predicted to evoke that region of the space.
-No starting word is required.
+The intended flow is:
 
-The actual dimensions should come from research and listener judgments rather
-than being fixed by this illustration. They may overlap or interact; we should
-not assume every axis is independent or every combination is achievable.
+**Word + pronunciation → structural description + estimated perceptual profile
+→ one or more approximate generator configurations.**
 
-This approach answers: **Which new words are likely to evoke this combination
-of impressions?**
+This is an inverse problem, not recovery of a uniquely correct recipe. Multiple
+configurations can produce similar impressions, and some words will contain
+features our grammar cannot express. The result should expose that uncertainty
+and unsupported structure rather than force everything into an existing preset.
 
-A relevant empirical starting point is *Higher order factors of sound
-symbolism*. The study measured 25 phoneme associations and found broader factors
-of activity, valence, potency, and novelty. These are candidate foundations to
-investigate, not a complete validated control panel for brand names. [3]
+For generated words, we can retain the originating configuration as known
+provenance. That does not make it the only configuration capable of producing
+the word or establish its perceived mood. For external words, pronunciation may
+need clarification before a useful estimate is possible.
 
-### 3. Use examples to locate a target, then transform selected dimensions
+**Initial work:** separate properties we can directly extract, such as intended
+syllable structure, from impressions we estimate. Use controlled variants to
+check whether changes in a word move the estimated profile in sensible ways.
+This topic can start with rules and research coefficients; it does not require a
+neural encoder at the outset.
 
-Examples can help a user express a target without naming every dimension.
-Estimate their perceived qualities, then let the user preserve some and change
-others.
+## 3. Learned, mixable generation
 
-For instance: “keep the weight I associate with anvil, use a rhythm closer to
-zudio, and move toward the playfulness I associate with wizzie.” These are
-user-intended qualities, not established measurements of those names.
+Learn a higher-dimensional representation of word sounds from the richer
+examples and configurations developed in topics 1 and 2. The hypothesis is that
+a small neural model can learn useful regularities and a smoother space for
+exploration, including combinations absent from its training examples.
 
-This combines perceptual constraints with structural ones. Weight and
-playfulness are impressions; rhythm is a property of the word's form. Both
-can be useful controls, but they should remain distinguishable.
+It would support two connected abilities:
 
-This approach answers: **How can we preserve what I like while changing a
-particular part of the experience?**
+- **Encode:** word + intended pronunciation → a representation of sound character.
+- **Generate:** target representation + variation seed → multiple plausible new words.
 
-## The shared model
+The current generator, enriched with more nuance, would supply forward training
+pairs: **configuration → generated word**. Topic 2 would supply reverse estimates
+for words and their properties. We may need additional paired examples and
+controlled transformations to cover gaps in both directions. Model architecture,
+representation size, and training objectives remain open research decisions.
 
-All three approaches can share three components:
+### What steering could feel like
 
-| Component | Role |
-| --- | --- |
-| Sound grammar | Defines plausible sound sequences, syllables, stress, and allowed transformations for the target language/style |
-| Perceptual model | Estimates the impressions a complete pronunciation is likely to evoke, including uncertainty and audience differences |
-| Generation/search | Finds varied candidates that satisfy structural constraints and approach the requested perceptual target |
+Start from a word, a profile, or a defined neutral point. Add reference words or
+themes, each with a slider centered on the current baseline. Move a slider left
+or right to adjust its influence, then generate candidates near the new target.
+Word examples can be encoded into vectors and blended in different ways before
+decoding into new words. A theme needs its own mapping into this sound space;
+a text embedding of its meaning is not automatically a sound-impression vector.
 
-The model works in two directions:
+We want to explore both whole-profile blends and selective mixing: take texture
+from one reference, preserve another's rhythm, and adjust energy independently.
+The example words mentioned in early discussions were illustrations, not a
+training target or a fixed set of anchors.
 
-**Pronunciation → estimated impressions:** locate a word in a fuzzy region of
-perceptual space, using listener evidence where available.
+Two interaction questions need explicit answers:
 
-**Target impressions → candidate pronunciations:** sample or search for plausible
-forms likely to fall in that region. Many different forms may fit the same
-request. Spelling can then be chosen and evaluated separately.
+- Pulling toward a whole word may change several properties together. Pulling
+  toward only its texture requires a representation that separates that property.
+- Moving away from a reference needs a defined baseline and direction. Away from
+  sharp does not automatically mean calm; coordinate midpoints need not feel
+  perceptually halfway between two words.
 
-We do not assume a dimension directly supplies the laws of pronunciation.
-Dimensions guide preferences within a sound grammar. We also do not assume
-whole-word impressions equal the sum of individual phoneme scores. Sound order,
-neighboring sounds, repetition, rhythm, stress, and endings may all contribute.
+### What the network must demonstrate
 
-Lexifer provides a useful precedent for weighted sounds, word shapes, and rules
-for allowed combinations. LEX-ICON provides constructed words and a method for
-associating them with multiple semantic dimensions. Its constructed-word labels
-are derived from earlier phoneme coefficients; they are not independent human
-ratings for every word. [4][5]
+Training on synthetic rules can teach their regularities, but supplies no new
+independent evidence of perception. A model may inherit the generator's blind
+spots, memorize examples, or produce invalid forms between valid training points.
+Neural weights do not guarantee compliance with pronunciation constraints; retain
+explicit checks for requested structure and the chosen sound grammar.
 
-## What combining profiles would mean
+The central test is useful behavior on **held-out combinations**: qualities or
+structures seen separately in training but not together. Compare against direct
+rule-based sampling and simple profile interpolation. Evaluate constraint
+satisfaction, diversity, similarity to training examples, and target fit
+separately, stating whose judgments define target fit.
 
-A profile would be a convenient starting region in perceptual space, potentially
-paired with a structural recipe. The current preset names could eventually
-become such starting points if evidence supports their intended impressions.
+Topic 3 is successful only if learning provides useful exploration beyond the
+simpler baselines, rather than merely recreating their output through a network.
 
-Combining profiles could mean:
+## 4. Teacher-assisted enrichment
 
-- Interpolating between two targets across selected dimensions.
-- Taking one dimension from one reference and another from a different reference.
-- Holding some qualities approximately steady while increasing or decreasing another.
-- Keeping a reference's syllable structure while targeting a different impression.
+Use a stronger LLM as a teacher to add carefully selected examples and judgments
+where rules and existing data have poor coverage. The bet is that its learned
+associations can provide useful supervision for a smaller model, including themes
+that the existing configuration cannot represent.
 
-“Halfway between” is initially a hypothesis about the representation. A midpoint
-in coordinates may not feel halfway between two names to listeners. Some targets
-may conflict with one another or require a tradeoff with pronounceability.
+Possible contributions include:
 
-The desired output is therefore a diverse set of candidates with approximate
-fit, not one supposedly correct word. Generation weights should not be presented
-as calibrated percentages of emotion.
+- Invented-word examples for underrepresented themes or combinations.
+- Pairwise judgments about which word is more flowing, heavy, sharp, or otherwise
+  closer to a stated target.
+- Controlled edits: retain rhythm while reducing abruptness, for example.
+- Approximate profiles and explanations for words outside the current grammar.
 
-## What “inherent to sound” means as a research question
+Few-shot examples can guide the teacher's intended interpretation. Quality,
+coverage, and consistency matter more than producing a large volume of similar
+synthetic words. An example expressing a new quality is only useful if we also
+provide a way to represent that quality; it should not be squeezed into the old
+three-dial schema by default.
 
-We want to test for associations that survive changes in spelling, familiar
-word meaning, and language/cultural background. Existing cross-language
-bouba/kiki findings make this a reasonable direction, but do not establish
-universal meanings for all sounds or profiles. [6]
+Record the source, teacher/model version, prompt, example context, and uncertainty
+of annotations. Keep generated training material separate from evaluation sets,
+and compare teacher-enriched training with rule-only training. Reusing the same
+teacher to generate labels and judge success can create circular evidence.
 
-Several influences must be distinguished:
+This approach can take on much of the provisional annotation and screening work
+while human capacity is limited. Few-shot consistency is not proof of calibration
+to listeners, however, and the smaller model may distill the teacher's mistakes
+as well as its useful generalizations. Agreement with people remains a separate
+validation question for later work or suitable existing human-rated data.
 
-- Acoustic and articulatory properties of sounds.
-- The order and structure in which sounds combine.
-- Patterns learned from a particular language.
-- Existing word meanings and brand familiarity.
-- Spelling and visual appearance.
-- Individual taste and cultural experience.
+## How the topics connect
 
-For example, anvil is a familiar object word, while Figma is an established
-brand. Their perceived character cannot be attributed entirely to phonetics.
-We should confirm the intended pronunciation of reference names rather than
-infer it solely from their letters.
+**Topic 1 defines what we can express. Topic 2 maps words into that description.
+Topic 3 learns to encode, combine, and generate from it. Topic 4 broadens the
+training signal beyond what our rules already know.**
 
-## Questions and experiments
+Topics 1 and 2 can supply a first dataset for topic 3. Topic 4 can develop alongside
+them, revealing missing qualities and contributing examples for both forward and
+reverse mappings. This is a research agenda, not four promised implementation
+milestones or an instruction to add more controls immediately.
 
-1. **Recover useful dimensions.** Gather judgments on novel spoken forms across
-   several qualities. Examine which qualities cluster and which remain distinct.
-   Compare against established dimensions before inventing a new taxonomy.
-2. **Test transformations.** Create controlled variants of reference structures.
-   Measure whether a change moves the intended quality while preserving others.
-3. **Test combinations.** Compare individual cues with combined cues. Assess
-   additive effects, interactions, and conflicts rather than presuming simple
-   averaging works.
-4. **Compare generation routes.** Evaluate template transformations, example-list
-   models, dimension-guided generation, and the current rule-based baseline using
-   the same listener tasks.
-5. **Test transfer.** Evaluate unseen names and new listeners, then explicitly
-   compare language/cultural groups. Separate effects of pronunciation, spelling,
-   and familiar meaning with audio and written conditions.
+## Boundaries and current status
 
-Measure target fit, pronounceability, distinctiveness, and liking separately.
-A word can match an impression without being a good brand name. Model-generated
-ratings can help explore hypotheses but cannot replace independent listener
-validation of the same model's claims.
+The implemented CLI offers experimental mood recipes, energy/weight/novelty
+preferences, numeric recipe blending, opening/syllable/ending constraints, exact
+character length, seeded generation, and cached domain checks. See the
+[control hierarchy](control-hierarchy.md) and [sound-dial implementation notes](sound-dials.md).
+Current blending interpolates recipe settings; it is not learned vector mixing.
+Reverse lookup, neural encoding/generation, reference-word sliders, and teacher
+training pipelines are not implemented.
 
-Domain availability remains a downstream practical filter. Evaluate the sound
-model before domain filtering, then examine the available subset separately.
-Otherwise availability could silently change which sound patterns we evaluate.
+Existing meanings, brand familiarity, spelling, language experience, and
+pronunciation can all influence impressions. We should not attribute every
+association to sound or assume it transfers across cultures. Cross-language
+bouba/kiki evidence supports investigating shared associations, not universal
+mappings for every proposed quality. [6]
 
-## Current status and next step
+Domain lookup, filtering, and pagination remain separate from sound design.
+Evaluate generated sound candidates before availability filtering so that domain
+registration does not silently select which patterns count as successful.
 
-The generator now offers experimental energy, weight, and novelty dials, editable
-mood recipes, and blends of their sampling settings, alongside the original
-letter-pattern presets and cached domain checks. See [sound dials](sound-dials.md).
-It does not learn dimensions from new listener data or infer profiles from
-example words. The dials implement research-informed hypotheses; they do not
-validate the broader perceptual model described here.
-
-A useful first study would compare a small set of example-guided transformations
-with dimension-guided candidates for two selected qualities. Confirm reference
-pronunciations and intended impressions first; then design controlled candidate
-sets and a listener evaluation. Use those observations to decide which approach
-to develop further.
+Related projects provide complementary methods: Wuggy for structural matching,
+UniPseudo for transitions learned from word lists, Lexifer for explicit sound
+rules, and LEX-ICON for sound–meaning evaluation. [1][2][4][5] See the
+[project comparison](project-comparison.md) for concrete examples and the overlap
+with broader LLM naming workflows.
 
 ## Starting references and projects
 
