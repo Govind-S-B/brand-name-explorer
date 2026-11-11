@@ -175,6 +175,8 @@ Original calm accepts even lengths 2–14 (default 6), flowing odd lengths 3–1
 The [project comparison](docs/project-comparison.md) shows concrete inputs and
 outputs from Wuggy, UniPseudo, Lexifer, LEX-ICON, and our generator, explaining
 what each approach lets you control.
+It also covers [other brand-naming projects](docs/project-comparison.md#other-work-in-the-brand-name-generation-space),
+including two LLM naming skills and how their direction overlaps with ours.
 
 The [research direction](docs/research-direction.md) describes example-based
 transformation, generation from perceptual dimensions, and combinations of both.
