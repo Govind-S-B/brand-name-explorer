@@ -1,5 +1,7 @@
 # brand-name-explorer
 
+making up brand names based on how they sound and feel, with a .com check to filter some out.
+
 ## Motivation
 
 I always used to struggle with coming up with brand names but had a friend who came up with things effortlessly. He just spews random words and they sound nice. I came across the old [bouba/kiki experiment](https://en.wikipedia.org/wiki/Bouba/kiki_effect) and experimented with a few moods based on it.
@@ -8,11 +10,7 @@ I set a few rules for how I want the sounds to be, then generate a sample I can 
 
 To make it faster, I pair it with a TLD search to quickly filter some if I really want to explore unique names.
 
-## Description
-
-making up brand names based on how they sound and feel, with a .com check to filter some out.
-
-## Turn the dials
+## Get Started
 
 Python 3.9+, no dependencies. Start here to see words immediately:
 
