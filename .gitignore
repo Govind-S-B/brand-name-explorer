@@ -1,0 +1,13 @@
+# Local lookup state and generated output
+domain_cache.json*
+*_cache.json*
+.cache/
+names*.txt
+names*.tsv
+names*.csv
+
+# Python / local environment
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
