@@ -1,18 +1,18 @@
 {
-  "version": "5426409ead97",
-  "initialJsGzip": 10184,
-  "initialCssGzip": 5214,
+  "version": "1a6d8dcf8c63",
+  "initialJsGzip": 10164,
+  "initialCssGzip": 6236,
   "assets": [
     {
-      "path": "assets/analysis.worker-7N3eWULR.js",
-      "bytes": 21621,
-      "gzip": 8763,
+      "path": "assets/analysis-ui-CCldbBeL.js",
+      "bytes": 3603,
+      "gzip": 1731,
       "initial": false
     },
     {
-      "path": "assets/bne-mono-400-Cy94DRbc.woff2",
-      "bytes": 5096,
-      "gzip": 5119,
+      "path": "assets/analysis.worker-D69Vq7sW.js",
+      "bytes": 21633,
+      "gzip": 8767,
       "initial": false
     },
     {
@@ -28,21 +28,27 @@
       "initial": false
     },
     {
-      "path": "assets/index-CZND0xj_.css",
-      "bytes": 20716,
-      "gzip": 5214,
+      "path": "assets/index-BWguVF-A.js",
+      "bytes": 26283,
+      "gzip": 10164,
       "initial": true
     },
     {
-      "path": "assets/index-gkfkdj12.js",
-      "bytes": 27461,
-      "gzip": 10184,
+      "path": "assets/index-Bx_-zUNL.css",
+      "bytes": 24507,
+      "gzip": 6236,
       "initial": true
     },
     {
       "path": "assets/inter-400-DGwFTPnX.woff2",
       "bytes": 6824,
       "gzip": 6847,
+      "initial": false
+    },
+    {
+      "path": "assets/inter-600-CrnvEuSK.woff2",
+      "bytes": 7072,
+      "gzip": 7095,
       "initial": false
     },
     {
@@ -59,8 +65,8 @@
     },
     {
       "path": "fonts-LICENSE.txt",
-      "bytes": 13563,
-      "gzip": 2532,
+      "bytes": 8981,
+      "gzip": 2138,
       "initial": false
     },
     {
@@ -71,8 +77,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 13706,
-      "gzip": 3758,
+      "bytes": 15823,
+      "gzip": 4549,
       "initial": false
     }
   ]

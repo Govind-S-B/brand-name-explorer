@@ -9,11 +9,21 @@ Python source. Fixtures are generated independently by Python, not by the port.
 The browser retains CPython's random() and getrandbits/_randbelow behavior rather
 than substituting a JavaScript PRNG. No Python source is loaded by the app.
 
-The interface markup is static. `index.html` holds the header, tabs and footer.
-`src/shell.ts` renders the panels into `index.html` at build time through a small
-Vite plugin, so the controls paint before JavaScript runs. `main.ts` attaches
-behaviour to that markup and handles local generation and portable
-shortlist/preferences storage. Inputs and stored labels are rendered with text
+The interface markup is static. `index.html` holds the app bar, the tab bar and
+the name sheet. `src/shell.ts` renders the panels and the Tune sheet into
+`index.html` at build time through a small Vite plugin, so the first screen paints
+before JavaScript runs.
+
+`main.ts` attaches behaviour to that markup and handles:
+- the feed (pages append on Load more but keep worker page and session semantics);
+- Tune;
+- local generation;
+- portable shortlist and preferences storage.
+
+`analysis-ui.ts` holds the analysis views, backup, import and CSV export. It is
+dynamically imported on first use; it imports nothing from `main.ts`, so the entry
+bundle carries no preload helper. Preferences use `bne.preferences.v2`, because v2
+changed the defaults to match the CLI. Inputs and stored labels are rendered with text
 nodes; user text is never interpreted as HTML. The analysis worker isolates the
 inverse grid and phoneme beam search. The lookup worker isolates the network
 scheduler and IndexedDB from UI work.

@@ -68,18 +68,67 @@ those inputs, not an exhaustive proof for every possible reference or seed.
 
 ## Browser functionality and recovery
 
-The [live browser verifier](browser-verification.json) checks desktop and mobile:
-all tool panels, 24 real domain lookups per profile, lazy dictionary loading,
-shortlist backup/import, cache clearing that preserves the shortlist, offline
-reload generation, and offline dictionary analysis after first use. Both have
-zero page errors, zero horizontal page overflow, and **zero axe violations**.
-The controls use at least 44 px tap targets and the tab strip supports arrow,
-Home and End keys. The screenshots were inspected visually:
+The [live browser verifier](browser-verification.json) checks desktop and mobile
+with real lookups:
 
+- **Default landing:** the CLI-equivalent feed of 20 possibly available names, every
+  one RDAP-confirmed.
+- **Tune:** the toggle that reveals registered names.
+- **Name sheet:**
+  - sound breakdown and inverter fit, without downloading the dictionary;
+  - nearby spellings (substitutions).
+- **Reverse:** with the lazily loaded dictionary, plus its substitutions follow-up.
+- **Shortlist:** backup and import, and cache clearing that preserves the shortlist.
+- **Offline:** an offline reload with default settings, and offline analysis
+  after first use.
+
+axe runs on the feed, the name sheet, Tune, Reverse and the shortlist. Both
+profiles have zero page errors, zero same-origin failures, zero horizontal
+overflow and **zero axe violations**. Controls have hit areas of at least 44 px,
+and the tab bar supports arrow, Home and End keys.
+
+The screenshots were inspected visually:
 - [390 px phone](screenshots/mobile.png) · [full phone page](screenshots/mobile-full.png)
+- [name sheet](screenshots/mobile-sheet.png) · [Tune](screenshots/mobile-tune.png)
 - [Desktop](screenshots/desktop.png) · [full desktop page](screenshots/desktop-full.png)
+- [desktop name sheet](screenshots/desktop-sheet.png) · [desktop Tune](screenshots/desktop-tune.png)
 
-### Interface redesign (12 November 2026)
+### UX v2: browsing feed (12 November 2026)
+
+The interface was rebuilt mobile-first as a consumer browsing app. The plan,
+information architecture and state list are in [ux-v2.md](ux-v2.md).
+
+- **Defaults now match the CLI:** only possibly available .com names (`--hide-registered`
+  on), with 20 per page instead of the CLI's 200.
+- **Navigation:** three destinations (Explore, Reverse, Shortlist). The inverter and
+  substitutions live in the name sheet and in Reverse follow-ups.
+- **Unchanged:** the generator, lookup engine and stores. The only analysis-worker
+  change is that the inverter result also returns its grammar phones, so
+  substitutions can run without the dictionary.
+- [v1 → v2 at 390 px](screenshots/v1-vs-v2-mobile.jpg). The v1 captures are kept as
+  `*-v1.png`.
+- **Deterministic captures** (mocked providers, `node scripts/design-screens.mjs`),
+  as `v2-<profile>-<state>.png` in [screenshots/](screenshots/):
+  - every 390 px state: `loading`, `checking`, `feed`, `name-sheet`,
+    `name-sheet-nearby`, `tune`, `tune-sound`, `tune-domains`, `all-names`,
+    `load-more`, `error`, `reverse`, `reverse-result`, `reverse-nearby`,
+    `shortlist`, `shortlist-empty` and `offline`;
+  - a 360 px set (`mobile360`) and desktop captures.
+
+Browser tests changed with the IA and defaults:
+- `verify-browser.mjs`:
+  - lands on the filtered feed, so it now expects lookups on load;
+  - drives Tune and the name sheet;
+  - reaches the inverter and substitutions through the sheet and Reverse.
+- `verify-resume.mjs`:
+  - reload resumes automatically;
+  - Load more appends page two;
+  - the saved-page check replaces the removed Previous button.
+- `benchmark-production.mjs` and `measure-load.mjs` set checks off in stored
+  preferences before landing, so they still time only their own work.
+- The 134 parity and lookup unit tests are unchanged.
+
+### Interface redesign v1 (12 November 2026)
 
 The interface was redesigned to the standard set out in the [design brief](design-brief.md).
 That brief comes from boat.dev, studied in Chrome at 1440 px and 390 px; references
@@ -92,11 +141,8 @@ rerun after the redesign. The pre-redesign captures are kept as `*-before.png`.
   reference, before and after.
 - At 390 px, nine full result rows sit above the fold, below the controls; the old
   layout showed none. At 1440 × 900, all 24 are visible.
-- Deterministic state captures, made with mocked providers by
-  `node scripts/design-screens.mjs`:
-  - `initial`, `checking`, `results` (with `-full`), `folds-open`, `reverse`,
-    `substitutions`, `shortlist` and `offline`;
-  - each as `mobile-*.png` and `desktop-*.png` in [screenshots/](screenshots/).
+- v1's main captures are kept as `mobile-v1.png` and `desktop-v1.png`. Its per-state
+  captures were superseded by the v2 set above.
 
 The [controlled recovery verifier](resume-verification.json) uses mocked RDAP/DoH
 with delayed early candidates. It pauses before completion, reloads/resumes,
@@ -109,13 +155,19 @@ but physical Safari suspension remains unverified.
 
 ## Bundle and load performance
 
-Production build: **10,184 bytes gzip entry JS** (12,906 before the redesign),
-5,214 bytes CSS; **28,492 bytes gzip for all JavaScript including both workers**
-(previously 31,214). This is below the 100 KB JS target. The static app shell is
-now HTML (`src/shell.ts`, injected at build time), and `index.html` is 3,758 bytes
-gzip. There are zero runtime dependencies.
+Production build, v2:
+- **10,164 bytes gzip entry JS**: 10,184 in v1, and 12,906 before the first redesign.
+- 6,236 bytes CSS.
+- **30,207 bytes gzip for all JavaScript**, including both workers and the
+  1,731-byte `analysis-ui` chunk. That chunk holds the analysis views, backup,
+  import and CSV export, and loads on first use (v1: 28,492; originally 31,214).
 
-Three self-hosted OFL font subsets total 17,416 bytes of WOFF2 (`scripts/fonts.py`).
+This is below the 100 KB JS target. The static app shell is HTML (`src/shell.ts`,
+injected at build time), and `index.html` is 4,549 bytes gzip. There are zero
+runtime dependencies.
+
+Three self-hosted OFL font subsets total 19,392 bytes of WOFF2: Funnel Display 500
+and Inter 400/600 (`scripts/fonts.py`).
 On a first visit they load only after the first results frame. Later visits enable
 them before first paint. Metric-matched fallbacks keep the swap at CLS 0. The full
 126,052-word compact CMU asset is 2,320,867 bytes raw / **816,962 bytes gzip**;
@@ -124,17 +176,22 @@ when analysis needs it. [Build sizes](bundle-size.json).
 
 Lighthouse mobile, on the gzip production preview under `/brand-name-explorer/`,
 with default simulated mobile throttling: **LCP 0.752 s, TBT 0 ms, CLS 0**,
-performance **100**, accessibility **100**. Before the redesign: LCP 0.943 s,
-CLS 0, 100/100. The audited transfer is **38,916 bytes** (18,348 before); the
-difference is mostly font subsets and the static HTML shell. That audit omits some worker/service-worker precache traffic; it is not
+performance **100**, accessibility **100**. These match v1 (LCP 0.752 s); before
+the first redesign, LCP was 0.943 s. The LCP element is the static feed title.
+
+The audited transfer is 66,990 bytes, split by origin:
+- 42,686 bytes are the app itself (v1: 38,916);
+- the rest is the landing feed's own .com lookups: RDAP 8,902, Cloudflare DoH 8,580
+  and Google DoH 6,822. That audit omits some worker/service-worker precache traffic; it is not
 the entire installed offline shell. [Compact audit summary](lighthouse-mobile-summary.json). Full JSON/HTML reports
 are generated locally by the reproduction command and are gitignored.
 
 A separate installed-Chrome test records server-side compressed response bodies,
 including workers and service-worker installation. It uses CDP slow 4G/4× CPU,
-with generation enabled and no domain work. A cold load transfers about **63.2 KB**
-for the whole installed shell, including the fonts and their licence. Repeat loads
-need only the **856-byte service worker update check** in this test. The offline iteration stops its isolated
+with generation enabled and no domain work (stored preferences turn checks off,
+because landing now starts lookups). A cold load transfers about **69.2 KB** for the
+whole installed shell, including fonts, licences and the lazy chunk. Repeat loads
+need only the **866-byte service worker update check** in this test. The offline iteration stops its isolated
 preview server as well as setting the browser context offline, and transfers
 **zero bytes**. Browser resource timing alone undercounts service-worker traffic.
 The exact observed timings and per-resource accounting are in
@@ -143,14 +200,20 @@ not github.io measurements. Payload totals exclude HTTP headers.
 
 | Load | Generator usable | Observed LCP | Observed TBT | Server compressed bodies |
 | --- | ---: | ---: | ---: | ---: |
-| Cold | 504 ms | 424 ms | 0 ms | 63,248 bytes |
-| Repeat | 92 ms | 72 ms | 0 ms | 856 bytes |
-| Offline, server stopped | 78 ms | 68 ms | 0 ms | 0 bytes |
+| Cold | 532 ms | 444 ms | 0 ms | 69,159 bytes |
+| Repeat | 94 ms | 76 ms | 0 ms | 866 bytes |
+| Offline, server stopped | 76 ms | 56 ms | 0 ms | 0 bytes |
 
-Before the redesign these were 560 / 532 / 0 ms and 37,470 bytes (cold), 80 / 60 /
-0 ms and 785 bytes (repeat), and 78 / 56 / 0 ms (offline). In three runs of the
-same build, the repeat-load usable time varied between 92 and 113 ms. A build
-without fonts measured 86 ms.
+Across three v2 runs, cold usable time ranged from 513 to 532 ms and repeat from
+91 to 100 ms.
+
+| Build | Cold usable / LCP | Repeat usable / LCP | Offline usable / LCP |
+| --- | ---: | ---: | ---: |
+| v1 | 504 / 424 ms (63,248 bytes) | 92 / 72 ms | 78 / 68 ms |
+| Before the first redesign | 560 / 532 ms (37,470 bytes) | 80 / 60 ms | 78 / 56 ms |
+
+v2's cold load is 10–30 ms behind v1, because its static shell is larger (HTML and
+CSS). It is still ahead of the original.
 
 These direct wall-clock observations are separate from Lighthouse's simulated
 metrics above; they use different measurement methods.
@@ -170,11 +233,13 @@ npm run test:resume
 npm run test:browser
 npm run benchmark:production
 npm run measure:load
+node scripts/design-screens.mjs docs/screenshots   # every UI state, mocked providers
 ./node_modules/.bin/lighthouse http://127.0.0.1:4173/brand-name-explorer/ \
   --chrome-path='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' \
   --chrome-flags='--headless --no-sandbox' \
   --only-categories=performance,accessibility --output=json --output=html \
   --output-path=docs/lighthouse-mobile --quiet
+node scripts/lighthouse-summary.mjs docs/lighthouse-mobile.report.json docs/lighthouse-mobile-summary.json
 ```
 
 Run performance measurements sequentially with other browser tests stopped.

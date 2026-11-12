@@ -33,12 +33,21 @@ https://govind-s-b.github.io/brand-name-explorer/.
 
 ## Capabilities
 
-- All seven mood recipes, blends, explicit dials, structure and spelling controls,
-  integer seeds, original styles, and pagination. The UI starts with 24 names;
-  it supports up to 4,000 per page. Python's default count remains 200.
-- Reverse finder with CMU/supplied pronunciation and explicit representation gaps;
-  exact-spelling inverter over the 1,331-point dial grid; opt-in substitution
-  beam search. Analysis runs in its own worker and makes no domain requests.
+- **Defaults:** a browsing feed with the CLI's defaults. You land on possibly
+  available .com names only (`--hide-registered`), 20 per page, with lookups
+  starting automatically. Up to 4,000 per page are available, and Python's
+  default count remains 200.
+- **Tune:** all seven mood recipes, blends, explicit dials, structure and spelling
+  controls, integer seeds, original styles, pagination (Load more and a start
+  page) and lookup tuning. Tune is a bottom sheet on phones and an inline panel on
+  desktop. [UX plan](docs/ux-v2.md).
+- **Analysis:**
+  - the reverse finder, with CMU or supplied pronunciation and explicit
+    representation gaps;
+  - the exact-spelling inverter over the 1,331-point dial grid;
+  - opt-in substitution beam search.
+  - Analysis runs in its own worker and makes no domain requests. The inverter and
+    substitutions live in each name's sheet and as Reverse follow-ups.
 - Independent DNS and RDAP schedulers in a lookup worker. Six RDAP slots and
   12 DoH slots per provider; paced starts, retry timers outside slots, persistent
   provider cooldowns, congestion backoff, and strict RDAP-confirmed availability.
@@ -47,7 +56,7 @@ https://govind-s-b.github.io/brand-name-explorer/.
   lookup tuning. Page two checks the full filtered prefix; it does not skip
   earlier candidates. Refresh resets the selected session's freshness boundary.
 - An in-flight search pauses when the document becomes hidden/offline and resumes
-  when visible/online. Reload exposes an explicit Resume button. It never relies
+  when visible/online. Reload resumes the landing search automatically. It never relies
   on a background tab or service worker continuing a search. Completed out-of-order
   checks stay cached. After an abrupt stop, a short rejected prefix may replay.
 - Separate localStorage shortlist with JSON backup/import, independent of cache
@@ -88,6 +97,7 @@ to regenerate the compact asset, shared inventories, and parity fixtures. This
 is a development command, never a browser runtime dependency. The preserved CMU
 license is linked in the interface and included in production output.
 
+- [UX v2 plan and information architecture](docs/ux-v2.md)
 - [Interface design brief (boat.dev standard)](docs/design-brief.md)
 - [Browser measurements and design choices](docs/browser-throughput.md)
 - [Verification, bundle sizes, and load results](docs/verification.md)

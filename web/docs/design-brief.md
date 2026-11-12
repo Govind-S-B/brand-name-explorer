@@ -1,5 +1,12 @@
 # Design brief — boat.dev standard, applied to a compact naming tool
 
+> **Superseded in part by [UX v2](ux-v2.md).** v2 keeps this brief's craft standard:
+> restraint, deliberate type, precise states, quiet motion, visible focus and
+> self-hosted OFL faces. It drops the density-first and terminal decisions (the
+> lowercase monospace UI voice, the inverse-fill segments and the status bar) in
+> favour of a calm, mobile-first browsing app. BNE Mono is no longer shipped;
+> v2 uses Funnel Display and Inter 400/600.
+
 Reference captured 12 November 2026 in installed Chrome at 1440 px and 390 px
 (iPhone 13 emulation, 2× DPR). Screenshots: [desktop](design-ref/boat-desktop.png),
 [desktop full](design-ref/boat-desktop-full.png), [390 px](design-ref/boat-mobile.png),
