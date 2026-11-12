@@ -12,6 +12,7 @@ npm run preview:pages
 # In a second terminal:
 npm run test:resume
 npm run test:browser
+npm run test:names
 node web/scripts/verify-feed.mjs
 node web/scripts/design-screens.mjs /tmp/bne-screens
 npm run measure:memory -- /tmp/bne-memory.json
@@ -47,6 +48,14 @@ Physical iPhone/Safari suspension, actual cellular links and unlimited feed
 length are not established by desktop Chrome emulation. Internet benchmarks are
 individual observations with uncontrolled remote resolver/registry caches.
 Availability remains a timestamped RDAP observation, not a purchase guarantee.
+
+`test:names` exercises the shared name rows at 360, 390 and 1440 px with mocked
+providers: all entry points, direct favourites, nested modal Back/Close and focus,
+child configuration application, preserved reference readings and text-only
+shortlists, asynchronous navigation, shared domain status and zero axe violations.
+It defaults to the preview on port 4174; use `BASE_URL` to select another preview.
+Screenshots go outside the tree to `/private/tmp/bne-name-affordances` by default
+(`EVIDENCE_DIR` overrides this). This suite does not certify domain availability.
 
 Set `HEAP_SNAPSHOTS=1` for `measure:memory` to also save CDP heap snapshots beside
 the JSON report. The report separates V8 used heap, backing storage and embedder

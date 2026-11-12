@@ -10,6 +10,10 @@ the spelling. Tap a name for its
 sound breakdown and nearby spellings. Reverse finds settings for a name you
 like; Shortlist saves your favourites and offers a portable JSON backup.
 
+Every name in Explore, Reverse, nearby suggestions and Shortlist opens the same
+name sheet and has a save heart. Follow a nearby name and use Back to return to
+the previous name and its suggestions.
+
 Every “possibly available” result is RDAP-confirmed. DNS only filters registered
 names. Registry absence does not guarantee purchase availability; confirm with
 a registrar. Sound preferences are experimental, not measured emotions.

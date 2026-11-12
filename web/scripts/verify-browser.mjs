@@ -81,7 +81,7 @@ for (const profile of ["desktop", "mobile"]) {
   await page.waitForFunction(() => document.querySelector("#ns-sound .dialbars"));
   assert.equal(network.some((u) => /cmudict.*bin/.test(u)), false);
   await page.locator("#ns-nearby button").click();
-  await page.waitForFunction(() => document.querySelectorAll("#ns-nearby .analysis-card").length === 5);
+  await page.waitForFunction(() => document.querySelectorAll("#ns-nearby .name-card").length === 5);
   await page.waitForTimeout(300);
   await shot("-sheet");
   await axe("name sheet");
@@ -123,7 +123,7 @@ for (const profile of ["desktop", "mobile"]) {
   assert.match(await page.locator("#panel-reverse .tool-result").innerText(), /Settings that make this sound/);
   assert.ok(network.some((u) => /cmudict.*bin/.test(u)));
   await page.locator("[data-follow=substitutions]").click();
-  await page.waitForFunction(() => document.querySelectorAll("#panel-reverse .tool-more .analysis-card").length === 5);
+  await page.waitForFunction(() => document.querySelectorAll("#panel-reverse .tool-more .name-card").length === 5);
   await axe("reverse");
   // Shortlist backup, cache clearing that keeps it, and import.
   await page.locator("#tab-saved").click();

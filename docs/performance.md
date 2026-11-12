@@ -186,3 +186,36 @@ vary substantially between runs; rerun an isolated 200/4,000 comparison after
 provider or transport changes. Do not raise browser concurrency beyond six.
 For future product work, test Safari on physical hardware and very late pages;
 keep the already liked v2 design locked until new user feedback.
+
+## Shared name rows and modal follow-up (2026-11-13)
+
+Compared the published heading-chip version (`887e82d`) with the shared-name
+implementation using the same gzip settings and CDP forced-GC memory harness.
+The before page was served from Pages and the after page from the local production
+preview; both used fresh Chrome contexts, the same 390 px viewport, and no domain
+checks for heap measurements. These are single heap observations, not device RSS
+or a claim of a speed improvement. Browser tests separately use real providers.
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Entry JS gzip | 7,727 B | 8,920 B |
+| CSS gzip | 6,244 B | 6,246 B |
+| Landing main V8 heap | 2.142 MB | 2.160 MB |
+| 8,000-name main V8 heap | 2.941 MB | 2.946 MB |
+| Analysis-worker V8 + backing storage | 2.265 MB | 2.266 MB |
+| 8,000-name rendered rows at heap checkpoint | 200 | 200 |
+
+The additional UI bytes cover shared reference names, modal Back/focus state and
+request routing. No runtime dependency, generation change, lookup-engine change
+or initial dictionary download was added. The separate feed verifier observed
+100 rendered rows after scroll-back, 8,000 distinct CSV rows and zero axe issues.
+The 22-hop modal test verified the 20-view history bound. Embedder-heap counters
+varied with rendering timing (13.51 → 8.15 MB at 8,000 names); that variation is
+not treated as an optimization result.
+
+Raw observations are under `/private/tmp/bne-affordances-*`; the shared-name
+screenshots are under `/private/tmp/bne-name-affordances/`.
+
+Follow-up mobile Lighthouse on the local production build: performance 100,
+accessibility 100, LCP 752.6 ms and TBT 0. This is one run, not a new network
+throughput benchmark; generation and lookup algorithms are unchanged.

@@ -18,9 +18,8 @@ await context.addInitScript(() =>
   ),
 );
 const page = await context.newPage();
-await page.goto(
-  process.env.BASE_URL || "http://127.0.0.1:4173/brand-name-explorer/",
-);
+const base = process.env.BASE_URL || "http://127.0.0.1:4173/brand-name-explorer/";
+await page.goto(base);
 await page.waitForSelector("#results .name-card");
 const root = await browser.newBrowserCDPSession();
 let next = 1;
@@ -48,7 +47,7 @@ async function heaps(label) {
   const { targetInfos } = await root.send("Target.getTargets");
   const values = [];
   for (const t of targetInfos.filter(
-    (t) => ["page", "worker"].includes(t.type) && t.url.includes("127.0.0.1"),
+    (t) => ["page", "worker"].includes(t.type) && t.url.startsWith(base),
   )) {
     const { sessionId } = await root.send("Target.attachToTarget", {
       targetId: t.targetId,

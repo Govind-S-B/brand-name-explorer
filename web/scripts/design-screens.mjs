@@ -90,7 +90,7 @@ for (const name of only) {
   await settle(page);
   await shot("name-sheet");
   await page.locator("#ns-nearby button").click();
-  await page.waitForFunction(() => document.querySelector("#ns-nearby .analysis-card"));
+  await page.waitForFunction(() => document.querySelector("#ns-nearby .name-card"));
   await page.locator("#name-sheet").evaluate((d) => (d.scrollTop = d.scrollHeight));
   await settle(page);
   await shot("name-sheet-nearby");
@@ -150,7 +150,7 @@ for (const name of only) {
   await settle(page);
   await shot("reverse-result");
   await page.locator("[data-follow=substitutions]").click();
-  await page.waitForFunction(() => document.querySelector("#panel-reverse .tool-more .analysis-card"));
+  await page.waitForFunction(() => document.querySelector("#panel-reverse .tool-more .name-card"));
   await page.locator("#panel-reverse .tool-more").scrollIntoViewIfNeeded();
   await settle(page);
   await shot("reverse-nearby");

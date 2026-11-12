@@ -1,4 +1,16 @@
 import { Feed } from "./feed";
+import {
+  nameFrom,
+  nameKey,
+  rowName,
+  renderName,
+  updateNameStatus,
+  mark,
+  validSaved,
+  type Name,
+  type Reading,
+  type SavedName,
+} from "./name-row";
 import "./style.css";
 import {
   MOODS,
@@ -25,7 +37,7 @@ const setText = (e: HTMLElement, text: string) => {
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 let mood = "calm",
   rows = new Map<string, DomainRow>(),
-  saved: Record<string, { name: string; domain: string; addedAt: number }> = {},
+  saved: Record<string, SavedName> = {},
   running = false,
   paused = false,
   requestId = 0,
@@ -67,24 +79,6 @@ function storageSet(key: string, value: string | null) {
     );
     return false;
   }
-}
-function validSaved(value: unknown): value is typeof saved {
-  return Boolean(
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    Object.keys(value).length <= 10000 &&
-    Object.entries(value).every(
-      ([key, v]) =>
-        v &&
-        typeof v === "object" &&
-        /^[a-z]{2,15}\.com$/.test(key) &&
-        typeof (v as any).name === "string" &&
-        (v as any).name.toLowerCase() + ".com" === key &&
-        (v as any).domain === key &&
-        Number.isFinite((v as any).addedAt),
-    ),
-  );
 }
 try {
   const value = JSON.parse(storageGet(savedKey) || "{}");
@@ -148,7 +142,10 @@ function syncProfile() {
   input("blend-amount").disabled = !blend;
   $("#mood-swatch").className = "swatch mood-" + mood;
   setText($("#mood-label"), mood);
-  $("#mood-picker").setAttribute("aria-label", `${mood}: tune mood and settings`);
+  $("#mood-picker").setAttribute(
+    "aria-label",
+    `${mood}: tune mood and settings`,
+  );
   setText($("#mood-summary"), label);
   setText(
     $("#sound-summary"),
@@ -334,47 +331,37 @@ function updateSavedButtons(root: ParentNode = document) {
         `${yes ? "Remove" : "Save"} ${button.dataset.name}${yes ? " from shortlist" : " to shortlist"}`,
       );
   });
-  setText($("#ns-save span"), saved[sheetDomain] ? "Saved" : "Save");
-}
-function nameCard(domain: string, row?: DomainRow): HTMLLIElement {
-  const name = cap(domain.slice(0, -4)),
-    li = el("li", "name-card") as HTMLLIElement,
-    title = el("h3"),
-    open = el("button", "name-open", name),
-    meta = el("p", "meta"),
-    badge = el("span"),
-    save = el("button", "save-name") as HTMLButtonElement;
-  li.dataset.domain = domain;
-  open.setAttribute("type", "button");
-  title.append(open);
-  mark(
-    li,
-    badge,
-    row?.status === "possibly available"
-      ? "available"
-      : row?.status === "registered"
-        ? "registered"
-        : "unchecked",
-    row?.status || "not checked",
+  setText(
+    $("#ns-save span"),
+    activeView && saved[nameKey(activeView.item)] ? "Saved" : "Save",
   );
-  if (row)
-    badge.title = `${row.source} · ${new Date(row.checkedAt).toLocaleString()}`;
-  meta.append(el("span", "domain", domain), badge);
-  save.type = "button";
-  save.dataset.save = domain;
-  save.dataset.name = name;
-  li.append(title, meta, save);
-  return li;
 }
-function mark(li: HTMLElement, badge: Element, state: string, text: string) {
-  li.dataset.status = state;
-  badge.className = "domain-status " + state;
-  badge.textContent = text;
+function nameCard(value: Name | string, reading?: Reading): HTMLLIElement {
+  const item = typeof value === "string" ? nameFrom(value, reading) : value;
+  return renderName(
+    item,
+    item.domain ? rows.get(item.domain) : undefined,
+    Boolean(saved[nameKey(item)]),
+  );
+}
+function syncNameStatuses(domain?: string) {
+  document
+    .querySelectorAll<HTMLElement>(
+      domain
+        ? `.name-card[data-domain="${domain}"]`
+        : ".name-card[data-domain]",
+    )
+    .forEach((card) => {
+      const row = rows.get(card.dataset.domain!);
+      if (row) updateNameStatus(card, row);
+    });
+  if (sheet.open && (!domain || activeView?.item.domain === domain))
+    updateNameDetails();
 }
 const feed = new Feed(
   list,
   (domain) => {
-    const card = nameCard(domain, rows.get(domain));
+    const card = nameCard(nameFrom(domain.slice(0, -4)));
     if (!rows.has(domain) && activeSearch && !activeSearch.filtered && running)
       mark(
         card,
@@ -395,38 +382,38 @@ function renderNames(names: string[], _checking: boolean) {
 function addRow(row: DomainRow) {
   rows.set(row.domain, row);
   feed.update(row.domain);
+  syncNameStatuses(row.domain);
   pageDone++;
   meter();
 }
-function toggleSave(domain: string) {
-  if (saved[domain]) delete saved[domain];
-  else
-    saved[domain] = {
-      name: cap(domain.slice(0, -4)),
-      domain,
-      addedAt: Date.now(),
-    };
+function toggleSave(item: Name) {
+  const key = nameKey(item);
+  if (saved[key]) delete saved[key];
+  else saved[key] = { ...item, addedAt: Date.now() };
   storageSet(savedKey, JSON.stringify(saved));
   updateSavedButtons();
 }
 document.addEventListener("click", (event) => {
   const target = event.target as HTMLElement,
     save = target.closest<HTMLElement>("[data-save]"),
-    open = target.closest(".name-open");
+    open = target.closest<HTMLElement>(".name-open");
   if (save) {
-    toggleSave(save.dataset.save!);
+    const item = rowName(save) || activeView?.item;
+    if (!item) return;
+    toggleSave(item);
     save.classList.remove("pop");
     void save.offsetWidth;
     save.classList.add("pop");
     if (save.closest("#saved-list")) renderSaved();
-  } else if (open) openName(open.closest("li")!.dataset.domain!);
+  } else if (open) {
+    const item = rowName(open);
+    if (item) openName(item, open);
+  }
 });
 function renderSaved() {
   const domains = Object.keys(saved),
     saveList = $("#saved-list");
-  saveList.replaceChildren(
-    ...domains.map((domain) => nameCard(domain, rows.get(domain))),
-  );
+  saveList.replaceChildren(...domains.map((key) => nameCard(saved[key])));
   if (!domains.length) {
     const li = el("li", "empty-state"),
       browse = el("button", "secondary", "Browse names");
@@ -519,8 +506,17 @@ async function run(more = false) {
     activeSearch = undefined;
     lastSearch = search;
     pageStart = more ? feed.length : 0;
-    if (!more)
-      for (const domain of rows.keys()) if (!saved[domain]) rows.delete(domain);
+    if (!more) {
+      const retained = new Set(
+        [
+          ...document.querySelectorAll<HTMLElement>(
+            "#panel-reverse .name-card[data-domain]",
+          ),
+        ].map((card) => card.dataset.domain),
+      );
+      for (const domain of rows.keys())
+        if (!saved[domain] && !retained.has(domain)) rows.delete(domain);
+    }
     if (!more) scrollTo({ top: 0 });
     if (!checksOn || !navigator.onLine) {
       trim();
@@ -741,49 +737,151 @@ function applySettings(
 
 // Name sheet: details and actions for one name.
 const sheet = $<HTMLDialogElement>("#name-sheet");
-let sheetDomain = "";
-function openName(domain: string) {
-  const name = cap(domain.slice(0, -4)),
-    row = rows.get(domain),
+interface NameView {
+  item: Name;
+  sound: HTMLElement;
+  nearby: HTMLElement;
+  scroll: number;
+  focus?: HTMLElement;
+  disposed?: boolean;
+  cancel?: () => void;
+}
+let activeView: NameView | undefined, rootOpener: HTMLElement | undefined;
+const nameHistory: NameView[] = [];
+function disposeView(view?: NameView) {
+  if (view) {
+    view.disposed = true;
+    view.cancel?.();
+  }
+}
+function updateNameDetails() {
+  if (!activeView) return;
+  const item = activeView.item,
+    domain = item.domain,
+    row = domain ? rows.get(domain) : undefined,
     available = row?.status === "possibly available",
     open = $<HTMLAnchorElement>("#ns-open"),
     pill = $("#ns-status");
-  sheetDomain = domain;
-  $("#ns-name").textContent = name;
-  $("#ns-domain").textContent = domain;
+  $("#ns-name").textContent = item.name;
+  $("#ns-domain").textContent = domain || "Reference name";
+  pill.hidden = !domain;
   pill.dataset.status = available ? "available" : "";
   pill.textContent = row ? cap(row.status) : "Not checked yet";
-  $("#ns-note").textContent = row
-    ? `${available ? "RDAP found no registration. Confirm with a registrar before you buy." : "This .com is already registered."} Checked ${new Date(row.checkedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} from ${({ rdap: "the .com registry (RDAP)", dns: "DNS records" } as Record<string, string>)[row.source] || "a saved check"}.`
-    : "Availability has not been checked for this name yet.";
-  open.href = available
-    ? `https://lookup.icann.org/en/lookup?name=${domain}`
-    : `https://${domain}`;
-  open.lastElementChild!.textContent = available ? "Look up" : "Visit site";
-  $("#ns-save").dataset.save = domain;
-  $("#ns-save").dataset.name = name;
+  $("#ns-note").textContent = !domain
+    ? "This reference is not a single .com name. You can still save it and explore its sound."
+    : row
+      ? `${available ? "RDAP found no registration. Confirm with a registrar before you buy." : "This .com is already registered."} Checked ${new Date(row.checkedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} from ${({ rdap: "the .com registry (RDAP)", dns: "DNS records" } as Record<string, string>)[row.source] || "a saved check"}.`
+      : "Availability has not been checked for this name yet. Look up opens the registry website.";
+  open.hidden = !domain;
+  if (domain)
+    open.href =
+      row?.status === "registered"
+        ? `https://${domain}`
+        : `https://lookup.icann.org/en/lookup?name=${domain}`;
+  else open.removeAttribute("href");
+  open.lastElementChild!.textContent =
+    row?.status === "registered" ? "Visit site" : "Look up";
+  $("#ns-save").dataset.save = nameKey(item);
+  $("#ns-save").dataset.name = item.name;
+  const back = $("#ns-back");
+  back.hidden = !nameHistory.length;
+  back.textContent = nameHistory.length
+    ? "← Back to " + nameHistory.at(-1)!.item.name
+    : "Back";
   updateSavedButtons();
-  $("#ns-sound").replaceChildren(el("p", "muted", "Reading the sound…"));
-  $("#ns-nearby").replaceChildren();
-  sheet.showModal();
-  ui().then((m) =>
-    m.nameSound(
-      name.toLowerCase(),
-      input("seed").value,
-      $("#ns-sound"),
-      $("#ns-nearby"),
-      applySettings,
-    ),
-  );
 }
-sheet.onclose = () => {
-  if (!$("#panel-saved").hidden) renderSaved();
+function showNameView(view: NameView, restore = false) {
+  activeView = view;
+  $("#ns-sound").replaceWith(view.sound);
+  $("#ns-nearby").replaceWith(view.nearby);
+  updateNameDetails();
+  syncNameStatuses();
+  if (!sheet.open) sheet.showModal();
+  requestAnimationFrame(() => {
+    if (activeView !== view || !sheet.open) return;
+    const focus =
+      restore && view.focus?.isConnected ? view.focus : $("#ns-name");
+    focus.focus({ preventScroll: true });
+    sheet.scrollTop = restore ? view.scroll : 0;
+  });
+}
+function openName(item: Name, opener: HTMLElement) {
+  if (!item.reading && saved[nameKey(item)]?.reading)
+    item = { ...item, reading: saved[nameKey(item)].reading };
+  if (sheet.open && activeView) {
+    if (nameKey(activeView.item) === nameKey(item)) return;
+    activeView.scroll = sheet.scrollTop;
+    activeView.focus = opener;
+    nameHistory.push(activeView);
+    if (nameHistory.length > 20) disposeView(nameHistory.shift());
+  } else {
+    disposeView(activeView);
+    nameHistory.splice(0).forEach(disposeView);
+    rootOpener = opener;
+  }
+  const sound = el("div"),
+    nearby = el("div");
+  sound.id = "ns-sound";
+  nearby.id = "ns-nearby";
+  sound.append(el("p", "muted", "Reading the sound…"));
+  const view: NameView = { item, sound, nearby, scroll: 0 };
+  showNameView(view);
+  ui().then((m) => {
+    if (!view.disposed)
+      view.cancel = m.nameSound(
+        item,
+        input("seed").value,
+        sound,
+        nearby,
+        applySettings,
+        nameCard,
+      );
+  });
+}
+$("#ns-back").onclick = () => {
+  const previous = nameHistory.pop();
+  if (!previous) return;
+  disposeView(activeView);
+  showNameView(previous, true);
 };
-$("#ns-copy").onclick = () =>
-  navigator.clipboard.writeText($("#ns-name").textContent!).then(
-    () => toast("Copied " + $("#ns-name").textContent),
+sheet.onclose = () => {
+  if (sheet.open) return;
+  disposeView(activeView);
+  nameHistory.splice(0).forEach(disposeView);
+  activeView = undefined;
+  // Release detached analyses and restore the original row after list updates.
+  $("#ns-sound").replaceChildren();
+  $("#ns-nearby").replaceChildren();
+  const key = rootOpener?.closest<HTMLElement>(".name-card")?.dataset.key;
+  if (!$("#panel-saved").hidden) {
+    renderSaved();
+    rootOpener =
+      [...$("#saved-list").querySelectorAll<HTMLElement>(".name-card")]
+        .find((row) => row.dataset.key === key)
+        ?.querySelector<HTMLElement>(".name-open") || $("#tab-saved");
+  }
+  if (!rootOpener?.isConnected)
+    rootOpener =
+      [...document.querySelectorAll<HTMLElement>(".name-card")]
+        .find((row) => row.dataset.key === key && !row.closest("[hidden]"))
+        ?.querySelector<HTMLElement>(".name-open") || undefined;
+  const focus =
+    rootOpener && !rootOpener.closest("[hidden]")
+      ? rootOpener
+      : document.querySelector<HTMLElement>(
+          '[role="tab"][aria-selected="true"]',
+        );
+  focus?.focus({ preventScroll: true });
+  rootOpener = undefined;
+};
+$("#ns-copy").onclick = () => {
+  const name = activeView?.item.name;
+  if (!name) return;
+  navigator.clipboard.writeText(name).then(
+    () => toast("Copied " + name),
     () => toast("Copy is not available here"),
   );
+};
 
 // Reverse: type a name, get the result; follow-ups fold in the other tools.
 const reverse = $("#panel-reverse"),
@@ -802,7 +900,9 @@ modeSelect.onchange = () => {
     modeSelect.selectedOptions[0].text,
   );
 };
+let reverseAnalysis = 0;
 function analyseReverse(mode: string) {
+  const revision = ++reverseAnalysis;
   const extra = {
     seed: input("seed").value,
     ...(modeSelect.value === "reading"
@@ -819,6 +919,7 @@ function analyseReverse(mode: string) {
       input("reverse-word").value.trim(),
       extra,
       (result, error) => {
+        if (revision !== reverseAnalysis) return;
         delete reverse.dataset.busy;
         line.textContent =
           error || "Analysis complete. No domain lookups were made.";
@@ -830,10 +931,11 @@ function analyseReverse(mode: string) {
             result,
             error,
             applySettings,
+            nameCard,
           );
         } else if (mode === "inverter")
           m.showFit(more, result, error, applySettings);
-        else m.showNearby(more, result, error);
+        else m.showNearby(more, result, error, nameCard);
       },
     ),
   );

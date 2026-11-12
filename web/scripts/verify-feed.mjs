@@ -6,7 +6,7 @@ const browser=await chromium.launch({headless:true,executablePath:process.env.CH
 const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',serviceWorkers:'block'});
 await context.addInitScript(()=>localStorage.setItem('bne.preferences.v2',JSON.stringify({'check-domains':false,count:'4000'})));
 const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.goto('http://127.0.0.1:4173/brand-name-explorer/');
+await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/brand-name-explorer/');
 await page.waitForFunction(()=>document.querySelector('#results').dataset.count==='4000');
 assert.ok(await page.locator('#results .name-card').count()<=300);
 await page.locator('#next').click();

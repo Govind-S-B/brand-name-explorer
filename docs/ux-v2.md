@@ -88,6 +88,31 @@ There are three destinations: a bottom tab bar on phones and header tabs on desk
 - **Nearby spellings:** substitution suggestions, computed on request from the
   same phones.
 
+### Shared names and navigation
+
+Explore, Shortlist, Nearby spellings, Reverse's reference and its example names
+all use the same row: name, .com status and favourite heart. Clicking the name
+area opens the full name sheet; the heart saves directly. Nearby rows add a
+change explanation, such as "Same sounds · 1 extra letter". Reverse keeps the
+settings groups around its example rows.
+
+Following a nearby name replaces the current sheet. "Back to Goftu" restores
+the preceding name, its computed suggestions, scroll and keyboard focus. Close
+or Escape returns to the originating list. The last 20 views are retained while
+the sheet is open and released when it closes.
+
+Save, Copy, Look up/Visit site, sound details, Explore similar and nearby
+suggestions are available from the shared sheet. Look up opens the external
+registry website; it does not mark an unchecked name as available. Only known
+registered domains use Visit site. Analysis itself makes no domain requests.
+
+Reverse references keep the analysed pronunciation, including when saved and
+reopened. If it cannot be represented by the generator, the sheet explains why
+there are no matching settings and still allows nearby exploration. References
+that are not single valid domain labels remain saveable as text without an
+invented .com link. Save state and incoming check results update every visible
+occurrence of the same name.
+
 "Explore similar →" consistently applies the displayed dials and structure,
 selects their nearest mood, and starts a new Explore feed from page 1. This action
 is shared by name-sheet Sound, Reverse candidates, and Reverse's Exact fit.

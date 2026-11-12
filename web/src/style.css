@@ -441,6 +441,15 @@ svg {
   font-size: 14px;
   line-height: 20px;
   color: var(--ink-3);
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.name-note {
+  grid-column: 1;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ink-3);
 }
 .domain::before {
   content: "";
@@ -799,6 +808,16 @@ svg {
   padding: 0 8px;
   border-radius: 16px;
   font-size: 13px;
+}
+.ns-actions:has(#ns-open[hidden]) {
+  grid-template-columns: repeat(2, 1fr);
+}
+#ns-back {
+  margin-bottom: 4px;
+  text-align: left;
+}
+#ns-name:focus {
+  outline: none;
 }
 .ns-actions svg,
 .ns-actions .heart {
@@ -1189,11 +1208,6 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   margin-top: 16px;
   animation: rise 0.24s var(--ease);
 }
-.r-name {
-  font: 500 34px/40px var(--display);
-  letter-spacing: -0.025em;
-  overflow-wrap: anywhere;
-}
 .phones {
   margin-top: 4px;
   font: 13px/20px var(--mono);
@@ -1234,7 +1248,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   border-radius: 16px;
   background: var(--surface);
 }
-.candidate h3 {
+.candidate > h3 {
   margin: 0 0 10px;
   font-size: 14px;
   font-weight: 600;
@@ -1242,9 +1256,6 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 }
 .samples {
   margin: 12px 0 14px;
-  font: 500 18px/26px var(--display);
-  letter-spacing: -0.01em;
-  word-spacing: 6px;
 }
 .dialbars {
   display: grid;
@@ -1275,20 +1286,6 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 }
 .tool-more:not(:empty) {
   margin-top: 8px;
-}
-.analysis-card {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--line);
-}
-.analysis-card h3 {
-  font: 500 20px/26px var(--display);
-  letter-spacing: -0.01em;
-}
-.analysis-card p {
-  margin-top: 2px;
-  font-size: 13px;
-  line-height: 19px;
-  color: var(--ink-3);
 }
 .tool-result details,
 .tool-more details {

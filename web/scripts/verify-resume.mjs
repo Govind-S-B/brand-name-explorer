@@ -80,7 +80,7 @@ await context.route("https://rdap.verisign.com/**", async (route) => {
     })
     .catch(() => {});
 });
-const base = "http://127.0.0.1:4173/brand-name-explorer/";
+const base = process.env.BASE_URL || "http://127.0.0.1:4173/brand-name-explorer/";
 const stage = (state, timeout = 30000) =>
   page.waitForFunction((s) => document.querySelector("#stage").dataset.state === s, state, { timeout });
 const domains = () =>
