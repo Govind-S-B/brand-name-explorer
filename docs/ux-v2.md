@@ -101,10 +101,21 @@ the preceding name, its computed suggestions, scroll and keyboard focus. Close
 or Escape returns to the originating list. The last 20 views are retained while
 the sheet is open and released when it closes.
 
-Save, Copy, Look up/Visit site, sound details, Explore similar and nearby
-suggestions are available from the shared sheet. Look up opens the external
-registry website; it does not mark an unchecked name as available. Only known
-registered domains use Visit site. Analysis itself makes no domain requests.
+Save, Copy, Registry/Visit site, sound details, Explore similar and nearby
+suggestions are available from the shared sheet. Registry opens the external
+registry website. Only known registered domains use Visit site. Analysis itself
+makes no domain requests; opening the sheet reads saved checks from the cache.
+
+A small refresh icon beside the status pill checks an unchecked .com or refreshes
+an earlier result. Its tooltip/accessibility label changes to Check, Refresh or
+Retry. The icon has a 44 px hit area, spins during checking (static with reduced
+motion), and prevents repeat clicks. Save still works. Results update every
+occurrence without restarting Explore or adding feed rows/counters. Manual checks
+share the feed's provider limits, take priority, and retry if a feed change replaces
+the scheduler. Offline/errors are announced and never imply availability. Failed
+refreshes retain the previous result with its timestamp and a clear failure note.
+Text-only references have no check control. Only validated RDAP responses can
+establish possible availability.
 
 Reverse references keep the analysed pronunciation, including when saved and
 reopened. If it cannot be represented by the generator, the sheet explains why

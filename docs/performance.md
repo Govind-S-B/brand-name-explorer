@@ -219,3 +219,39 @@ screenshots are under `/private/tmp/bne-name-affordances/`.
 Follow-up mobile Lighthouse on the local production build: performance 100,
 accessibility 100, LCP 752.6 ms and TBT 0. This is one run, not a new network
 throughput benchmark; generation and lookup algorithms are unchanged.
+
+## Inline domain checking (2026-11-13)
+
+Compared with the shared-name version (`f2e551b`), using the same production
+build/gzip and 390 px CDP forced-GC harness. Before values are the recorded
+shared-name measurements above. After values below are single local observations;
+they are not physical-phone memory measurements or statistical speed claims.
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Entry JS gzip | 8,920 B | 9,563 B |
+| CSS gzip | 6,246 B | 6,283 B |
+| Landing main V8 heap | 2.160 MB | 2.176 MB |
+| Landing lookup-worker V8 heap | 0.387 MB | 0.389 MB |
+| 8,000-name main V8 heap | 2.946 MB | 2.847 MB |
+| 8,000-name lookup-worker V8 heap | 0.397 MB | 0.399 MB |
+| Analysis-worker V8 + backing storage | 2.266 MB | 2.266 MB |
+| Rendered rows at 8,000-name checkpoint | 200 | 100 |
+| Mobile Lighthouse performance / accessibility | 100 / 100 | 100 / 100 |
+| Mobile Lighthouse LCP / TBT | 752.6 ms / 0 | 752.9 ms / 0 |
+
+The explicit check shares existing DNS/RDAP gates and takes the next available
+slot ahead of queued feed jobs. The 390 px controlled test confirms an outstanding
+manual check survives feed completion and is rescheduled after pause/change;
+the feed's RDAP counter remains 20 for its 20 calls, excluding the manual call.
+Tests verify cached modal reopening makes zero network calls and repeated clicks
+make one request. No generation/provider-validation algorithm, provider limit,
+font, dictionary or runtime dependency changed. Public-service 200/4,000 timings
+were not rebenchmarked for this UI follow-up; no throughput improvement is claimed.
+
+The final memory checkpoint retained 100 rendered rows rather than the baseline's
+200 because viewport recycling settled differently. Earlier after-build samples
+with 200 rendered rows measured 3.055–3.078 MB at 8,000 names. These observations
+establish bounded rows, not a memory improvement. Raw evidence:
+`/private/tmp/bne-inline-memory.json`, `/private/tmp/bne-inline-lighthouse.json`
+and `/private/tmp/bne-inline-check/`.

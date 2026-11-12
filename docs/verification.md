@@ -13,6 +13,7 @@ npm run preview:pages
 npm run test:resume
 npm run test:browser
 npm run test:names
+npm run test:check
 node web/scripts/verify-feed.mjs
 node web/scripts/design-screens.mjs /tmp/bne-screens
 npm run measure:memory -- /tmp/bne-memory.json
@@ -56,6 +57,15 @@ shortlists, asynchronous navigation, shared domain status and zero axe violation
 It defaults to the preview on port 4174; use `BASE_URL` to select another preview.
 Screenshots go outside the tree to `/private/tmp/bne-name-affordances` by default
 (`EVIDENCE_DIR` overrides this). This suite does not certify domain availability.
+
+`test:check` uses controlled providers at 360, 390 and 1440 px. It verifies the
+adjacent icon/44 px target, keyboard activation, duplicate-click suppression,
+shared results across modal Back and Shortlist, cached reopening without network,
+fresh refresh, failures with/without earlier results, offline/retry, and no domain
+control for text references. At 390 px it also checks feed completion/pause/change,
+separate feed counters, close/reopen during a request, mid-request offline, and
+another tab holding the lookup lock. All tested states have zero axe violations.
+Screenshots live outside the repo in `/private/tmp/bne-inline-check` by default.
 
 Set `HEAP_SNAPSHOTS=1` for `measure:memory` to also save CDP heap snapshots beside
 the JSON report. The report separates V8 used heap, backing storage and embedder
