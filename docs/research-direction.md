@@ -70,8 +70,13 @@ The intended flow is:
 
 This is an inverse problem, not recovery of a uniquely correct recipe. Multiple
 configurations can produce similar impressions, and some words will contain
-features our grammar cannot express. The result should expose that uncertainty
-and unsupported structure rather than force everything into an existing preset.
+features our grammar cannot express. The inverter is the inverse of the
+generator: if a reference falls outside its support, flag the specific gaps and
+return no fitted settings or automatic substitute names. An explicitly requested
+substitution search can propose different, representable words, with edits and
+relaxed constraints reported separately; the original remains a gap. Do not fit only the supported
+sounds while ignoring the rest. Expanding coverage requires expanding the
+generator and its corresponding inverse together.
 
 For generated words, we can retain the originating configuration as known
 provenance. That does not make it the only configuration capable of producing
@@ -191,8 +196,13 @@ preferences, numeric recipe blending, opening/syllable/ending constraints, exact
 character length, seeded generation, and cached domain checks. See the
 [control hierarchy](control-hierarchy.md) and [sound-dial implementation notes](sound-dials.md).
 Current blending interpolates recipe settings; it is not learned vector mixing.
-Reverse lookup, neural encoding/generation, reference-word sliders, and teacher
-training pipelines are not implemented.
+A local [reverse-finder prototype](reverse-finder.md) now fits candidate dial
+configurations only for references the generator can represent, and reports gaps
+otherwise. Supplied readings, an offline dictionary, and labelled spelling
+assumptions are separate input adapters. It is a rule-based inverse baseline,
+not a validated perceptual estimator.
+Neural encoding/generation, reference-word sliders, and teacher training pipelines
+are not implemented.
 
 Existing meanings, brand familiarity, spelling, language experience, and
 pronunciation can all influence impressions. We should not attribute every

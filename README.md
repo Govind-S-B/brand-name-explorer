@@ -168,6 +168,28 @@ Original calm accepts even lengths 2–14 (default 6), flowing odd lengths 3–1
 (default 5), and expansive odd lengths 3–15 (default 7). Original calm at length
 6 has 21,000 names; the new mood grammar has a different space and sequence.
 
+## Reverse finder
+
+Invert the current generator for a reference word, or report a representation
+gap. Everything runs locally without domain lookups:
+
+```bash
+python3 reverse_finder.py lemoru
+python3 reverse_finder.py Zafkiel --reading zaf-ki-el
+python3 reverse_finder.py Shien --reading she-en
+python3 reverse_finder.py Giorno --reading jee-orn-o
+python3 reverse_finder.py Shien --reading she-en --substitutions 5
+```
+
+The finder shows its reading source and structure. Supported references receive
+candidate settings and sample names; unsupported references return `gap` with
+specific reasons and no fitted configuration. Optional `--substitutions N`
+searches for nearby allowed words separately, showing the sound and structure
+changes; it does not turn the original gap into a fit. It uses supplied readings, an
+offline pronunciation dictionary, or an explicitly labelled spelling assumption.
+Use `--json` for a machine-readable report. See the [reverse finder](docs/reverse-finder.md)
+for the engine/generator/inverter split, stress-test results, and limitations.
+
 ## Research
 
 The [project comparison](docs/project-comparison.md) shows concrete inputs and

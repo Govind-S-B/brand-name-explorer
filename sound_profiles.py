@@ -12,12 +12,9 @@ import math
 import random
 from dataclasses import dataclass
 
+from sound_engine import CLASSES, DIALS, EFFECTS, consonant_weight, targets, vowel_weight
 
-DIALS = {
-    'energy': ('restful', 'energetic'),
-    'weight': ('light / delicate', 'heavy / substantial'),
-    'novelty': ('familiar-sounding', 'unusual / buzzy'),
-}
+
 # Recipes are our hypotheses. They are not mood categories fitted by the study.
 MOODS = {
     'calm':     {'energy': 1, 'weight': 3, 'novelty': 2, 'ending': 'open'},
@@ -27,23 +24,6 @@ MOODS = {
     'playful':  {'energy': 8, 'weight': 2, 'novelty': 7, 'ending': 'open'},
     'lyrical':  {'energy': 3, 'weight': 4, 'novelty': 4, 'ending': 'open'},
     'strange':  {'energy': 6, 'weight': 5, 'novelty': 10, 'ending': 'either'},
-}
-# Reported consonant-category differences from the overall factor mean:
-# Sidhu, Vigliocco & Pexman (2022), pp. 33–34 of the accepted manuscript.
-# 0 denotes no directional preference in this implementation, not proof of no effect.
-EFFECTS = {
-    'sonorant': (-.60, -.49, -.26),
-    'voiced_fricative': (.39, .28, .40),
-    'voiceless_fricative': (0, -.26, 0),
-    'voiceless_stop': (.36, .23, 0),
-    'voiced_stop': (0, .24, -.17),
-}
-CLASSES = {
-    **dict.fromkeys(('l', 'm', 'n', 'r', 'w'), 'sonorant'),
-    **dict.fromkeys(('v', 'z'), 'voiced_fricative'),
-    **dict.fromkeys(('f', 's', 'sh', 'h'), 'voiceless_fricative'),
-    **dict.fromkeys(('p', 't', 'k', 'ch'), 'voiceless_stop'),
-    **dict.fromkeys(('b', 'd', 'g'), 'voiced_stop'),
 }
 # r/w/h/ch and the richer grammar are extrapolations beyond that experiment.
 # Clusters use explicit phoneme tuples; sh/ch are individual sounds here.
@@ -133,20 +113,10 @@ class MoodSpace:
         self.profile = resolve_profile(mood, blend, energy, weight, novelty, ending)
         self.length, self.seed = length, seed
         self.mood, self.syllables, self.blend = mood, syllables, blend
-        # Normalize relative preferences; these are not emotion probabilities.
-        targets = [(self.profile[d] - 5) / 5 for d in DIALS]
-        scales = (.60, .49, .40)
+        target = targets(self.profile)
 
         def consonants(items):
-            tokens = []
-            for text, sounds in items:
-                vector = [sum(EFFECTS[CLASSES[s]][i] for s in sounds) / len(sounds)
-                          for i in range(3)]
-                score = sum(t * v / scale for t, v, scale in zip(targets, vector, scales))
-                # The cluster preference is a design heuristic, not a study coefficient.
-                cluster = .12 * math.exp(1.2 * targets[2]) if len(sounds) > 1 else 1
-                tokens.append(Token(text, math.exp(1.5 * score) * cluster))
-            return tuple(tokens)
+            return tuple(Token(text, consonant_weight(sounds, target)) for text, sounds in items)
 
         onset_items = ONSETS
         if opening == 'consonant':
@@ -154,9 +124,7 @@ class MoodSpace:
         elif opening == 'cluster':
             onset_items = [(text, sounds) for text, sounds in ONSETS if len(sounds) > 1]
         onset, middle, coda = map(consonants, (onset_items, MIDDLES, CODAS))
-        vowels = tuple(Token(v, math.exp(.9 * (targets[0] - targets[1]) *
-                                        (1 if v in FRONT_VOWELS else -1)) *
-                            (.25 if len(v) > 1 else 1)) for v in VOWELS)
+        vowels = tuple(Token(v, vowel_weight(v in FRONT_VOWELS, target, len(v))) for v in VOWELS)
         shapes = []
         for size in ([syllables] if syllables else range(1, 6)):
             for starts in (False, True):

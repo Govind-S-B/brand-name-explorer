@@ -144,9 +144,13 @@ sound-symbolism studies. You choose an impression; the current engine translates
 it into sampling preferences inside a sound grammar. Domain availability is a
 separate downstream filter.
 
-The current generator does not learn from an input word list, transform a
-reference word, or infer its mood. Those are complementary directions described
-in the [research direction](research-direction.md).
+The current generator does not learn from an input word list or transform a
+reference word. A local [reverse finder](reverse-finder.md) fits candidate
+generator settings only when the reference is representable; otherwise it reports
+gaps without fitted settings. An opt-in substitution search suggests nearby
+allowed words separately, without reclassifying the original gap. Neither path
+infers a validated mood. Broader
+approaches are described in the [research direction](research-direction.md).
 
 These examples show what the tools produce. Whether listeners reliably perceive
 our intended moods remains a question to test, not a result established by the
