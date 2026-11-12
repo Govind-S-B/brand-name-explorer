@@ -89,6 +89,17 @@ try {
 const lookup = new Worker(new URL("./lookup.worker.ts", import.meta.url), {
   type: "module",
 });
+let detailId = 0,
+  lookupFailed = false;
+const domainChecks = new Map<
+  string,
+  { id: number; pending: boolean; error?: string }
+>();
+function rememberRow(row: DomainRow) {
+  const previous = rows.get(row.domain);
+  if (!previous || row.checkedAt >= previous.checkedAt)
+    rows.set(row.domain, row);
+}
 // Analysis views and rare actions load on first use (see analysis-ui.ts).
 const ui = () => import("./analysis-ui");
 const input = (id: string) => $<HTMLInputElement>("#" + id),
@@ -315,6 +326,19 @@ function setBusy(value: boolean) {
   $("#resume").hidden = value || !paused;
 }
 const onPage = (page: number) => (page > 1 ? ` · page ${page}` : "");
+function summarizeFeed(
+  filtered = lastSearch?.filtered,
+  page = lastSearch?.page || 1,
+) {
+  const available = feed.domains.filter(
+    (domain) => rows.get(domain)?.status === "possibly available",
+  ).length;
+  status(
+    filtered && available === feed.length
+      ? `${feed.length} possibly available .com names${onPage(page)}`
+      : `${feed.length} names · ${available} possibly available${onPage(page)}`,
+  );
+}
 
 // Feed rows. Clicks are delegated: the heart saves, the name opens the sheet.
 function updateSavedButtons(root: ParentNode = document) {
@@ -338,11 +362,28 @@ function updateSavedButtons(root: ParentNode = document) {
 }
 function nameCard(value: Name | string, reading?: Reading): HTMLLIElement {
   const item = typeof value === "string" ? nameFrom(value, reading) : value;
-  return renderName(
+  const card = renderName(
     item,
     item.domain ? rows.get(item.domain) : undefined,
     Boolean(saved[nameKey(item)]),
   );
+  if (item.domain && domainChecks.has(item.domain)) updateCardStatus(card);
+  return card;
+}
+function updateCardStatus(card: HTMLElement) {
+  const domain = card.dataset.domain!,
+    row = rows.get(domain),
+    check = domainChecks.get(domain);
+  if (check?.pending || (check?.error && !row)) {
+    const badge = card.querySelector<HTMLElement>(".domain-status")!;
+    mark(
+      card,
+      badge,
+      check.pending ? "checking" : "error",
+      check.pending ? "checking…" : "not confirmed",
+    );
+    badge.title = check.error || "Checking .com availability";
+  } else updateNameStatus(card, row);
 }
 function syncNameStatuses(domain?: string) {
   document
@@ -352,8 +393,11 @@ function syncNameStatuses(domain?: string) {
         : ".name-card[data-domain]",
     )
     .forEach((card) => {
-      const row = rows.get(card.dataset.domain!);
-      if (row) updateNameStatus(card, row);
+      if (
+        rows.has(card.dataset.domain!) ||
+        domainChecks.has(card.dataset.domain!)
+      )
+        updateCardStatus(card);
     });
   if (sheet.open && (!domain || activeView?.item.domain === domain))
     updateNameDetails();
@@ -380,7 +424,7 @@ function renderNames(names: string[], _checking: boolean) {
   for (const name of names) feed.add(name.toLowerCase() + ".com");
 }
 function addRow(row: DomainRow) {
-  rows.set(row.domain, row);
+  rememberRow(row);
   feed.update(row.domain);
   syncNameStatuses(row.domain);
   pageDone++;
@@ -515,7 +559,13 @@ async function run(more = false) {
         ].map((card) => card.dataset.domain),
       );
       for (const domain of rows.keys())
-        if (!saved[domain] && !retained.has(domain)) rows.delete(domain);
+        if (
+          !saved[domain] &&
+          !retained.has(domain) &&
+          !domainChecks.has(domain) &&
+          activeView?.item.domain !== domain
+        )
+          rows.delete(domain);
     }
     if (!more) scrollTo({ top: 0 });
     if (!checksOn || !navigator.onLine) {
@@ -593,6 +643,28 @@ function generateNames(search: SearchState): Promise<string[]> {
 }
 lookup.onmessage = (event) => {
   const msg = event.data;
+  if (msg.type === "cached" || msg.type === "checked") {
+    if (msg.type === "checked") {
+      const check = domainChecks.get(msg.domain);
+      if (!check || check.id !== msg.id) return;
+      check.pending = false;
+      check.error = msg.error
+        ? !navigator.onLine
+          ? "You’re offline. Reconnect, then retry."
+          : msg.error.replace(/ Progress saved; resume to retry\.$/, "")
+        : undefined;
+      if (!check.error) domainChecks.delete(msg.domain);
+    }
+    if (msg.row) rememberRow(msg.row);
+    syncNameStatuses(msg.domain);
+    if (
+      msg.row &&
+      $("#stage").dataset.state === "done" &&
+      feed.domains.includes(msg.domain)
+    )
+      summarizeFeed();
+    return;
+  }
   if (msg.type === "generated") {
     const pending = generations.get(msg.id);
     generations.delete(msg.id);
@@ -623,11 +695,7 @@ lookup.onmessage = (event) => {
     activeSearch = undefined;
     setBusy(false);
     runState("done");
-    status(
-      filtered
-        ? `${feed.length} possibly available .com names${onPage(page)}`
-        : `${feed.length} names · ${feed.domains.filter((d) => rows.get(d)?.status === "possibly available").length} possibly available${onPage(page)}`,
-    );
+    summarizeFeed(filtered, page);
     $("#lookup-stats").textContent =
       `Last page: ${msg.emitted} results from ${msg.cursor.toLocaleString()} candidates. RDAP ${msg.stats.rdap} · DNS ${msg.stats.dns} · ${msg.stats.skipped} RDAP checks skipped · ${msg.stats.cacheHits} cached.`;
   } else if (msg.type === "paused") {
@@ -646,6 +714,12 @@ lookup.onmessage = (event) => {
   }
 };
 lookup.onerror = () => {
+  lookupFailed = true;
+  for (const check of domainChecks.values()) {
+    check.pending = false;
+    check.error = "Checking stopped. Reload this page to try again.";
+  }
+  syncNameStatuses();
   paused = Boolean(activeSearch);
   setBusy(false);
   runState("error");
@@ -762,16 +836,46 @@ function updateNameDetails() {
     available = row?.status === "possibly available",
     open = $<HTMLAnchorElement>("#ns-open"),
     pill = $("#ns-status");
+  const check = domain ? domainChecks.get(domain) : undefined,
+    button = $("#ns-check"),
+    pending = Boolean(check?.pending),
+    action = pending
+      ? "Checking"
+      : check?.error
+        ? "Retry check for"
+        : row
+          ? "Refresh check for"
+          : "Check";
+  button.hidden = !domain;
+  button.setAttribute("aria-disabled", String(pending));
+  button.setAttribute(
+    "aria-label",
+    `${action} ${domain || ".com availability"}`,
+  );
+  button.title = button.getAttribute("aria-label")!;
   $("#ns-name").textContent = item.name;
   $("#ns-domain").textContent = domain || "Reference name";
   pill.hidden = !domain;
-  pill.dataset.status = available ? "available" : "";
-  pill.textContent = row ? cap(row.status) : "Not checked yet";
-  $("#ns-note").textContent = !domain
+  pill.dataset.status = !pending && available ? "available" : "";
+  setText(
+    pill,
+    pending
+      ? "Checking…"
+      : row
+        ? cap(row.status)
+        : check?.error
+          ? "Not confirmed"
+          : "Not checked yet",
+  );
+  let note = !domain
     ? "This reference is not a single .com name. You can still save it and explore its sound."
     : row
       ? `${available ? "RDAP found no registration. Confirm with a registrar before you buy." : "This .com is already registered."} Checked ${new Date(row.checkedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} from ${({ rdap: "the .com registry (RDAP)", dns: "DNS records" } as Record<string, string>)[row.source] || "a saved check"}.`
-      : "Availability has not been checked for this name yet. Look up opens the registry website.";
+      : "Use the refresh icon beside the status to check this .com.";
+  if (domain && (pending || check?.error))
+    note =
+      `${pending ? "Checking this .com…" : `${row ? "Refresh failed" : "Check failed"}. ${check!.error}`} ${row ? "Previous result: " + note : ""}`.trim();
+  setText($("#ns-note"), note);
   open.hidden = !domain;
   if (domain)
     open.href =
@@ -780,7 +884,7 @@ function updateNameDetails() {
         : `https://lookup.icann.org/en/lookup?name=${domain}`;
   else open.removeAttribute("href");
   open.lastElementChild!.textContent =
-    row?.status === "registered" ? "Visit site" : "Look up";
+    row?.status === "registered" ? "Visit site" : "Registry ↗";
   $("#ns-save").dataset.save = nameKey(item);
   $("#ns-save").dataset.name = item.name;
   const back = $("#ns-back");
@@ -797,6 +901,12 @@ function showNameView(view: NameView, restore = false) {
   updateNameDetails();
   syncNameStatuses();
   if (!sheet.open) sheet.showModal();
+  if (view.item.domain)
+    lookup.postMessage({
+      type: "cached",
+      id: ++detailId,
+      domain: view.item.domain,
+    });
   requestAnimationFrame(() => {
     if (activeView !== view || !sheet.open) return;
     const focus =
@@ -882,6 +992,30 @@ $("#ns-copy").onclick = () => {
     () => toast("Copy is not available here"),
   );
 };
+$("#ns-check").onclick = () => {
+  const domain = activeView?.item.domain;
+  if (!domain || domainChecks.get(domain)?.pending) return;
+  const id = ++detailId;
+  if (lookupFailed) {
+    domainChecks.set(domain, {
+      id,
+      pending: false,
+      error: "Checking stopped. Reload this page to try again.",
+    });
+    syncNameStatuses(domain);
+    return;
+  }
+  domainChecks.set(domain, {
+    id,
+    pending: navigator.onLine,
+    ...(!navigator.onLine
+      ? { error: "You’re offline. Reconnect, then retry." }
+      : {}),
+  });
+  syncNameStatuses(domain);
+  if (navigator.onLine)
+    lookup.postMessage({ type: "check", id, domain, options: options() });
+};
 
 // Reverse: type a name, get the result; follow-ups fold in the other tools.
 const reverse = $("#panel-reverse"),
@@ -964,6 +1098,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 addEventListener("offline", () => {
+  lookup.postMessage({ type: "offline" });
   if (running) {
     resumeOnVisible = true;
     cancel();

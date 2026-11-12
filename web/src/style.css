@@ -775,6 +775,21 @@ svg {
   font-weight: 600;
   line-height: 20px;
 }
+.ns-check {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+#ns-check {
+  margin: -10px 0;
+}
+#ns-check svg {
+  width: 18px;
+  height: 18px;
+}
+#ns-check[aria-disabled="true"] svg {
+  animation: spin 1s linear infinite;
+}
 .pill::before {
   content: "";
   width: 7px;

@@ -392,3 +392,116 @@ test("Correlated errors reduce concurrency and a healthy run recovers it", async
     await engine.close();
   }
 });
+
+test("Explicit checks take the next provider slot without changing feed counters", async () => {
+  const store = new MemoryStore(),
+    calls: string[] = [];
+  let active = 0,
+    maximum = 0;
+  const engine = fast(
+    store,
+    {
+      async rdap(domain) {
+        calls.push(domain);
+        maximum = Math.max(maximum, ++active);
+        await new Promise((r) => setTimeout(r, 5));
+        active--;
+        return { status: "registered" };
+      },
+    },
+    { dns: false, rdapConcurrency: 1 },
+  );
+  try {
+    const feed = Array.from({ length: 10 }, (_, i) =>
+      engine.get(`feed${i}.com`),
+    );
+    const detail = engine.get("detail.com", Date.now(), true);
+    await Promise.all([...feed, detail]);
+    assert.equal(calls[0], "detail.com");
+    assert.equal(maximum, 1);
+    assert.equal(engine.stats.rdap, 10);
+    assert.equal(store.domains.size, 11);
+  } finally {
+    await engine.close();
+  }
+});
+
+test("Finishing a feed cancels speculation while explicit checks finish and save", async () => {
+  const store = new MemoryStore();
+  let entered!: () => void, release!: () => void;
+  const started = new Promise<void>((r) => (entered = r));
+  const ready = new Promise<void>((r) => (release = r));
+  const engine = fast(
+    store,
+    {
+      async rdap(domain, signal) {
+        if (domain === "detail.com") await ready;
+        else {
+          entered();
+          await new Promise((_, reject) =>
+            signal.addEventListener("abort", () => reject(signal.reason), {
+              once: true,
+            }),
+          );
+        }
+        return { status: "possibly available" };
+      },
+    },
+    { dns: false },
+  );
+  try {
+    const detail = engine.get("detail.com", Date.now(), true);
+    const feed = engine.get("background.com");
+    await started;
+    const rejected = assert.rejects(feed, { name: "AbortError" });
+    engine.cancelBackground();
+    release();
+    await rejected;
+    assert.equal((await detail).status, "possibly available");
+    assert.equal(store.domains.has("background.com"), false);
+    assert.equal(store.domains.has("detail.com"), true);
+  } finally {
+    release();
+    await engine.close();
+  }
+});
+
+test("Repeated close waits for provider cleanup before a replacement engine starts", async () => {
+  let entered!: () => void, cleanup!: () => void;
+  const started = new Promise<void>((r) => (entered = r));
+  const engine = fast(
+    new MemoryStore(),
+    {
+      async rdap(_, signal) {
+        entered();
+        await new Promise<void>((resolve) => {
+          signal.addEventListener(
+            "abort",
+            () => {
+              cleanup = resolve;
+            },
+            { once: true },
+          );
+        });
+        return { status: "registered" };
+      },
+    },
+    { dns: false },
+  );
+  const lookup = engine.get("alpha.com");
+  await started;
+  const rejection = assert.rejects(lookup, { name: "AbortError" });
+  const first = engine.close(),
+    second = engine.close();
+  assert.equal(first, second);
+  let closed = false;
+  void second.then(() => {
+    closed = true;
+  });
+  await Promise.resolve();
+  assert.equal(closed, false);
+  cleanup();
+  await second;
+  await rejection;
+  assert.equal(closed, true);
+});

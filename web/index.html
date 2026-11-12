@@ -29,12 +29,12 @@
         <div>
           <button type="button" id="ns-back" class="text-btn" hidden>Back</button>
           <h2 id="ns-name" class="ns-name" tabindex="-1">Name</h2>
-          <p class="ns-domain"><span id="ns-domain"></span><span id="ns-status" class="pill"></span></p>
+          <p class="ns-domain"><span id="ns-domain"></span><span class="ns-check"><span id="ns-status" class="pill"></span><button type="button" id="ns-check" class="icon-btn" aria-label="Check .com availability" title="Check .com availability"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17"/></svg></button></span></p>
         </div>
         <button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       </div>
       <div class="sheet-body">
-        <p id="ns-note" class="ns-note"></p>
+        <p id="ns-note" class="ns-note" role="status"></p>
         <div class="ns-actions">
           <button type="button" id="ns-save" class="pill-btn" aria-pressed="false"><i class="heart" aria-hidden="true"></i><span>Save</span></button>
           <button type="button" id="ns-copy" class="pill-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg>Copy</button>

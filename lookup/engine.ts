@@ -71,6 +71,9 @@ interface Job {
   domain: string;
   key: string;
   fresh: number;
+  priority: boolean;
+  stats: LookupEngine["stats"];
+  aborter: AbortController;
   stage: "reading" | "dns" | "rdap" | "saving" | "done";
   dnsStarted: number;
   dnsRunning: boolean;
@@ -79,11 +82,8 @@ interface Job {
   resolve: (row: DomainRow) => void;
   reject: (e: unknown) => void;
 }
-export class LookupEngine {
-  readonly options: LookupOptions;
-  readonly rdap: Gate;
-  readonly dns: { cloudflare: Gate; google: Gate };
-  stats = {
+function lookupStats() {
+  return {
     rdap: 0,
     dns: 0,
     skipped: 0,
@@ -95,10 +95,18 @@ export class LookupEngine {
     congestion: 0,
     throttles: 0,
   };
+}
+export class LookupEngine {
+  readonly options: LookupOptions;
+  readonly rdap: Gate;
+  readonly dns: { cloudflare: Gate; google: Gate };
+  stats = lookupStats();
+  private detailStats = lookupStats();
   private jobs = new Map<string, Job>();
   private promises = new Map<string, Promise<DomainRow>>();
   private timer: ReturnType<typeof setTimeout> | undefined;
   private closed = false;
+  private closing?: Promise<void>;
   private aborter = new AbortController();
   private tasks = new Set<Promise<void>>();
   private failures: boolean[] = [];
@@ -170,7 +178,7 @@ export class LookupEngine {
       hash = (Math.imul(hash, 31) + c.charCodeAt(0)) >>> 0;
     return hash % 2 ? "google" : "cloudflare";
   }
-  get(domain: string, fresh = 0): Promise<DomainRow> {
+  get(domain: string, fresh = 0, priority = false): Promise<DomainRow> {
     domain = domain.toLowerCase();
     if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.com$/.test(domain))
       return Promise.reject(new Error("Invalid .com domain"));
@@ -178,12 +186,19 @@ export class LookupEngine {
       return Promise.reject(new DOMException("Lookup paused", "AbortError"));
     const key = domain + "/" + fresh;
     const existing = this.promises.get(key);
-    if (existing) return existing;
+    if (existing) {
+      if (priority) this.jobs.get(key)!.priority = true;
+      return existing;
+    }
     const result = new Promise<DomainRow>((resolve, reject) => {
       const job: Job = {
         domain,
         key,
         fresh,
+        priority,
+        aborter: new AbortController(),
+        // Explicit checks share provider limits, but not the feed's counters.
+        stats: priority ? this.detailStats : this.stats,
         stage: "reading",
         dnsStarted: 0,
         dnsRunning: false,
@@ -201,19 +216,19 @@ export class LookupEngine {
   }
   private async read(job: Job) {
     await this.initialized;
-    if (this.closed) return;
+    if (this.closed || job.stage === "done") return;
     const saved = await this.store.getDomain(job.domain);
-    if (this.closed) return;
+    if (this.closed || this.jobs.get(job.key) !== job) return;
     if (saved && saved.checkedAt >= job.fresh) {
-      this.stats.cacheHits++;
+      job.stats.cacheHits++;
       this.finish(job, { ...saved, source: "cache" });
       return;
     }
     if (this.options.dns) {
       const dns = await this.store.getDns(job.domain);
-      if (this.closed) return;
+      if (this.closed || this.jobs.get(job.key) !== job) return;
       if (dns && dns.expiresAt > Date.now() && dns.checkedAt >= job.fresh) {
-        this.stats.dnsCacheHits++;
+        job.stats.dnsCacheHits++;
         if (dns.outcome === "ns") {
           const row: DomainRow = {
             domain: job.domain,
@@ -223,7 +238,7 @@ export class LookupEngine {
           };
           job.stage = "saving";
           await this.store.saveDomain(row);
-          this.stats.skipped++;
+          job.stats.skipped++;
           this.finish(job, row);
           return;
         }
@@ -272,10 +287,15 @@ export class LookupEngine {
         job.stage = "rdap";
     const ready = [...this.jobs.values()]
       .filter((j) => j.stage === "rdap" && j.notBefore <= now)
-      .sort((a, b) => b.attempt - a.attempt);
+      .sort(
+        (a, b) =>
+          Number(b.priority) - Number(a.priority) || b.attempt - a.attempt,
+      );
     while (ready.length && this.rdap.available(Date.now()))
       this.startRdap(ready.shift()!, false);
-    for (const job of this.jobs.values()) {
+    for (const job of [...this.jobs.values()].sort(
+      (a, b) => Number(b.priority) - Number(a.priority),
+    )) {
       if (job.stage === "dns" && !job.dnsRunning) {
         const gate = this.dns[this.provider(job.domain)];
         if (gate.available(Date.now())) this.startDns(job);
@@ -339,9 +359,10 @@ export class LookupEngine {
     gate.enter(Date.now());
     job.dnsRunning = true;
     job.dnsStarted = Date.now();
-    this.stats.dns++;
+    job.stats.dns++;
     const signal = AbortSignal.any([
       this.aborter.signal,
+      job.aborter.signal,
       AbortSignal.timeout(this.options.dnsTimeout),
     ]);
     const task = (async () => {
@@ -355,7 +376,7 @@ export class LookupEngine {
           error: signal.aborted ? "DNS timeout" : "Resolver failure",
         };
       }
-      if (this.closed) return;
+      if (this.closed || job.stage === "done") return;
       const now = Date.now();
       if (["ns", "nxdomain", "no_ns"].includes(result.outcome)) {
         const dns: DnsRow = {
@@ -374,7 +395,7 @@ export class LookupEngine {
             source: "dns",
           };
           await this.store.saveDns(dns, row);
-          this.stats.skipped++;
+          job.stats.skipped++;
           this.finish(job, row);
         } else {
           await this.store.saveDns(dns);
@@ -382,11 +403,11 @@ export class LookupEngine {
         }
         gate.success();
       } else {
-        this.stats.dnsErrors++;
+        job.stats.dnsErrors++;
         if (result.throttled || result.retryAfter) {
           const until = now + Math.max(2000, result.retryAfter || 0);
           gate.pause(until, result.throttled);
-          this.stats.throttles += Number(Boolean(result.throttled));
+          job.stats.throttles += Number(Boolean(result.throttled));
           await this.store.setCooldown(provider, gate.cooldown);
         }
         if (job.stage === "dns") job.stage = "rdap";
@@ -399,7 +420,7 @@ export class LookupEngine {
       });
     this.track(task);
   }
-  private observe(failed: boolean) {
+  private observe(failed: boolean, stats: LookupEngine["stats"]) {
     this.failures.push(failed);
     if (this.failures.length > 64) this.failures.shift();
     this.healthy = failed ? 0 : this.healthy + 1;
@@ -411,7 +432,7 @@ export class LookupEngine {
       this.rdap.limit = Math.max(1, Math.floor(this.rdap.limit * 0.75));
       this.rdap.rate = Math.max(1, this.rdap.rate * 0.75);
       this.rdap.successes = 0;
-      this.stats.congestion++;
+      stats.congestion++;
       this.failures = [];
     } else if (this.healthy >= 64) {
       this.rdap.limit = Math.min(
@@ -424,11 +445,12 @@ export class LookupEngine {
   private startRdap(job: Job, hedge: boolean) {
     this.rdap.enter(Date.now());
     job.stage = "saving";
-    this.stats.rdap++;
-    this.stats.retries += Number(job.attempt > 0);
-    this.stats.hedges += Number(hedge);
+    job.stats.rdap++;
+    job.stats.retries += Number(job.attempt > 0);
+    job.stats.hedges += Number(hedge);
     const signal = AbortSignal.any([
       this.aborter.signal,
+      job.aborter.signal,
       AbortSignal.timeout(this.options.rdapTimeout),
     ]);
     const task = (async () => {
@@ -443,8 +465,8 @@ export class LookupEngine {
           networkFailure: true,
         };
       }
-      if (this.closed) return;
-      this.observe(Boolean(result.error));
+      if (this.closed || job.stage === "done") return;
+      this.observe(Boolean(result.error), job.stats);
       if (result.status) {
         const row: DomainRow = {
           domain: job.domain,
@@ -463,7 +485,7 @@ export class LookupEngine {
       );
       if (result.throttled || result.providerFailure || result.retryAfter) {
         this.rdap.pause(Date.now() + delay, result.throttled);
-        this.stats.throttles += Number(Boolean(result.throttled));
+        job.stats.throttles += Number(Boolean(result.throttled));
         await this.store.setCooldown("rdap", this.rdap.cooldown);
       }
       if (
@@ -492,8 +514,15 @@ export class LookupEngine {
   get stopped() {
     return this.closed;
   }
-  async close() {
-    if (this.closed) return;
+  cancelBackground() {
+    for (const job of [...this.jobs.values()])
+      if (!job.priority) {
+        job.aborter.abort();
+        this.fail(job, new DOMException("Lookup paused", "AbortError"));
+      }
+  }
+  close(): Promise<void> {
+    if (this.closing) return this.closing;
     this.closed = true;
     if (this.timer) clearTimeout(this.timer);
     this.aborter.abort();
@@ -502,6 +531,7 @@ export class LookupEngine {
         job,
         new DOMException("Lookup paused; resume to continue", "AbortError"),
       );
-    await Promise.allSettled([...this.tasks]);
+    this.closing = Promise.allSettled([...this.tasks]).then(() => {});
+    return this.closing;
   }
 }
