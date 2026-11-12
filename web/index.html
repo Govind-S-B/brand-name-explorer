@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>try{localStorage.getItem("bne.fonts.v1")&&document.documentElement.classList.add("fonts")}catch{}</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#fefefe" />
+    <meta
+      name="description"
+      content="Explore names through sound. Generate offline, check .com domains, and save your shortlist."
+    />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <title>Brand name explorer</title>
+  </head>
+  <body>
+    <header class="bar">
+      <a class="wordmark" href="./"><i class="mark" aria-hidden="true"></i>brand name explorer</a>
+      <nav class="tabs" aria-label="Explorer tools" role="tablist">
+        <button role="tab" id="tab-explore" aria-controls="panel-explore" aria-selected="true" tabindex="0" data-tab="explore">Explore</button>
+        <button role="tab" id="tab-reverse" aria-controls="panel-reverse" aria-selected="false" tabindex="-1" data-tab="reverse">Reverse<span class="long"> finder</span></button>
+        <button role="tab" id="tab-inverter" aria-controls="panel-inverter" aria-selected="false" tabindex="-1" data-tab="inverter">Invert<span class="long">er</span></button>
+        <button role="tab" id="tab-substitutions" aria-controls="panel-substitutions" aria-selected="false" tabindex="-1" data-tab="substitutions">Subs<span class="long">titutions</span></button>
+        <button role="tab" id="tab-saved" aria-controls="panel-saved" aria-selected="false" tabindex="-1" data-tab="saved">Shortlist <span class="count" id="saved-count">0</span></button>
+      </nav>
+      <span class="net" id="net"><i aria-hidden="true"></i><span id="net-label">online</span></span>
+    </header>
+    <div id="app"></div>
+    <footer class="statusbar"><span class="tag">[bne]</span><span>made-up names, real possibilities</span><span>generated locally · no sign-in</span><a href="./cmudict-LICENSE.txt">cmu dictionary licence</a><a href="./fonts-LICENSE.txt">font licences</a></footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

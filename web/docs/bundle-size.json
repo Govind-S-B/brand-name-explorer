@@ -1,0 +1,79 @@
+{
+  "version": "5426409ead97",
+  "initialJsGzip": 10184,
+  "initialCssGzip": 5214,
+  "assets": [
+    {
+      "path": "assets/analysis.worker-7N3eWULR.js",
+      "bytes": 21621,
+      "gzip": 8763,
+      "initial": false
+    },
+    {
+      "path": "assets/bne-mono-400-Cy94DRbc.woff2",
+      "bytes": 5096,
+      "gzip": 5119,
+      "initial": false
+    },
+    {
+      "path": "assets/cmudict-CDVrJOwC.json",
+      "bytes": 2320867,
+      "gzip": 816962,
+      "initial": false
+    },
+    {
+      "path": "assets/funnel-display-500-CacY68Yj.woff2",
+      "bytes": 5496,
+      "gzip": 5519,
+      "initial": false
+    },
+    {
+      "path": "assets/index-CZND0xj_.css",
+      "bytes": 20716,
+      "gzip": 5214,
+      "initial": true
+    },
+    {
+      "path": "assets/index-gkfkdj12.js",
+      "bytes": 27461,
+      "gzip": 10184,
+      "initial": true
+    },
+    {
+      "path": "assets/inter-400-DGwFTPnX.woff2",
+      "bytes": 6824,
+      "gzip": 6847,
+      "initial": false
+    },
+    {
+      "path": "assets/lookup.worker-BXK3qfiM.js",
+      "bytes": 26388,
+      "gzip": 9545,
+      "initial": false
+    },
+    {
+      "path": "cmudict-LICENSE.txt",
+      "bytes": 1754,
+      "gzip": 956,
+      "initial": false
+    },
+    {
+      "path": "fonts-LICENSE.txt",
+      "bytes": 13563,
+      "gzip": 2532,
+      "initial": false
+    },
+    {
+      "path": "icon.svg",
+      "bytes": 270,
+      "gzip": 197,
+      "initial": false
+    },
+    {
+      "path": "index.html",
+      "bytes": 13706,
+      "gzip": 3758,
+      "initial": false
+    }
+  ]
+}

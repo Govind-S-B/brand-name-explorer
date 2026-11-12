@@ -1,0 +1,711 @@
+[
+  {
+    "serverEncodedBodyBytes": 63248,
+    "serverTransfers": [
+      {
+        "path": "/brand-name-explorer/",
+        "encodedBytes": 3758,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/assets/index-CZND0xj_.css",
+        "encodedBytes": 5214,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/assets/index-gkfkdj12.js",
+        "encodedBytes": 10184,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/assets/lookup.worker-BXK3qfiM.js",
+        "encodedBytes": 9545,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/sw.js",
+        "encodedBytes": 856,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/assets/inter-400-DGwFTPnX.woff2",
+        "encodedBytes": 6847,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/assets/funnel-display-500-CacY68Yj.woff2",
+        "encodedBytes": 5519,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/assets/bne-mono-400-Cy94DRbc.woff2",
+        "encodedBytes": 5119,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/assets/analysis.worker-7N3eWULR.js",
+        "encodedBytes": 8763,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/icon.svg",
+        "encodedBytes": 197,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/cmudict-LICENSE.txt",
+        "encodedBytes": 956,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/fonts-LICENSE.txt",
+        "encodedBytes": 2532,
+        "gzip": true
+      },
+      {
+        "path": "/brand-name-explorer/index.html",
+        "encodedBytes": 3758,
+        "gzip": true
+      }
+    ],
+    "mode": "cold",
+    "previewServerStopped": false,
+    "generatorUsableWallMs": 504,
+    "lcpMs": 424,
+    "observedTbtMs": 0,
+    "pageResourceTransferBytes": 44725,
+    "allContextResponseBodyBytes": 52984,
+    "requests": 20,
+    "dictionaryFetched": false,
+    "responses": [
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 711,
+          "responseBodySize": 3770,
+          "responseHeadersSize": 254
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/index-CZND0xj_.css",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 643,
+          "responseBodySize": 5227,
+          "responseHeadersSize": 253
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/index-gkfkdj12.js",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 628,
+          "responseBodySize": 10197,
+          "responseHeadersSize": 260
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/sw.js",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 78,
+          "responseBodySize": 0,
+          "responseHeadersSize": 260
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/analysis.worker-7N3eWULR.js",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 485,
+          "responseBodySize": 8776,
+          "responseHeadersSize": 260
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/index-CZND0xj_.css",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 268,
+          "responseBodySize": -178,
+          "responseHeadersSize": 178
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/index-gkfkdj12.js",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 267,
+          "responseBodySize": -185,
+          "responseHeadersSize": 185
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/lookup.worker-BXK3qfiM.js",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 486,
+          "responseBodySize": 0,
+          "responseHeadersSize": 260
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/inter-400-DGwFTPnX.woff2",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 274,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/funnel-display-500-CacY68Yj.woff2",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 283,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/bne-mono-400-Cy94DRbc.woff2",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 277,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/icon.svg",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 654,
+          "responseBodySize": 208,
+          "responseHeadersSize": 243
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/lookup.worker-BXK3qfiM.js",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 275,
+          "responseBodySize": -185,
+          "responseHeadersSize": 185
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/cmudict-LICENSE.txt",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 470,
+          "responseBodySize": 968,
+          "responseHeadersSize": 255
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/funnel-display-500-CacY68Yj.woff2",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 667,
+          "responseBodySize": 5532,
+          "responseHeadersSize": 240
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/fonts-LICENSE.txt",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 468,
+          "responseBodySize": 2544,
+          "responseHeadersSize": 255
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/icon.svg",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 251,
+          "responseBodySize": -168,
+          "responseHeadersSize": 168
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/index.html",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 461,
+          "responseBodySize": 3770,
+          "responseHeadersSize": 254
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/bne-mono-400-Cy94DRbc.woff2",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 661,
+          "responseBodySize": 5132,
+          "responseHeadersSize": 240
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/inter-400-DGwFTPnX.woff2",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 658,
+          "responseBodySize": 6860,
+          "responseHeadersSize": 240
+        }
+      }
+    ],
+    "metrics": {
+      "lcp": 424,
+      "long": [],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 424
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 424
+        }
+      ],
+      "resources": [
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/index-gkfkdj12.js",
+          "transfer": 10484,
+          "encoded": 10184,
+          "decoded": 27461
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/index-CZND0xj_.css",
+          "transfer": 5514,
+          "encoded": 5214,
+          "decoded": 20716
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/funnel-display-500-CacY68Yj.woff2",
+          "transfer": 5819,
+          "encoded": 5519,
+          "decoded": 5496
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/bne-mono-400-Cy94DRbc.woff2",
+          "transfer": 5419,
+          "encoded": 5119,
+          "decoded": 5096
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/inter-400-DGwFTPnX.woff2",
+          "transfer": 7147,
+          "encoded": 6847,
+          "decoded": 6824
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/icon.svg",
+          "transfer": 497,
+          "encoded": 197,
+          "decoded": 270
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/lookup.worker-BXK3qfiM.js",
+          "transfer": 9845,
+          "encoded": 9545,
+          "decoded": 26388
+        }
+      ]
+    }
+  },
+  {
+    "serverEncodedBodyBytes": 856,
+    "serverTransfers": [
+      {
+        "path": "/brand-name-explorer/sw.js",
+        "encodedBytes": 856,
+        "gzip": true
+      }
+    ],
+    "mode": "repeat",
+    "previewServerStopped": false,
+    "generatorUsableWallMs": 92,
+    "lcpMs": 72,
+    "observedTbtMs": 0,
+    "pageResourceTransferBytes": 0,
+    "allContextResponseBodyBytes": 0,
+    "requests": 9,
+    "dictionaryFetched": false,
+    "responses": [
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 341,
+          "responseBodySize": -179,
+          "responseHeadersSize": 179
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 507,
+          "responseBodySize": -179,
+          "responseHeadersSize": 179
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/index-CZND0xj_.css",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 420,
+          "responseBodySize": -178,
+          "responseHeadersSize": 178
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/index-gkfkdj12.js",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 419,
+          "responseBodySize": -185,
+          "responseHeadersSize": 185
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/bne-mono-400-Cy94DRbc.woff2",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 454,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/funnel-display-500-CacY68Yj.woff2",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 460,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/inter-400-DGwFTPnX.woff2",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 451,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/lookup.worker-BXK3qfiM.js",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 230,
+          "responseBodySize": -185,
+          "responseHeadersSize": 185
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/icon.svg",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 372,
+          "responseBodySize": -168,
+          "responseHeadersSize": 168
+        }
+      }
+    ],
+    "metrics": {
+      "lcp": 72,
+      "long": [],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 72
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 72
+        }
+      ],
+      "resources": [
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/index-gkfkdj12.js",
+          "transfer": 0,
+          "encoded": 27461,
+          "decoded": 27461
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/index-CZND0xj_.css",
+          "transfer": 0,
+          "encoded": 20716,
+          "decoded": 20716
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/funnel-display-500-CacY68Yj.woff2",
+          "transfer": 0,
+          "encoded": 5496,
+          "decoded": 5496
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/bne-mono-400-Cy94DRbc.woff2",
+          "transfer": 0,
+          "encoded": 5096,
+          "decoded": 5096
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/inter-400-DGwFTPnX.woff2",
+          "transfer": 0,
+          "encoded": 6824,
+          "decoded": 6824
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/lookup.worker-BXK3qfiM.js",
+          "transfer": 0,
+          "encoded": 0,
+          "decoded": 0
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/icon.svg",
+          "transfer": 0,
+          "encoded": 270,
+          "decoded": 270
+        }
+      ]
+    }
+  },
+  {
+    "serverEncodedBodyBytes": 0,
+    "serverTransfers": [],
+    "mode": "offline",
+    "previewServerStopped": true,
+    "generatorUsableWallMs": 78,
+    "lcpMs": 68,
+    "observedTbtMs": 0,
+    "pageResourceTransferBytes": 0,
+    "allContextResponseBodyBytes": 0,
+    "requests": 9,
+    "dictionaryFetched": false,
+    "responses": [
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 341,
+          "responseBodySize": -179,
+          "responseHeadersSize": 179
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/",
+        "serviceWorker": false,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 507,
+          "responseBodySize": -179,
+          "responseHeadersSize": 179
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/index-gkfkdj12.js",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 144,
+          "responseBodySize": -185,
+          "responseHeadersSize": 185
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/index-CZND0xj_.css",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 145,
+          "responseBodySize": -178,
+          "responseHeadersSize": 178
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/funnel-display-500-CacY68Yj.woff2",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 185,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/inter-400-DGwFTPnX.woff2",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 176,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/bne-mono-400-Cy94DRbc.woff2",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 179,
+          "responseBodySize": -165,
+          "responseHeadersSize": 165
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/assets/lookup.worker-BXK3qfiM.js",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 230,
+          "responseBodySize": -185,
+          "responseHeadersSize": 185
+        }
+      },
+      {
+        "url": "http://127.0.0.1:4174/brand-name-explorer/icon.svg",
+        "serviceWorker": true,
+        "status": 200,
+        "sizes": {
+          "requestBodySize": 0,
+          "requestHeadersSize": 372,
+          "responseBodySize": -168,
+          "responseHeadersSize": 168
+        }
+      }
+    ],
+    "metrics": {
+      "lcp": 68,
+      "long": [],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 68
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 68
+        }
+      ],
+      "resources": [
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/index-gkfkdj12.js",
+          "transfer": 0,
+          "encoded": 27461,
+          "decoded": 27461
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/index-CZND0xj_.css",
+          "transfer": 0,
+          "encoded": 20716,
+          "decoded": 20716
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/funnel-display-500-CacY68Yj.woff2",
+          "transfer": 0,
+          "encoded": 5496,
+          "decoded": 5496
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/inter-400-DGwFTPnX.woff2",
+          "transfer": 0,
+          "encoded": 6824,
+          "decoded": 6824
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/bne-mono-400-Cy94DRbc.woff2",
+          "transfer": 0,
+          "encoded": 5096,
+          "decoded": 5096
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/icon.svg",
+          "transfer": 0,
+          "encoded": 270,
+          "decoded": 270
+        },
+        {
+          "name": "http://127.0.0.1:4174/brand-name-explorer/assets/lookup.worker-BXK3qfiM.js",
+          "transfer": 0,
+          "encoded": 0,
+          "decoded": 0
+        }
+      ]
+    }
+  }
+]
