@@ -333,3 +333,12 @@ Settings use the existing sheet styling. Zero axe violations in tested states.
 Raw evidence is outside the tree: `/private/tmp/bne-history-{before,after}/`,
 `bne-history-{memory-before,memory-final,visual,lighthouse}.json` and
 `bne-history-load-{before,after}.log` under `/private/tmp/`.
+
+### Random feeling on reload (2026-11-13)
+
+Reload now selects another feeling as well as a fresh seed. It resets custom dials
+and the blend so the chosen feeling affects generation. Exact History reruns and
+the fixed-configuration reload option retain their saved settings. Production
+entry JS grows from 11,296 to 11,338 B gzip (+42 B); all JS from 33,548 to 33,590 B.
+CSS, fonts, dictionary, worker code and lookup scheduler are unchanged. Load,
+heaps and throughput were not rebenchmarked for this startup-selection change.

@@ -72,14 +72,17 @@ one request per repeated name, recent cache reuse, stale domain/DNS evidence
 refreshing after reload, and offline Reverse results checking on reconnect.
 Screenshots live outside the repo in `/private/tmp/bne-inline-check` by default.
 
-`test:history` checks fresh seeds across three reloads, history timestamps and
+`test:history` checks new seeds and different feelings across three reloads, history timestamps and
 filtering, details without execution, exact Explore/Reverse **Run again** (including
 custom dials, blend, structure, long seed, page and supplied pronunciation), the
 100-entry bound, Clear history, corrupt data, unavailable storage, compact tabs,
 44 px controls, dialog focus and zero axe violations at 360, 390 and 1440 px.
 It defaults to port 4175 and `/private/tmp/bne-history` screenshots. Other browser
 fixtures explicitly disable random-on-reload to preserve their seeded workload.
-The Node suite now has 143 passing tests, including four history model tests.
+The Node suite now has 144 passing tests, including five history/reload model tests.
+Reload tests also verify new mood dials replace previous custom dials and blends,
+spelling/lookup preferences survive, and disabling the reload toggle keeps both
+the feeling and seed.
 
 Set `HEAP_SNAPSHOTS=1` for `measure:memory` to also save CDP heap snapshots beside
 the JSON report. The report separates V8 used heap, backing storage and embedder

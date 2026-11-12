@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import constants from "../../core/constants.json" with { type: "json" };
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
@@ -88,6 +89,7 @@ try {
     await page.goto(base);
     await idle();
     const seeds = [],
+      moods = [],
       firstNames = await page.locator("#results .name-open").allTextContents();
     for (let i = 0; i < 4; i++) {
       if (i) {
@@ -95,8 +97,12 @@ try {
         await idle();
       }
       seeds.push(await page.locator("#seed").inputValue());
+      moods.push(await page.locator("#mood-label").textContent());
+      if (i)
+        assert.notEqual(moods[i], moods[i - 1], "Each reload changes feeling");
       assert.equal((await history()).length, i + 1);
       assert.equal((await history())[0].source, "Opened page");
+      assert.equal((await history())[0].controls.mood, moods[i]);
     }
     assert.equal(new Set(seeds).size, 4);
     assert.notDeepEqual(
@@ -159,6 +165,7 @@ try {
       .click();
     await idle();
     assert.equal(await page.locator("#seed").inputValue(), seeds[0]);
+    assert.equal(await page.locator("#mood-label").textContent(), moods[0]);
     assert.deepEqual(
       await page.locator("#results .name-open").allTextContents(),
       firstNames,
@@ -187,15 +194,18 @@ try {
     await shot("settings");
     await close("#settings-sheet");
     const stableSeed = await page.locator("#seed").inputValue();
+    const stableMood = await page.locator("#mood-label").textContent();
     await page.reload();
     await idle();
     assert.equal(await page.locator("#seed").inputValue(), stableSeed);
+    assert.equal(await page.locator("#mood-label").textContent(), stableMood);
     const previous = (await history()).length;
     await page.locator("#next").click();
     await idle();
     assert.equal((await history()).length, previous + 1);
     assert.equal((await history())[0].controls.page, "2");
     assert.equal((await history())[0].controls.seed, stableSeed);
+    assert.equal((await history())[0].controls.mood, stableMood);
     const pageTwo = (await history())[0];
     const pageTwoNames = (
       await page.locator("#results .name-open").allTextContents()
@@ -263,6 +273,26 @@ try {
       await page.locator("#seed").inputValue(),
       custom.controls.seed,
     );
+    const reloaded = (await history())[0].controls;
+    assert.notEqual(reloaded.mood, custom.controls.mood);
+    assert.equal(reloaded.explicit, "");
+    assert.equal(reloaded.blend, "");
+    for (const dial of ["energy", "weight", "novelty"])
+      assert.equal(
+        Number(reloaded[dial]),
+        constants.moods[reloaded.mood][dial],
+      );
+    for (const id of [
+      "length",
+      "syllables",
+      "opening",
+      "ending",
+      "count",
+      "check-domains",
+      "filter-available",
+      "rdap-concurrency",
+    ])
+      assert.equal(reloaded[id], custom.controls[id]);
     await page.locator("#open-history").click();
     await page.locator("#history-filter").fill(String(custom.controls.seed));
     await page.locator(".history-entry summary").click();
@@ -370,6 +400,7 @@ try {
     reports.push({
       width,
       newSeeds: true,
+      differentFeelingsOnReload: true,
       threeReloadsKept: true,
       fullParameters: true,
       exactExploreAndReverseReruns: true,

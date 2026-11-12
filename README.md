@@ -14,10 +14,10 @@ Every name in Explore, Reverse, nearby suggestions and Shortlist opens the same
 name sheet and has a save heart. Follow a nearby name and use Back to return to
 the previous name and its suggestions.
 
-Each new visit starts with a fresh seed. **History** keeps the latest 100 searches
+Each new visit starts with a different feeling and a fresh seed. **History** keeps the latest 100 searches
 in this browser, with their time, seed and full settings. Open an entry to inspect
 it, then choose **Run again** to reuse that configuration. **Settings** lets you
-clear history or keep the same seed on reload.
+clear history or keep the same feeling and seed on reload.
 
 Every “possibly available” result is RDAP-confirmed. DNS only filters registered
 names. Registry absence does not guarantee purchase availability; confirm with

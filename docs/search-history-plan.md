@@ -6,9 +6,11 @@ three icons, hiding only inactive visible labels while retaining accessible name
 Add quiet History, Settings and GitHub controls in the top app bar; GitHub links
 to this repository. Preserve the existing feed, Tune and name-sheet styling.
 
-Fresh page loads use a new random integer seed and start at page 1, retaining
-other preferences. The seed stays stable through tuning, pagination and resume.
-Settings can disable random seeds on reload for repeatable visits. Running a
+Fresh page loads choose a random feeling different from the current one, use a
+new random integer seed and start at page 1. Apply the new feeling's dials and
+clear the previous blend; retain spelling and lookup preferences. The feeling
+and seed stay stable through pagination and resume. Settings can disable this
+reload shuffle for repeatable visits. Running a
 history entry again always uses its saved seed, independently of that preference.
 
 History always records and stores the latest 100 actual searches locally:

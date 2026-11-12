@@ -1,10 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { MOODS } from "../core/profile";
 import {
   addHistory,
   readHistory,
   validEntry,
   freshSeed,
+  freshMood,
   readAppSettings,
   type HistoryEntry,
 } from "../web/src/history";
@@ -98,4 +100,20 @@ test("Fresh seeds remain integers, differ from the previous seed and default on"
   assert.deepEqual(readAppSettings('{"randomSeed":false}'), {
     randomSeed: false,
   });
+});
+test("Reload can choose every other feeling without repeating the current one", () => {
+  const moods = Object.keys(MOODS);
+  for (const previous of moods) {
+    const selected = new Set(
+      Array.from({ length: moods.length - 1 }, (_, value) =>
+        freshMood(previous, value),
+      ),
+    );
+    assert.deepEqual(
+      selected,
+      new Set(moods.filter((mood) => mood !== previous)),
+    );
+    assert.notEqual(freshMood(previous, 0xffffffff), previous);
+    assert.ok(moods.includes(freshMood(previous)));
+  }
 });

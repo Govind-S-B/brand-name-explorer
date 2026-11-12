@@ -62,6 +62,13 @@ export function freshSeed(
 ): string {
   return String(String(value) === previous ? (value + 1) >>> 0 : value);
 }
+export function freshMood(
+  previous: string,
+  value = crypto.getRandomValues(new Uint32Array(1))[0],
+): string {
+  const moods = choices.mood.filter((mood) => mood !== previous);
+  return moods[value % moods.length];
+}
 export function validControls(value: unknown): value is Controls {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const c = value as Controls;

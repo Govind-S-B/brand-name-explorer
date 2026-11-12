@@ -10,7 +10,8 @@ precise states), not a template for density.
 
 | Setting | CLI default | Web v2 |
 | --- | --- | --- |
-| Mood, opening, syllables, ending | calm, any, automatic, from mood | same |
+| Mood | calm | a different random feeling on each page load |
+| Opening, syllables, ending | any, automatic, from mood | same |
 | Length | 6 | same |
 | Seed | 42 | fresh random seed on each page load; optional fixed-seed reloads in Settings |
 | Check .com | on | on, starts automatically on load |
@@ -67,13 +68,16 @@ sit in the header. GitHub opens this repository in a new tab.
 | Copy, open domain, save | Name sheet actions; save is also on every row |
 | Shortlist backup and import | Shortlist header |
 | Past configurations, timestamps and Run again | Header › History |
-| New seed on reload; Clear history | Header › Settings |
+| New feeling + seed on reload; Clear history | Header › Settings |
 
 ### Search history
 
-Every fresh page load uses a new random integer seed and resets to page one,
-retaining the other preferences. Tuning, pagination and pause/resume keep that
-seed. Settings can disable random seeds on reload; the CLI retains seed 42.
+Every fresh page load chooses a random feeling different from the current one,
+uses a new random integer seed and resets to page one. The new feeling supplies
+the dials, clearing custom dial overrides and the previous blend. Spelling and
+lookup preferences remain. Pagination and pause/resume keep the current feeling
+and seed. Settings can disable both reload changes; the CLI retains calm and
+seed 42.
 
 History always records the latest 100 searches locally: page loads, submitted
 Explore/Reverse searches, applied settings, Explore similar and Load more. A
@@ -85,7 +89,7 @@ stores configurations, not result lists or domain responses.
 Entries show relative time and a short configuration summary. Opening one only
 reveals its exact time and parameters. **Run again →** applies its saved settings
 and seed and runs Explore or Reverse, adding a new timestamped entry. This also
-works when random seeds on reload are enabled. Domain results still follow the
+works when random feelings and seeds on reload are enabled. Domain results still follow the
 normal cache/fresh-check rules and may change over time. Search filters entries
 by query, mood, seed or other saved text. Settings offers **Clear history**, with
 no recording toggle; subsequent searches are recorded again.

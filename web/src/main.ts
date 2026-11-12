@@ -7,6 +7,7 @@ import {
   readHistory,
   readAppSettings,
   freshSeed,
+  freshMood,
   type Controls,
   type HistoryEntry,
 } from "./history";
@@ -268,6 +269,8 @@ try {
 if (appSettings.randomSeed) {
   input("seed").value = freshSeed(input("seed").value);
   input("page").value = "1";
+  select("blend").value = "";
+  setMood(freshMood(mood));
 }
 document.querySelectorAll<HTMLButtonElement>("[data-mood]").forEach((b) => {
   b.setAttribute("aria-pressed", String(b.dataset.mood === mood));

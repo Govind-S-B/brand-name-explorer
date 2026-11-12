@@ -135,7 +135,7 @@ ${panel(
 <dialog id="settings-sheet" class="sheet utility-sheet" aria-labelledby="settings-title">
   <div class="sheet-head"><h2 id="settings-title">Settings</h2>${close}</div>
   <div class="sheet-body">
-    ${toggle("random-seed", "New seed on reload", "Start each visit with different names. Use Run again in History to revisit an earlier search.", true)}
+    ${toggle("random-seed", "New feeling + seed on reload", "Start each visit with a different feeling and seed. Use Run again in History to revisit an earlier search.", true)}
     <div class="history-storage"><h3>Search history</h3><p class="fine-print">The latest 100 searches stay in this browser. New searches are recorded automatically.</p>
     <button type="button" class="pill-btn" id="clear-history">Clear history</button><p id="history-storage-status" class="fine-print" role="status"></p></div>
   </div>
