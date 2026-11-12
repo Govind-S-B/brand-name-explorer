@@ -24,10 +24,9 @@ Preferences use `bne.preferences.v2`; no old-key migrations run.
 There are three destinations: a bottom tab bar on phones and header tabs on desktop.
 
 1. **Explore**: the feed.
-   - **Title** reads from the mood ("Names that feel calm").
-   - **Config bar**:
-     - the mood chip ("● Calm ▾"), which opens Tune at Mood;
-     - a **Tune** button, which opens Tune.
+   - **Title** reads from the mood ("Names that feel ● calm ▾"). The mood is a
+     pill-shaped chip inside the heading, with its coloured dot and dropdown
+     arrow. It opens Tune at Mood; there is no separate configuration bar.
    - **Status line**:
      - one quiet sentence plus a thin progress bar;
      - Pause or Resume appears only when it applies.
@@ -49,7 +48,7 @@ There are three destinations: a bottom tab bar on phones and header tabs on desk
 
 | Capability | Home |
 | --- | --- |
-| Mood, blend and blend amount | Tune › Mood (open by default); the mood chip jumps here |
+| Mood, blend and blend amount | Tune › Mood (open by default); the mood chip in the title opens it |
 | Energy, weight and novelty dials | Tune › Sound |
 | Syllables, opening and ending | Tune › Sound |
 | Letters (length) | Tune › Spelling |
@@ -97,8 +96,7 @@ is shared by name-sheet Sound, Reverse candidates, and Reverse's Exact fit.
 
 The first paint is static HTML, before any JavaScript runs:
 - the header;
-- the title "Names that feel calm";
-- the config bar;
+- the title "Names that feel ● calm ▾", with the mood chip as the settings expander;
 - "Finding available .com names…";
 - three placeholder rows.
 
@@ -112,7 +110,7 @@ nothing visible is pushed around. About eight 68 px rows fit above the bottom ta
 | Loading | Placeholder rows; quiet shimmer, static under reduced motion |
 | Checking | Progress bar; "Checked 132 · 9 available so far"; rows land with a 2 px fade |
 | Done | "20 names · possibly available .com"; Load more appears |
-| Empty | "No available names on this page" with Load more and Tune |
+| Empty | "No available names on this page" with Load more and a hint to tap the mood above |
 | Show-all mode | Registered rows dim, labelled "registered"; unchecked rows "checking…" |
 | Offline | Header pill "Offline"; the feed shows unchecked names and resumes automatically when back online |
 | Error | Red status sentence with Try again (Resume) |

@@ -95,7 +95,7 @@ for (const name of only) {
   await settle(page);
   await shot("name-sheet-nearby");
   await page.keyboard.press("Escape");
-  await page.locator("#mood-chip").click();
+  await page.locator("#mood-picker").click();
   await settle(page);
   await shot("tune");
   await page.locator("#mood-controls").evaluate((d) => (d.open = false));
@@ -113,7 +113,7 @@ for (const name of only) {
   await state(page, "done");
   await settle(page);
   await shot("all-names");
-  await page.locator("#tune-btn").click();
+  await page.locator("#mood-picker").click();
   await page.locator("#filter-available").check();
   await page.locator("#generate").click();
   await state(page, "done");
@@ -124,7 +124,7 @@ for (const name of only) {
   await shot("load-more");
   // Error: a second tab cannot check while this one holds the lookup lock.
   delay = 20000;
-  await page.locator("#mood-chip").click();
+  await page.locator("#mood-picker").click();
   await page.locator("[data-mood=strange]").click();
   await page.locator("#generate").click();
   const second = await context.newPage();
@@ -135,7 +135,7 @@ for (const name of only) {
   await second.screenshot({ path: `${out}/v2-${name}-error.png`, animations: "disabled" });
   await second.close();
   delay = 40;
-  await page.locator("#mood-chip").click();
+  await page.locator("#mood-picker").click();
   await page.locator("[data-mood=calm]").click();
   await page.locator("#generate").click();
   await state(page, "done");
@@ -162,7 +162,7 @@ for (const name of only) {
   await shot("shortlist-empty");
   await page.locator("#tab-explore").click();
   await context.setOffline(true);
-  await page.locator("#tune-btn").click();
+  await page.locator("#mood-picker").click();
   await page.locator("#generate").click();
   await state(page, "offline");
   await settle(page);

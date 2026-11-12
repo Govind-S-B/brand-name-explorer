@@ -263,7 +263,7 @@ svg {
   display: none;
 }
 
-/* Page heads and the config bar. */
+/* Page heads and the inline mood selector. */
 .page-head {
   padding: 8px 0 14px;
 }
@@ -276,10 +276,18 @@ svg {
   color: var(--ink-2);
   max-width: 52ch;
 }
-.configbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.mood-picker {
+  vertical-align: middle;
+  letter-spacing: normal;
+}
+.mood-picker svg {
+  width: 18px;
+  height: 18px;
+  margin-right: -4px;
+  color: var(--ink-3);
+}
+.mood-picker[aria-expanded="true"] svg {
+  transform: rotate(180deg);
 }
 .chip {
   display: inline-flex;
@@ -299,18 +307,6 @@ svg {
 .chip svg {
   width: 18px;
   height: 18px;
-}
-.mood-chip svg {
-  margin-right: -4px;
-  color: var(--ink-3);
-}
-.tune-btn {
-  margin-left: auto;
-}
-.tune-btn[aria-expanded="true"] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
 }
 .swatch {
   width: 10px;
@@ -1450,8 +1446,7 @@ pre {
   .secondary:hover {
     background-color: var(--fill-2);
   }
-  .moods .chip[aria-pressed="true"]:hover,
-  .tune-btn[aria-expanded="true"]:hover {
+  .moods .chip[aria-pressed="true"]:hover {
     background-color: var(--ink);
   }
   .primary:hover {

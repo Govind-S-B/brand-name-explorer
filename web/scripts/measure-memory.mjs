@@ -101,7 +101,7 @@ await page.waitForFunction(() =>
 );
 results.push(await heaps("dictionary-loaded"));
 await page.locator("#tab-explore").click();
-await page.locator("#tune-btn").click();
+await page.locator("#mood-picker").click();
 await page.locator("#advanced-controls").evaluate((el) => (el.open = true));
 await page.locator("#count").selectOption("4000");
 await page.locator("#generate").click();

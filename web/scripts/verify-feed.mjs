@@ -24,7 +24,7 @@ await page.evaluate(()=>scrollTo(0,0));await page.waitForTimeout(300);
 assert.equal(await page.locator('#results .name-card').first().getAttribute('data-domain'),initial);
 const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
 assert.deepEqual(axe.violations,[]);
-await page.locator('#tune-btn').click();await page.locator('#advanced-controls').evaluate(e=>e.open=true);
+await page.locator('#mood-picker').click();await page.locator('#advanced-controls').evaluate(e=>e.open=true);
 const downloaded=page.waitForEvent('download');await page.locator('#export-results').click();const download=await downloaded;
 const csv=await readFile(await download.path(),'utf8');assert.equal(csv.trim().split('\n').length,8001);
 assert.equal(new Set(csv.trim().split('\n').slice(1).map(l=>l.split(',')[0])).size,8000);

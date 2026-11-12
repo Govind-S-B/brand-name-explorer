@@ -147,8 +147,8 @@ function syncProfile() {
   $("#blend-amount-value").textContent = input("blend-amount").value;
   input("blend-amount").disabled = !blend;
   $("#mood-swatch").className = "swatch mood-" + mood;
-  setText($("#mood-label"), label);
-  setText($("#feed-title"), `Names that feel ${mood}`);
+  setText($("#mood-label"), mood);
+  $("#mood-picker").setAttribute("aria-label", `${mood}: tune mood and settings`);
   setText($("#mood-summary"), label);
   setText(
     $("#sound-summary"),
@@ -262,20 +262,19 @@ $("#panel-explore").addEventListener("change", (event) => {
 // Tune: a modal bottom sheet on phones, an inline panel on desktop.
 const tune = $<HTMLDialogElement>("#tune"),
   wide = matchMedia("(min-width: 900px)");
-function openTune(section?: string) {
-  if (section) ($(section) as HTMLDetailsElement).open = true;
+function openTune() {
+  ($("#mood-controls") as HTMLDetailsElement).open = true;
   if (!tune.open) wide.matches ? tune.show() : tune.showModal();
-  $("#tune-btn").setAttribute("aria-expanded", "true");
+  $("#mood-picker").setAttribute("aria-expanded", "true");
 }
 tune.onclose = () => {
-  $("#tune-btn").setAttribute("aria-expanded", "false");
+  $("#mood-picker").setAttribute("aria-expanded", "false");
   if (dirty) run();
 };
 tune.onkeydown = (e) => {
   if (e.key === "Escape" && !tune.matches(":modal")) tune.close();
 };
-$("#tune-btn").onclick = () => (tune.open ? tune.close() : openTune());
-$("#mood-chip").onclick = () => openTune("#mood-controls");
+$("#mood-picker").onclick = () => (tune.open ? tune.close() : openTune());
 $("#generate-form").onsubmit = (event) => {
   event.preventDefault();
   dirty = false;

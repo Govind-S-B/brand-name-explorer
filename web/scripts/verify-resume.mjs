@@ -111,7 +111,7 @@ await stage("done");
 assert.deepEqual(calls, countsBefore);
 assert.deepEqual(await domains(), available.slice(0, 20));
 // Fresh lookups bypass saved results.
-await page.locator("#tune-btn").click();
+await page.locator("#mood-picker").click();
 await page.locator("#domain-controls").evaluate((el) => (el.open = true));
 await page.locator("#refresh").check();
 await page.locator("#generate").click();
@@ -127,7 +127,7 @@ await context.setOffline(false);
 await stage("done");
 assert.deepEqual(await domains(), available.slice(0, 40));
 // Original engine styles and their restored length limits.
-await page.locator("#tune-btn").click();
+await page.locator("#mood-picker").click();
 await page.locator("#domain-controls").evaluate((el) => (el.open = true));
 await page.locator("#check-domains").uncheck();
 await page.locator("#advanced-controls").evaluate((el) => (el.open = true));

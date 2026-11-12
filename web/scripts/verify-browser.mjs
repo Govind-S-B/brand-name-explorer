@@ -51,6 +51,8 @@ for (const profile of ["desktop", "mobile"]) {
   // Default landing: the CLI's defaults, i.e. possibly available .com names only, 20 per page.
   await page.goto(base);
   await stage(page, "done");
+  assert.equal(await page.locator("#feed-title #mood-picker").count(), 1);
+  assert.equal(await page.locator(".configbar").count(), 0);
   assert.equal(await page.locator("#results .name-card").count(), 20);
   const statuses = await page.locator("#results .domain-status").allTextContents();
   assert.ok(statuses.every((s) => s === "possibly available"));
@@ -85,7 +87,13 @@ for (const profile of ["desktop", "mobile"]) {
   await axe("name sheet");
   await page.keyboard.press("Escape");
   // Tune: reveal registered names with the toggle.
-  await page.locator("#tune-btn").click();
+  await page.locator("#mood-picker").focus();
+  await page.keyboard.press("Enter");
+  assert.equal(await page.locator("#mood-picker").getAttribute("aria-expanded"), "true");
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(() => document.querySelector("#mood-picker").getAttribute("aria-expanded") === "false");
+  assert.equal(await page.locator("#mood-picker").evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press("Space");
   await page.locator("#domain-controls").evaluate((el) => (el.open = true));
   await page.waitForTimeout(300);
   await shot("-tune");
@@ -93,12 +101,13 @@ for (const profile of ["desktop", "mobile"]) {
   await page.locator("#filter-available").uncheck();
   await page.locator("#generate").click();
   await stage(page, "done");
+  assert.equal(await page.locator("#mood-picker").getAttribute("aria-expanded"), "false");
   assert.equal(await page.locator("#results .name-card").count(), 20);
   assert.equal(await page.locator("#results .unchecked,#results .checking").count(), 0);
   const allStatuses = await page.locator("#results .domain-status").allTextContents();
   assert.ok(allStatuses.every((s) => ["registered", "possibly available"].includes(s)));
   assert.ok(allStatuses.includes("registered"));
-  await page.locator("#tune-btn").click();
+  await page.locator("#mood-picker").click();
   await page.locator("#filter-available").check();
   await page.locator("#generate").click();
   await stage(page, "done");
@@ -125,7 +134,7 @@ for (const profile of ["desktop", "mobile"]) {
   const backup = JSON.parse(await readFile(await download.path(), "utf8"));
   assert.ok(backup.saved[savedDomain]);
   await page.locator("#tab-explore").click();
-  await page.locator("#tune-btn").click();
+  await page.locator("#mood-picker").click();
   await page.locator("#advanced-controls").evaluate((el) => (el.open = true));
   await page.locator("#clear-cache").click();
   await page.waitForFunction(() => document.querySelector("#cache-status").textContent.includes("0 domain records"));

@@ -28,7 +28,7 @@ context.on("request", (r) => {
 await page.goto(
   process.env.BASE_URL || "http://127.0.0.1:4173/brand-name-explorer/",
 );
-await page.locator("#tune-btn").click();
+await page.locator("#mood-picker").click();
 await page.locator("#domain-controls").evaluate((el) => (el.open = true));
 await page.locator("#check-domains").check();
 const start = Date.now();
@@ -59,7 +59,7 @@ assert.equal(
   Number(await page.locator("#results").getAttribute("data-count")),
   count,
 );
-await page.locator("#tune-btn").click();
+await page.locator("#mood-picker").click();
 await page.locator("#advanced-controls").evaluate((e) => (e.open = true));
 const pendingDownload = page.waitForEvent("download");
 await page.locator("#export-results").click();

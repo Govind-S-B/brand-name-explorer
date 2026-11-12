@@ -92,15 +92,14 @@ const panel = (id: string, title: string, lede: string, body: string) =>
 
 export const shell = () => `<main>
 <section id="panel-explore" class="panel" role="tabpanel" aria-labelledby="tab-explore">
-<div class="page-head"><h1 id="feed-title">Names that feel calm</h1></div>
-<div class="configbar"><button type="button" class="chip mood-chip" id="mood-chip" aria-haspopup="dialog" aria-controls="tune"><i class="swatch mood-calm" id="mood-swatch" aria-hidden="true"></i><span id="mood-label">Calm</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><button type="button" class="chip tune-btn" id="tune-btn" aria-haspopup="dialog" aria-controls="tune" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Tune</button></div>
+<div class="page-head"><h1 id="feed-title">Names that feel <button type="button" class="chip mood-picker" id="mood-picker" aria-label="calm: tune mood and settings" aria-haspopup="dialog" aria-controls="tune" aria-expanded="false"><i class="swatch mood-calm" id="mood-swatch" aria-hidden="true"></i><span id="mood-label">calm</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button></h1></div>
 ${tune}
 <div class="stage" id="stage" data-state="loading">
 <div class="statusline"><p id="run-status" role="status" aria-live="polite">Finding available .com names…</p><button id="pause" type="button" class="text-btn" hidden>Pause</button><button id="resume" type="button" class="text-btn" hidden>Resume</button></div>
 <div class="meter" aria-hidden="true"><i id="meter"></i></div>
 <h2 class="sr-only">Names</h2><ul id="results" class="feed" aria-label="Names" data-filtered="true"></ul>
 <div class="skeletons" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-<div class="empty"><p><b>No available names on this page.</b></p><p>Try another mood in Tune, or load the next page.</p></div>
+<div class="empty"><p><b>No available names on this page.</b></p><p>Tap the mood above to change settings, or load the next page.</p></div>
 <button id="next" type="button" class="secondary wide">Load more names</button>
 </div>
 </section>
