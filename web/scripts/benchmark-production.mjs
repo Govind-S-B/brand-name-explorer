@@ -38,18 +38,22 @@ for (const profile of ["desktop", "mobile-slow4g"]) {
     if (r.url().includes("rdap.verisign.com")) calls.rdap++;
     if (/cloudflare-dns.com|dns.google/.test(r.url())) calls.dns++;
   });
+  // Land with checks off so the timed run below is the only lookup work.
+  await context.addInitScript(() =>
+    localStorage.setItem("bne.preferences.v2", JSON.stringify({ "check-domains": false, count: "200" })),
+  );
   await page.goto("http://127.0.0.1:4173/brand-name-explorer/");
+  await page.locator("#tune-btn").click();
   await page.locator("#domain-controls").evaluate((el) => (el.open = true));
+  await page.locator("#check-domains").check();
   await page.locator("#filter-available").check();
-  await page.locator("#count").selectOption("200");
   const start = Date.now();
   await page.locator("#generate").click();
   await page.waitForFunction(
     () =>
-      document.querySelector("#pause").hidden &&
-      document
-        .querySelector("#run-status")
-        .textContent.startsWith("200 results"),
+      document.querySelector("#stage").dataset.state === "done" &&
+      document.querySelectorAll("#results .name-card").length === 200,
+    null,
     { timeout: 180000 },
   );
   const seconds = (Date.now() - start) / 1000;
