@@ -1,7 +1,7 @@
 {
-  "version": "1a6d8dcf8c63",
+  "version": "2dcba4598544",
   "initialJsGzip": 10164,
-  "initialCssGzip": 6236,
+  "initialCssGzip": 6238,
   "assets": [
     {
       "path": "assets/analysis-ui-CCldbBeL.js",
@@ -28,15 +28,15 @@
       "initial": false
     },
     {
-      "path": "assets/index-BWguVF-A.js",
-      "bytes": 26283,
-      "gzip": 10164,
+      "path": "assets/index-B1pUTyWP.css",
+      "bytes": 24507,
+      "gzip": 6238,
       "initial": true
     },
     {
-      "path": "assets/index-Bx_-zUNL.css",
-      "bytes": 24507,
-      "gzip": 6236,
+      "path": "assets/index-DtsXMcNI.js",
+      "bytes": 26283,
+      "gzip": 10164,
       "initial": true
     },
     {
@@ -78,7 +78,7 @@
     {
       "path": "index.html",
       "bytes": 15823,
-      "gzip": 4549,
+      "gzip": 4550,
       "initial": false
     }
   ]

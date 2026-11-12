@@ -820,7 +820,7 @@ svg {
   padding-top: 18px;
   border-top: 1px solid var(--line);
 }
-.ns-section h3 {
+.ns-section > h3 {
   margin-bottom: 10px;
   font-size: 13px;
   font-weight: 600;
