@@ -1,4 +1,9 @@
-import { report, fitProfiles, parseSpelling } from "./core/inverter";
+import {
+  report,
+  fitProfiles,
+  parseSpelling,
+  spellingPhoneSequence,
+} from "./core/inverter";
 import { readReference } from "./core/pronunciation";
 import { suggest } from "./core/substitutions";
 self.onmessage = async (event: MessageEvent) => {
@@ -10,6 +15,7 @@ self.onmessage = async (event: MessageEvent) => {
         fits = fitProfiles(parsed);
       result = {
         parsed,
+        phones: spellingPhoneSequence(parsed),
         fits: fits.slice(0, 10),
         note: "Integer dial-grid fits with neutral regularization, not recovered original settings.",
       };

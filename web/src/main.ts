@@ -12,6 +12,17 @@ import type { DomainRow } from "./lookup/store";
 import { DEFAULT_LOOKUP, type LookupOptions } from "./lookup/engine";
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
   document.querySelector<T>(selector)!;
+const el = (tag: string, cls = "", text = "") => {
+  const e = document.createElement(tag);
+  e.className = cls;
+  e.textContent = text;
+  return e;
+};
+// Same-text writes are skipped so static first-paint text is not repainted.
+const setText = (e: HTMLElement, text: string) => {
+  if (e.textContent !== text) e.textContent = text;
+};
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 let mood = "calm",
   rows = new Map<string, DomainRow>(),
   saved: Record<string, { name: string; domain: string; addedAt: number }> = {},
@@ -19,9 +30,14 @@ let mood = "calm",
   paused = false,
   requestId = 0,
   activeSearch: SearchState | undefined,
-  analysisWorker: Worker | undefined,
-  analysisId = 0,
-  analysisBusy = false;
+  lastSearch: SearchState | undefined,
+  checksOn = true,
+  pageStart = 0,
+  pageDone = 0,
+  dirty = false,
+  userScrolled = false,
+  resumeOnVisible = false,
+  toastTimer = 0;
 interface SearchState {
   settings: Settings;
   count: number;
@@ -29,9 +45,10 @@ interface SearchState {
   filtered: boolean;
   options: Partial<LookupOptions>;
 }
-const prefKey = "bne.preferences.v1",
+// v2: defaults now follow the CLI (available names only, 20 per page).
+const prefKey = "bne.preferences.v2",
   savedKey = "bne.shortlist.v1",
-  activeKey = "bne.active.v1";
+  list = $("#results");
 function storageGet(key: string) {
   try {
     return localStorage.getItem(key);
@@ -45,9 +62,9 @@ function storageSet(key: string, value: string | null) {
     else localStorage.setItem(key, value);
     return true;
   } catch {
-    $("#notice").hidden = false;
-    $("#notice").textContent =
-      "Local storage is unavailable. Download a shortlist backup before closing this tab.";
+    showError(
+      "Browser storage is unavailable. Download a shortlist backup to keep it.",
+    );
     return false;
   }
 }
@@ -78,6 +95,8 @@ try {
 const lookup = new Worker(new URL("./lookup.worker.ts", import.meta.url), {
   type: "module",
 });
+// Analysis views and rare actions load on first use (see analysis-ui.ts).
+const ui = () => import("./analysis-ui");
 const input = (id: string) => $<HTMLInputElement>("#" + id),
   select = (id: string) => $<HTMLSelectElement>("#" + id),
   number = (id: string) => Number(input(id).value);
@@ -116,26 +135,45 @@ function options(): Partial<LookupOptions> {
   };
 }
 function syncProfile() {
-  const profile = resolveProfile({
-    mood,
-    ...(select("blend").value
-      ? { blend: select("blend").value + ":" + input("blend-amount").value }
-      : {}),
-  });
-  $("#blend-face").textContent =
-    select("blend").selectedOptions[0]?.text || "+ blend";
+  const blend = select("blend").value,
+    style = select("engine").value,
+    custom = DIALS.some((d) => input(d).dataset.explicit === "true"),
+    profile = resolveProfile({
+      mood,
+      ...(blend ? { blend: blend + ":" + input("blend-amount").value } : {}),
+    }),
+    label = cap(mood) + (blend ? " + " + cap(blend) : "");
   for (const d of DIALS) {
     if (input(d).dataset.explicit !== "true")
       input(d).value = String(profile[d]);
     $("#" + d + "-value").textContent = input(d).value;
   }
-  $("#sound-summary").textContent =
-    `${input("length").value} letters · ${select("syllables").value || "auto"} syl${DIALS.some((d) => input(d).dataset.explicit === "true") ? " · custom dials" : ""}`;
-  $("#domain-summary").textContent = input("check-domains").checked
-    ? input("filter-available").checked
-      ? "available only"
-      : "live .com checks"
-    : "off · generate only";
+  $("#blend-amount-value").textContent = input("blend-amount").value;
+  input("blend-amount").disabled = !blend;
+  $("#mood-swatch").className = "swatch mood-" + mood;
+  setText($("#mood-label"), style ? "Original " + style : label);
+  setText(
+    $("#feed-title"),
+    style ? `Original ${style} names` : `Names that feel ${mood}`,
+  );
+  setText($("#mood-summary"), label);
+  setText(
+    $("#sound-summary"),
+    `${custom ? "Custom dials" : "From mood"} · ${select("syllables").value || "auto"} syllables`,
+  );
+  setText($("#spelling-summary"), input("length").value + " letters");
+  setText(
+    $("#domain-summary"),
+    !input("check-domains").checked
+      ? "Off"
+      : input("filter-available").checked
+        ? "Available only"
+        : "All names",
+  );
+  setText(
+    $("#advanced-summary"),
+    `${select("count").value} per page · seed ${input("seed").value}`,
+  );
 }
 function setMood(value: string) {
   mood = value;
@@ -192,14 +230,32 @@ document.querySelectorAll<HTMLButtonElement>("[data-mood]").forEach((b) => {
     setMood(b.dataset.mood!);
     input("page").value = "1";
     savePreferences();
+    dirty = true;
   };
 });
 for (const d of DIALS)
   input(d).oninput = () => {
     input(d).dataset.explicit = "true";
     $("#" + d + "-value").textContent = input(d).value;
-    savePreferences();
   };
+$("#reset-dials").onclick = () => {
+  for (const d of DIALS) delete input(d).dataset.explicit;
+  syncProfile();
+  savePreferences();
+  dirty = true;
+};
+document.querySelectorAll<HTMLButtonElement>("[data-step]").forEach(
+  (b) =>
+    (b.onclick = () => {
+      const field = input("length"),
+        step = Number(field.step) || 1,
+        next = number("length") + Number(b.dataset.step) * step;
+      if (next >= Number(field.min) && next <= Number(field.max)) {
+        field.value = String(next);
+        field.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }),
+);
 function syncEngine(resetLength = false) {
   const style = select("engine").value;
   if (resetLength)
@@ -215,130 +271,200 @@ function syncEngine(resetLength = false) {
 }
 syncEngine();
 select("engine").onchange = () => syncEngine(true);
-$("#panel-explore").addEventListener("change", () => {
+$("#panel-explore").addEventListener("change", (event) => {
   try {
     syncProfile();
     savePreferences();
+    if ((event.target as Element).closest("#tune")) dirty = true;
   } catch (error) {
     showError((error as Error).message);
   }
 });
+
+// Tune: a modal bottom sheet on phones, an inline panel on desktop.
+const tune = $<HTMLDialogElement>("#tune"),
+  wide = matchMedia("(min-width: 900px)");
+function openTune(section?: string) {
+  if (section) ($(section) as HTMLDetailsElement).open = true;
+  if (!tune.open) wide.matches ? tune.show() : tune.showModal();
+  $("#tune-btn").setAttribute("aria-expanded", "true");
+}
+tune.onclose = () => {
+  $("#tune-btn").setAttribute("aria-expanded", "false");
+  if (dirty) run();
+};
+tune.onkeydown = (e) => {
+  if (e.key === "Escape" && !tune.matches(":modal")) tune.close();
+};
+$("#tune-btn").onclick = () => (tune.open ? tune.close() : openTune());
+$("#mood-chip").onclick = () => openTune("#mood-controls");
+$("#generate-form").onsubmit = (event) => {
+  event.preventDefault();
+  dirty = false;
+  tune.close();
+  run();
+};
+document.querySelectorAll<HTMLElement>("[data-close]").forEach(
+  (b) => (b.onclick = () => b.closest("dialog")!.close()),
+);
+document.querySelectorAll("dialog").forEach((d) =>
+  d.addEventListener("click", (e) => {
+    if (e.target === d && d.matches(":modal")) d.close();
+  }),
+);
+
 function showError(message: string) {
   $("#notice").hidden = false;
   $("#notice").textContent = message;
 }
+function toast(message: string) {
+  const t = $("#toast");
+  t.textContent = message;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
 function status(text: string) {
-  $("#run-status").textContent = text;
+  setText($("#run-status"), text);
 }
 type RunState = "idle" | "running" | "paused" | "done" | "error" | "offline";
 function runState(state: RunState) {
   $("#stage").dataset.state = state;
-  if (state === "done") meter(1);
 }
-function meter(fraction?: number) {
-  const total = activeSearch?.count || 0;
+function meter() {
   $("#meter").style.width =
-    (fraction ?? (total ? Math.min(1, rows.size / total) : 0)) * 100 + "%";
-}
-function setRank(page: number, count: number) {
-  $("#results").style.counterReset = `rank ${(page - 1) * count}`;
+    Math.min(1, pageDone / (activeSearch?.count || 1)) * 100 + "%";
 }
 function setBusy(value: boolean) {
   running = value;
   $("#pause").hidden = !value;
   $("#resume").hidden = value || !paused;
-  $<HTMLButtonElement>("#generate").disabled = false;
 }
+const onPage = (page: number) => (page > 1 ? ` · page ${page}` : "");
+
+// Feed rows. Clicks are delegated: the heart saves, the name opens the sheet.
 function updateSavedButtons() {
-  $("#saved-count").textContent = String(Object.keys(saved).length);
+  const n = Object.keys(saved).length;
+  $("#saved-count").textContent = String(n);
+  $("#saved-count").dataset.n = String(n);
   document
     .querySelectorAll<HTMLButtonElement>("[data-save]")
     .forEach((button) => {
       const yes = Boolean(saved[button.dataset.save!]);
       button.setAttribute("aria-pressed", String(yes));
-      button.setAttribute(
-        "aria-label",
+      // The sheet's button is named by its visible "Save"/"Saved" label.
+      if (button.id !== "ns-save")
+        button.setAttribute(
+          "aria-label",
         `${yes ? "Remove" : "Save"} ${button.dataset.name}${yes ? " from shortlist" : " to shortlist"}`,
       );
     });
+  setText($("#ns-save span"), saved[sheetDomain] ? "Saved" : "Save");
 }
 function nameCard(domain: string, row?: DomainRow): HTMLLIElement {
-  const name = domain[0].toUpperCase() + domain.slice(1, -4),
-    li = document.createElement("li");
+  const name = cap(domain.slice(0, -4)),
+    li = el("li", "name-card") as HTMLLIElement,
+    title = el("h3"),
+    open = el("button", "name-open", name),
+    meta = el("p", "meta"),
+    badge = el("span"),
+    save = el("button", "save-name") as HTMLButtonElement;
   li.dataset.domain = domain;
-  li.className = "name-card";
-  const title = document.createElement("h3");
-  title.textContent = name;
-  const sub = document.createElement("span");
-  sub.className = "domain";
-  sub.textContent = ".com";
-  const badge = document.createElement("span"),
-    state =
-      row?.status === "possibly available"
-        ? "available"
-        : row?.status === "registered"
-          ? "registered"
-          : "unchecked";
-  li.dataset.status = state;
-  badge.className = "domain-status " + state;
-  badge.textContent = row?.status || "not checked";
-  badge.title = row
-    ? `${row.source} · ${new Date(row.checkedAt).toLocaleString()}`
-    : "No lookup has been made";
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "save-name";
-  button.dataset.save = domain;
-  button.dataset.name = name;
-  button.onclick = () => {
-    if (saved[domain]) delete saved[domain];
-    else saved[domain] = { name, domain, addedAt: Date.now() };
-    storageSet(savedKey, JSON.stringify(saved));
-    updateSavedButtons();
-    renderSaved();
-  };
-  li.append(title, sub, badge, button);
+  open.setAttribute("type", "button");
+  title.append(open);
+  mark(
+    li,
+    badge,
+    row?.status === "possibly available"
+      ? "available"
+      : row?.status === "registered"
+        ? "registered"
+        : "unchecked",
+    row?.status || "not checked",
+  );
+  if (row)
+    badge.title = `${row.source} · ${new Date(row.checkedAt).toLocaleString()}`;
+  meta.append(el("span", "domain", domain), badge);
+  save.type = "button";
+  save.dataset.save = domain;
+  save.dataset.name = name;
+  li.append(title, meta, save);
   return li;
 }
-function renderInitial(names: string[], checking = false) {
-  rows.clear();
-  const list = $("#results");
-  list.replaceChildren(...names.map((n) => nameCard(n.toLowerCase() + ".com")));
-  if (checking)
-    list.querySelectorAll(".domain-status").forEach((el) => {
-      el.textContent = "checking…";
-      el.className = "domain-status checking";
-      (el.parentElement as HTMLElement).dataset.status = "checking";
-    });
-  $("#result-count").textContent = String(names.length);
+function mark(li: HTMLElement, badge: Element, state: string, text: string) {
+  li.dataset.status = state;
+  badge.className = "domain-status " + state;
+  badge.textContent = text;
+}
+function trim() {
+  while (list.children.length > pageStart) list.lastElementChild!.remove();
+}
+function renderNames(names: string[], checking: boolean) {
+  for (const n of names) {
+    const card = nameCard(n.toLowerCase() + ".com");
+    if (checking)
+      mark(card, card.querySelector(".domain-status")!, "checking", "checking…");
+    list.append(card);
+  }
   updateSavedButtons();
 }
 function addRow(row: DomainRow) {
   rows.set(row.domain, row);
-  const old = Array.from($("#results").children).find(
-    (el) => (el as HTMLElement).dataset.domain === row.domain,
-  );
-  const card = nameCard(row.domain, row);
+  const card = nameCard(row.domain, row),
+    old = list.querySelector(`[data-domain="${row.domain}"]`);
   if (old) old.replaceWith(card);
-  else $("#results").append(card);
-  $("#result-count").textContent = String($("#results").children.length);
+  else list.append(card);
+  pageDone++;
   updateSavedButtons();
   meter();
 }
+function toggleSave(domain: string) {
+  if (saved[domain]) delete saved[domain];
+  else
+    saved[domain] = {
+      name: cap(domain.slice(0, -4)),
+      domain,
+      addedAt: Date.now(),
+    };
+  storageSet(savedKey, JSON.stringify(saved));
+  updateSavedButtons();
+}
+document.addEventListener("click", (event) => {
+  const target = event.target as HTMLElement,
+    save = target.closest<HTMLElement>("[data-save]"),
+    open = target.closest(".name-open");
+  if (save) {
+    toggleSave(save.dataset.save!);
+    save.classList.remove("pop");
+    void save.offsetWidth;
+    save.classList.add("pop");
+    if (save.closest("#saved-list")) renderSaved();
+  } else if (open) openName(open.closest("li")!.dataset.domain!);
+});
 function renderSaved() {
-  const list = $("#saved-list");
-  list.replaceChildren(
-    ...Object.keys(saved).map((domain) => nameCard(domain, rows.get(domain))),
+  const domains = Object.keys(saved),
+    saveList = $("#saved-list");
+  saveList.replaceChildren(
+    ...domains.map((domain) => nameCard(domain, rows.get(domain))),
   );
-  if (!Object.keys(saved).length) {
-    const li = document.createElement("li");
-    li.className = "empty-state";
-    li.textContent =
-      "A good name deserves a second look. Tap a heart to keep one here.";
-    list.append(li);
+  if (!domains.length) {
+    const li = el("li", "empty-state"),
+      browse = el("button", "secondary", "Browse names");
+    li.append(
+      el("i", "heart"),
+      el("b", "", "Nothing saved yet"),
+      "Tap the heart on any name to keep it here.",
+      el("br"),
+      browse,
+    );
+    browse.onclick = () => switchTab("explore");
+    saveList.append(li);
   }
   updateSavedButtons();
 }
+
+// Searches. Each page keeps the worker's page/session semantics; the feed
+// appends later pages so browsing reads as one continuous list.
 function cancel() {
   requestId++;
   if (running) lookup.postMessage({ type: "pause" });
@@ -349,87 +475,78 @@ async function requestPersistence() {
   try {
     const persisted = await navigator.storage?.persist?.();
     $("#cache-status").textContent =
-      `Cache storage: ${persisted ? "persistent permission granted" : "best effort"}. Shortlist backups are downloadable separately.`;
+      `Lookup cache storage: ${persisted ? "persistent" : "best effort"}.`;
   } catch {
     /* IDB errors are reported by the worker */
   }
 }
 function beginSearch(search: SearchState, refresh = false) {
-  if (search.filtered) {
-    rows.clear();
-    $("#results").replaceChildren();
-    $("#result-count").textContent = "0";
-  } else
-    renderInitial(generate(search.settings, search.count, search.page), true);
-  $("#page-label").textContent = `Page ${search.page}`;
-  setRank(search.page, search.count);
+  trim();
+  if (!search.filtered)
+    renderNames(generate(search.settings, search.count, search.page), true);
+  list.dataset.filtered = String(search.filtered);
   activeSearch = search;
   paused = false;
+  pageDone = 0;
   requestId++;
-  storageSet(activeKey, JSON.stringify(search));
   setBusy(true);
   runState("running");
   meter();
   lookup.postMessage({ type: "search", id: requestId, ...search, refresh });
 }
-function run() {
+function run(more = false) {
   try {
-    const s = settings(),
-      count = Number(select("count").value),
-      page = number("page");
-    if (![24, 50, 200, 1000, 4000].includes(count))
-      throw new Error("Choose a result count");
-    if (!Number.isInteger(page) || page < 1)
-      throw new Error("Page must be a positive integer");
-    const names = generate(s, count, page);
-    cancel();
-    $("#notice").hidden = true;
-    paused = false;
-    activeSearch = undefined;
-    storageSet(activeKey, null);
-    $("#resume").hidden = true;
-    renderInitial(names, input("check-domains").checked);
-    setRank(page, count);
-    runState("idle");
-    $("#page-label").textContent = `Page ${page}`;
-    $<HTMLButtonElement>("#previous").disabled = page === 1;
-    savePreferences();
-    if (!input("check-domains").checked) {
-      status(`${names.length} names generated offline. Domain checks are off.`);
-      return;
-    }
-    if (!navigator.onLine) {
-      status(
-        `${names.length} names generated offline. Reconnect and resume to check domains.`,
-      );
-      activeSearch = {
-        settings: s,
+    let search: SearchState;
+    if (more && lastSearch) search = { ...lastSearch, page: lastSearch.page + 1 };
+    else {
+      const count = Number(select("count").value),
+        page = number("page");
+      if (![20, 50, 200, 1000, 4000].includes(count))
+        throw new Error("Choose how many names per page");
+      if (!Number.isInteger(page) || page < 1)
+        throw new Error("Start page must be a positive whole number");
+      checksOn = input("check-domains").checked;
+      search = {
+        settings: settings(),
         count,
         page,
-        filtered: input("filter-available").checked,
+        filtered: checksOn && input("filter-available").checked,
         options: options(),
       };
-      paused = true;
-      storageSet(activeKey, JSON.stringify(activeSearch));
-      $("#resume").hidden = false;
-      runState("offline");
-      return;
+      savePreferences();
     }
-    const search = {
-      settings: s,
-      count,
-      page,
-      filtered: input("filter-available").checked,
-      options: options(),
-    };
-    if (search.filtered) {
-      $("#results").replaceChildren();
-      $("#result-count").textContent = "0";
+    const names = generate(search.settings, search.count, search.page);
+    cancel();
+    dirty = false;
+    $("#notice").hidden = true;
+    activeSearch = undefined;
+    lastSearch = search;
+    pageStart = more ? list.children.length : 0;
+    if (!more) scrollTo({ top: 0 });
+    if (!checksOn || !navigator.onLine) {
+      trim();
+      renderNames(names, false);
+      list.dataset.filtered = "false";
+      if (checksOn) {
+        activeSearch = search;
+        paused = resumeOnVisible = true;
+        $("#resume").hidden = false;
+        runState("offline");
+        status(
+          "You’re offline. Showing unchecked names until you reconnect.",
+        );
+      } else {
+        runState("idle");
+        status(
+          `${list.children.length} names · availability checks are off${onPage(search.page)}`,
+        );
+      }
+      return;
     }
     status(
       search.filtered
-        ? "Finding RDAP-confirmed possibilities in seed order…"
-        : "Checking .com domains in seed order…",
+        ? "Finding available .com names…"
+        : "Checking .com availability…",
     );
     beginSearch(search, input("refresh").checked);
     input("refresh").checked = false;
@@ -438,29 +555,30 @@ function run() {
     showError((error as Error).message);
   }
 }
-$("#generate-form").onsubmit = (event) => {
-  event.preventDefault();
-  run();
-};
 $("#pause").onclick = () => {
   cancel();
   runState("paused");
-  status("Paused. Completed checks and search progress are saved.");
+  status("Paused. Progress is saved.");
 };
 $("#resume").onclick = () => {
   if (activeSearch && navigator.onLine) {
-    status("Resuming saved progress…");
+    status("Resuming…");
     beginSearch(activeSearch);
-  } else status("Reconnect to resume domain checks.");
+  } else status("Reconnect to resume checking.");
 };
-$("#next").onclick = () => {
-  input("page").value = String(number("page") + 1);
-  run();
-};
-$("#previous").onclick = () => {
-  input("page").value = String(Math.max(1, number("page") - 1));
-  run();
-};
+$("#next").onclick = () => run(true);
+// Infinite-scroll feel: after a real scroll gesture, reaching Load more loads it.
+addEventListener("wheel", () => (userScrolled = true), { passive: true });
+addEventListener("touchmove", () => (userScrolled = true), { passive: true });
+new IntersectionObserver(([entry]) => {
+  if (
+    entry.isIntersecting &&
+    userScrolled &&
+    !running &&
+    $("#stage").dataset.state === "done"
+  )
+    run(true);
+}).observe($("#next"));
 lookup.onmessage = (event) => {
   const msg = event.data;
   if (msg.type === "cache") {
@@ -473,41 +591,44 @@ lookup.onmessage = (event) => {
   if (msg.type === "row") addRow(msg.row);
   else if (msg.type === "progress")
     status(
-      `${msg.cursor.toLocaleString()} candidates checked${msg.matches !== undefined ? " · " + msg.matches.toLocaleString() + " possible matches" : ""}. RDAP ${msg.stats.rdap} · DNS ${msg.stats.dns} · ${msg.stats.skipped} RDAP checks skipped.`,
+      msg.matches !== undefined
+        ? `Checked ${msg.cursor.toLocaleString()} names · ${msg.matches.toLocaleString()} available so far`
+        : `Checking .com availability… ${pageDone} of ${activeSearch?.count}`,
     );
   else if (msg.type === "done") {
+    const filtered = activeSearch?.filtered,
+      page = activeSearch?.page || 1;
     paused = false;
     activeSearch = undefined;
-    storageSet(activeKey, null);
     setBusy(false);
     runState("done");
     status(
-      `${msg.emitted} results · ${msg.cursor.toLocaleString()} candidates${msg.matches !== undefined ? " · " + msg.matches + " possible matches" : ""}. RDAP ${msg.stats.rdap} · DNS ${msg.stats.dns} · ${msg.stats.skipped} skipped · ${msg.stats.cacheHits} cached.`,
+      filtered
+        ? `${list.children.length} possibly available .com names${onPage(page)}`
+        : `${list.children.length} names · ${list.querySelectorAll(".available").length} possibly available${onPage(page)}`,
     );
+    $("#lookup-stats").textContent =
+      `Last page: ${msg.emitted} results from ${msg.cursor.toLocaleString()} candidates. RDAP ${msg.stats.rdap} · DNS ${msg.stats.dns} · ${msg.stats.skipped} RDAP checks skipped · ${msg.stats.cacheHits} cached.`;
   } else if (msg.type === "paused") {
     paused = Boolean(activeSearch);
     setBusy(false);
     runState("paused");
-    status("Paused. Resume to continue from saved progress.");
+    status("Paused. Progress is saved.");
   } else if (msg.type === "error") {
     paused = Boolean(activeSearch);
     setBusy(false);
     runState("error");
-    status(msg.error);
-    $("#results")
-      .querySelectorAll(".checking")
-      .forEach((el) => {
-        el.textContent = "not confirmed";
-        el.className = "domain-status error";
-        (el.parentElement as HTMLElement).dataset.status = "error";
-      });
+    status(`Checking stopped: ${msg.error}`);
+    list.querySelectorAll<HTMLElement>(".checking").forEach((badge) => {
+      mark(badge.closest("li")!, badge, "error", "not confirmed");
+    });
   }
 };
 lookup.onerror = () => {
   paused = Boolean(activeSearch);
   setBusy(false);
   runState("error");
-  status("The lookup worker stopped. Reload and resume the saved search.");
+  status("Checking stopped. Reload to resume.");
 };
 $("#inspect-cache").onclick = () =>
   lookup.postMessage({ type: "stats", id: requestId });
@@ -515,66 +636,31 @@ $("#clear-cache").onclick = () => {
   cancel();
   lookup.postMessage({ type: "clear", id: requestId });
 };
-function download(filename: string, text: string, type = "application/json") {
-  const url = URL.createObjectURL(new Blob([text], { type })),
-    a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-$("#backup").onclick = () => {
-  download(
-    "brand-name-shortlist.json",
-    JSON.stringify(
-      {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        saved,
-        preferences: JSON.parse(storageGet(prefKey) || "{}"),
-      },
-      null,
-      2,
-    ),
-  );
-  $("#saved-status").textContent =
-    "Backup download started. Keep this file outside browser storage.";
-};
-input("import").onchange = async () => {
-  const file = input("import").files?.[0];
-  if (!file) return;
-  try {
-    if (file.size > 5000000)
-      throw new Error("Backup must be smaller than 5 MB");
-    const data = JSON.parse(await file.text());
-    if (data.version !== 1 || !validSaved(data.saved))
-      throw new Error("This is not a valid shortlist backup");
-    saved = { ...saved, ...data.saved };
-    storageSet(savedKey, JSON.stringify(saved));
-    renderSaved();
+// Backup, import and CSV export are rare actions; they load with analysis-ui.
+$("#backup").onclick = () =>
+  ui().then((m) => {
+    m.backup(saved, JSON.parse(storageGet(prefKey) || "{}"));
     $("#saved-status").textContent =
-      `Imported. ${Object.keys(saved).length} saved names.`;
-  } catch (error) {
-    $("#saved-status").textContent = (error as Error).message;
-  }
-  input("import").value = "";
-};
-$("#export-results").onclick = () => {
-  const header = "domain,status,source,checked_at_utc\n",
-    csv = Array.from($("#results").children)
-      .map((el) => {
-        const domain = (el as HTMLElement).dataset.domain!,
-          r = rows.get(domain);
-        return [
-          domain,
-          r?.status || "not checked",
-          r?.source || "generated",
-          r ? new Date(r.checkedAt).toISOString() : "",
-        ].join(",");
-      })
-      .join("\n");
-  download("brand-name-results.csv", header + csv, "text/csv");
-};
+      "Backup download started. Keep this file outside browser storage.";
+  });
+input("import").onchange = () =>
+  ui()
+    .then((m) => m.readBackup(input("import").files?.[0]))
+    .then(
+      (data) => {
+        if (!data) return;
+        if (!validSaved(data)) throw new Error("This is not a valid shortlist backup");
+        saved = { ...saved, ...data };
+        storageSet(savedKey, JSON.stringify(saved));
+        renderSaved();
+        $("#saved-status").textContent =
+          `Imported. ${Object.keys(saved).length} saved names.`;
+      },
+    )
+    .catch((error) => ($("#saved-status").textContent = error.message))
+    .finally(() => (input("import").value = ""));
+$("#export-results").onclick = () =>
+  ui().then((m) => m.exportCsv(list, rows));
 function switchTab(id: string) {
   document
     .querySelectorAll<HTMLButtonElement>("[data-tab]")
@@ -585,6 +671,7 @@ function switchTab(id: string) {
       $("#panel-" + button.dataset.tab).hidden = !selected;
     });
   if (id === "saved") renderSaved();
+  scrollTo({ top: 0 });
 }
 document.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((button) => {
   button.onclick = () => switchTab(button.dataset.tab!);
@@ -606,173 +693,129 @@ document.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((button) => {
     }
   };
 });
-function displayAnalysis(container: HTMLElement, result: any) {
-  container.replaceChildren();
-  const summary = document.createElement("p");
-  summary.className = "analysis-summary";
-  summary.textContent =
-    result.status === "gap"
-      ? "This reading has a representation gap."
-      : result.status === "fit"
-        ? "Candidate settings found."
-        : result.results
-          ? "Nearby allowed spellings"
-          : "Candidate inverse settings";
-  container.append(summary);
-  if (result.source) {
-    const p = document.createElement("p");
-    p.textContent = `${result.source} · ${result.phones.join(" ")}`;
-    container.append(p);
+
+function applySettings(
+  dials: Record<string, number>,
+  structure: Record<string, string | number>,
+  recipe?: string,
+) {
+  (document.querySelector("dialog[open]") as HTMLDialogElement)?.close();
+  switchTab("explore");
+  select("engine").value = "";
+  syncEngine();
+  if (recipe) setMood(recipe);
+  for (const d of DIALS) {
+    input(d).value = String(dials[d]);
+    input(d).dataset.explicit = "true";
   }
-  if (result.structure) {
-    const p = document.createElement("p");
-    p.className = "fine-print";
-    p.textContent = Object.entries(result.structure)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(" · ");
-    container.append(p);
-  }
-  for (const gap of result.gaps || []) {
-    const p = document.createElement("p");
-    p.className = "gap";
-    p.textContent = gap;
-    container.append(p);
-  }
-  const candidates =
-    result.candidates ||
-    result.results ||
-    result.fits?.map(([score, dials]: [number, any]) => ({ dials, score }));
-  for (const item of candidates || []) {
-    const card = document.createElement("article");
-    card.className = "analysis-card";
-    const title = document.createElement("h3");
-    title.textContent =
-      item.word ||
-      Object.entries(item.dials)
-        .map(([k, v]) => `${k} ${v}`)
-        .join(" · ");
-    card.append(title);
-    if (item.samples) {
-      const p = document.createElement("p");
-      p.textContent = item.samples.join(" · ");
-      card.append(p);
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = "Explore these settings";
-      b.onclick = () => {
-        switchTab("explore");
-        select("engine").value = "";
-        syncEngine();
-        setMood(item.nearest_recipe);
-        for (const d of DIALS) {
-          input(d).value = String(item.dials[d]);
-          input(d).dataset.explicit = "true";
-        }
-        for (const key of ["length", "syllables", "opening", "ending"]) {
-          const el = document.getElementById(key) as HTMLInputElement;
-          el.value = String(result.structure[key]);
-        }
-        input("page").value = "1";
-        input("check-domains").checked = false;
-        syncProfile();
-        run();
-      };
-      card.append(b);
-    }
-    if (item.phones) {
-      const p = document.createElement("p");
-      p.textContent = `${item.phones.join(" ")} · edit cost ${item.sound_edit_cost}`;
-      card.append(p);
-      for (const edit of [...item.edits, ...item.structure_changes]) {
-        const line = document.createElement("p");
-        line.className = "fine-print";
-        line.textContent = edit;
-        card.append(line);
-      }
-    }
-    container.append(card);
-  }
-  const details = document.createElement("details"),
-    label = document.createElement("summary"),
-    pre = document.createElement("pre");
-  label.textContent = "Full report and reading notes";
-  pre.textContent = JSON.stringify(result, null, 2);
-  details.append(label, pre);
-  container.append(details);
+  for (const key of ["length", "syllables", "opening", "ending"])
+    (document.getElementById(key) as HTMLInputElement).value = String(
+      structure[key],
+    );
+  input("page").value = "1";
+  syncProfile();
+  run();
 }
-document.querySelectorAll<HTMLFormElement>(".tool-form").forEach((form) => {
-  const modeSelect = form.elements.namedItem(
-      "reading-mode",
-    ) as HTMLSelectElement | null,
-    value = form.elements.namedItem("reading-value") as HTMLInputElement | null;
-  if (modeSelect && value) {
-    value.disabled = true;
-    modeSelect.onchange = () => {
-      value.disabled = modeSelect.value === "dictionary";
-      value.required = !value.disabled;
-    };
-  }
-  form.onsubmit = (event) => {
-    event.preventDefault();
-    if (analysisBusy || !form.reportValidity()) return;
-    analysisBusy = true;
-    document
-      .querySelectorAll<HTMLButtonElement>(".tool-form button")
-      .forEach((b) => (b.disabled = true));
-    const panel = form.closest("section")!,
-      output = panel.querySelector<HTMLElement>(".tool-result")!,
-      line = panel.querySelector<HTMLElement>(".tool-status")!,
-      button = form.querySelector<HTMLButtonElement>("button")!;
-    line.textContent = "Exploring the sound model…";
-    button.disabled = true;
-    panel.dataset.busy = "true";
-    if (!analysisWorker)
-      analysisWorker = new Worker(
-        new URL("./analysis.worker.ts", import.meta.url),
-        { type: "module" },
-      );
-    const data = new FormData(form),
-      readingMode = String(data.get("reading-mode")),
-      id = ++analysisId;
-    analysisWorker.onmessage = (e) => {
-      if (e.data.id !== id) return;
-      analysisBusy = false;
-      delete panel.dataset.busy;
-      document
-        .querySelectorAll<HTMLButtonElement>(".tool-form button")
-        .forEach((b) => (b.disabled = false));
-      if (e.data.error) line.textContent = e.data.error;
-      else {
-        line.textContent = "Analysis complete. No domain lookups were made.";
-        displayAnalysis(output, e.data.result);
-      }
-    };
-    analysisWorker.onerror = () => {
-      analysisBusy = false;
-      delete panel.dataset.busy;
-      document
-        .querySelectorAll<HTMLButtonElement>(".tool-form button")
-        .forEach((b) => (b.disabled = false));
-      line.textContent =
-        "Analysis could not load. If offline, supply engine spelling or open this tool once while online.";
-      analysisWorker?.terminate();
-      analysisWorker = undefined;
-    };
-    analysisWorker.postMessage({
-      id,
-      mode: form.dataset.mode,
-      word: String(data.get("word")),
-      seed: input("seed").value,
-      count: Number(data.get("suggestion-count") || 5),
-      ...(readingMode === "reading"
-        ? { reading: String(data.get("reading-value")) }
-        : readingMode === "phones"
-          ? { phones: String(data.get("reading-value")) }
-          : {}),
-    });
+
+// Name sheet: details and actions for one name.
+const sheet = $<HTMLDialogElement>("#name-sheet");
+let sheetDomain = "";
+function openName(domain: string) {
+  const name = cap(domain.slice(0, -4)),
+    row = rows.get(domain),
+    available = row?.status === "possibly available",
+    open = $<HTMLAnchorElement>("#ns-open"),
+    pill = $("#ns-status");
+  sheetDomain = domain;
+  $("#ns-name").textContent = name;
+  $("#ns-domain").textContent = domain;
+  pill.dataset.status = available ? "available" : "";
+  pill.textContent = row ? cap(row.status) : "Not checked yet";
+  $("#ns-note").textContent = row
+    ? `${available ? "RDAP found no registration. Confirm with a registrar before you buy." : "This .com is already registered."} Checked ${new Date(row.checkedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} from ${({ rdap: "the .com registry (RDAP)", dns: "DNS records" } as Record<string, string>)[row.source] || "a saved check"}.`
+    : "Availability has not been checked for this name yet.";
+  open.href = available
+    ? `https://lookup.icann.org/en/lookup?name=${domain}`
+    : `https://${domain}`;
+  open.lastElementChild!.textContent = available ? "Look up" : "Visit site";
+  $("#ns-save").dataset.save = domain;
+  $("#ns-save").dataset.name = name;
+  updateSavedButtons();
+  $("#ns-sound").replaceChildren(el("p", "muted", "Reading the sound…"));
+  $("#ns-nearby").replaceChildren();
+  sheet.showModal();
+  ui().then((m) =>
+    m.nameSound(
+      name.toLowerCase(),
+      input("seed").value,
+      $("#ns-sound"),
+      $("#ns-nearby"),
+      applySettings,
+    ),
+  );
+}
+sheet.onclose = () => {
+  if (!$("#panel-saved").hidden) renderSaved();
+};
+$("#ns-copy").onclick = () =>
+  navigator.clipboard
+    .writeText($("#ns-name").textContent!)
+    .then(
+      () => toast("Copied " + $("#ns-name").textContent),
+      () => toast("Copy is not available here"),
+    );
+
+// Reverse: type a name, get the result; follow-ups fold in the other tools.
+const reverse = $("#panel-reverse"),
+  form = reverse.querySelector<HTMLFormElement>("form")!,
+  line = reverse.querySelector<HTMLElement>(".tool-status")!,
+  more = reverse.querySelector<HTMLElement>(".tool-more")!,
+  follow = reverse.querySelector<HTMLElement>(".follow")!,
+  modeSelect = form.elements.namedItem("reading-mode") as HTMLSelectElement,
+  readingValue = form.elements.namedItem("reading-value") as HTMLInputElement;
+readingValue.disabled = true;
+modeSelect.onchange = () => {
+  readingValue.disabled = modeSelect.value === "dictionary";
+  readingValue.required = !readingValue.disabled;
+  setText(
+    reverse.querySelector<HTMLElement>(".pron .fold-value")!,
+    modeSelect.selectedOptions[0].text,
+  );
+};
+function analyseReverse(mode: string) {
+  const extra = {
+    seed: input("seed").value,
+    ...(modeSelect.value === "reading"
+      ? { reading: readingValue.value }
+      : modeSelect.value === "phones"
+        ? { phones: readingValue.value }
+        : {}),
   };
-});
-let resumeOnVisible = false;
+  reverse.dataset.busy = "";
+  line.textContent = "Reading the sound…";
+  ui().then((m) =>
+    m.analyse(mode, input("reverse-word").value.trim(), extra, (result, error) => {
+      delete reverse.dataset.busy;
+      line.textContent =
+        error || "Analysis complete. No domain lookups were made.";
+      if (mode === "reverse") {
+        follow.hidden = Boolean(error);
+        more.replaceChildren();
+        m.showReport(reverse.querySelector(".tool-result")!, result, error, applySettings);
+      } else if (mode === "inverter") m.showFit(more, result, error, applySettings);
+      else m.showNearby(more, result, error);
+    }),
+  );
+}
+form.onsubmit = (event) => {
+  event.preventDefault();
+  if (reverse.dataset.busy === undefined && form.reportValidity())
+    analyseReverse("reverse");
+};
+follow
+  .querySelectorAll<HTMLButtonElement>("[data-follow]")
+  .forEach((b) => (b.onclick = () => analyseReverse(b.dataset.follow!)));
+
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && running) {
     resumeOnVisible = true;
@@ -787,76 +830,56 @@ document.addEventListener("visibilitychange", () => {
     beginSearch(activeSearch);
   }
 });
-window.addEventListener("offline", () => {
+addEventListener("offline", () => {
   if (running) {
     resumeOnVisible = true;
     cancel();
     runState("offline");
-    status("Offline. Generation still works; checked progress is saved.");
+    status("You’re offline. Checking resumes when you reconnect.");
   }
 });
-window.addEventListener("online", () => {
+addEventListener("online", () => {
   if (resumeOnVisible && !document.hidden && activeSearch) {
     resumeOnVisible = false;
     beginSearch(activeSearch);
   }
 });
-window.addEventListener("pagehide", () => {
+addEventListener("pagehide", () => {
   if (running) lookup.postMessage({ type: "pause" });
 });
 function network() {
   $("#net").dataset.online = String(navigator.onLine);
-  $("#net-label").textContent = navigator.onLine ? "online" : "offline";
+  $("#net-label").textContent = navigator.onLine ? "Online" : "Offline";
 }
 network();
-window.addEventListener("online", network);
-window.addEventListener("offline", network);
+addEventListener("online", network);
+addEventListener("offline", network);
+
+// Land on the feed: start the default (CLI-equivalent) search immediately.
 try {
   syncProfile();
-  renderInitial(
-    generate(settings(), Number(select("count").value), number("page")),
-  );
-  setRank(number("page"), Number(select("count").value));
-  $("#page-label").textContent = `Page ${number("page")}`;
 } catch {
   setMood("calm");
-  input("length").value = "6";
-  input("page").value = "1";
-  renderInitial(generate({}, 24));
 }
-runState("idle");
-// Web fonts after the first results frame (see style.css); cached visits
+run();
+renderSaved();
+// Web fonts after the first frame (see style.css); cached visits
 // already enabled them in <head>.
 requestAnimationFrame(() =>
   setTimeout(() => {
     document.documentElement.classList.add("fonts");
     Promise.all(
-      ["500 1em Funnel Display", "1em Inter", "1em BNE Mono"].map((f) =>
+      ["500 1em Funnel Display", "1em Inter", "600 1em Inter"].map((f) =>
         document.fonts.load(f),
       ),
     ).then(
-      () => localStorage.setItem("bne.fonts.v1", "1"),
+      () => localStorage.setItem("bne.fonts.v2", "1"),
       () => {},
     );
   }),
 );
-renderSaved();
-try {
-  const pending = JSON.parse(storageGet(activeKey) || "null");
-  if (pending?.settings && pending.count && pending.page) {
-    activeSearch = pending;
-    paused = true;
-    $("#resume").hidden = false;
-    runState("paused");
-    status(
-      "A previous search is saved. Resume its checks, or generate a new set.",
-    );
-  }
-} catch {
-  /* no saved search */
-}
 if ("serviceWorker" in navigator)
-  window.addEventListener("load", () => {
+  addEventListener("load", () => {
     void navigator.serviceWorker
       .register(import.meta.env.BASE_URL + "sw.js", {
         scope: import.meta.env.BASE_URL,

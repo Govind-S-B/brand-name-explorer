@@ -2,30 +2,54 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <script>try{localStorage.getItem("bne.fonts.v1")&&document.documentElement.classList.add("fonts")}catch{}</script>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#fefefe" />
+    <script>try{localStorage.getItem("bne.fonts.v2")&&document.documentElement.classList.add("fonts")}catch{}</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#fbfbf9" />
     <meta
       name="description"
-      content="Explore names through sound. Generate offline, check .com domains, and save your shortlist."
+      content="Browse made-up brand names by sound, see which .com domains are possibly available, and keep a shortlist."
     />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
     <title>Brand name explorer</title>
   </head>
   <body>
-    <header class="bar">
-      <a class="wordmark" href="./"><i class="mark" aria-hidden="true"></i>brand name explorer</a>
-      <nav class="tabs" aria-label="Explorer tools" role="tablist">
-        <button role="tab" id="tab-explore" aria-controls="panel-explore" aria-selected="true" tabindex="0" data-tab="explore">Explore</button>
-        <button role="tab" id="tab-reverse" aria-controls="panel-reverse" aria-selected="false" tabindex="-1" data-tab="reverse">Reverse<span class="long"> finder</span></button>
-        <button role="tab" id="tab-inverter" aria-controls="panel-inverter" aria-selected="false" tabindex="-1" data-tab="inverter">Invert<span class="long">er</span></button>
-        <button role="tab" id="tab-substitutions" aria-controls="panel-substitutions" aria-selected="false" tabindex="-1" data-tab="substitutions">Subs<span class="long">titutions</span></button>
-        <button role="tab" id="tab-saved" aria-controls="panel-saved" aria-selected="false" tabindex="-1" data-tab="saved">Shortlist <span class="count" id="saved-count">0</span></button>
+    <header class="appbar">
+      <a class="wordmark" href="./"><i class="mark" aria-hidden="true"></i>Brand name explorer</a>
+      <nav class="tabs" aria-label="Sections" role="tablist">
+        <button role="tab" id="tab-explore" aria-controls="panel-explore" aria-selected="true" tabindex="0" data-tab="explore"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Explore</button>
+        <button role="tab" id="tab-reverse" aria-controls="panel-reverse" aria-selected="false" tabindex="-1" data-tab="reverse"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>Reverse</button>
+        <button role="tab" id="tab-saved" aria-controls="panel-saved" aria-selected="false" tabindex="-1" data-tab="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.4-9.2-9.3C1.6 7.2 3.8 4.5 7 4.5c2.1 0 3.8 1.1 5 2.9 1.2-1.8 2.9-2.9 5-2.9 3.2 0 5.4 2.7 4.2 6.2C19.5 15.6 12 20 12 20z"/></svg>Shortlist<span class="badge" id="saved-count" data-n="0">0</span></button>
       </nav>
-      <span class="net" id="net"><i aria-hidden="true"></i><span id="net-label">online</span></span>
+      <span class="net" id="net" data-online="true"><i aria-hidden="true"></i><span id="net-label">Online</span></span>
     </header>
     <div id="app"></div>
-    <footer class="statusbar"><span class="tag">[bne]</span><span>made-up names, real possibilities</span><span>generated locally · no sign-in</span><a href="./cmudict-LICENSE.txt">cmu dictionary licence</a><a href="./fonts-LICENSE.txt">font licences</a></footer>
+    <footer class="foot">Names are generated on your device · No sign-in · <a href="./cmudict-LICENSE.txt">CMU dictionary licence</a> · <a href="./fonts-LICENSE.txt">Font licences</a></footer>
+    <dialog id="name-sheet" class="sheet" aria-labelledby="ns-name">
+      <div class="sheet-head">
+        <div>
+          <h2 id="ns-name" class="ns-name">Name</h2>
+          <p class="ns-domain"><span id="ns-domain"></span><span id="ns-status" class="pill"></span></p>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <p id="ns-note" class="ns-note"></p>
+        <div class="ns-actions">
+          <button type="button" id="ns-save" class="pill-btn" aria-pressed="false"><i class="heart" aria-hidden="true"></i><span>Save</span></button>
+          <button type="button" id="ns-copy" class="pill-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg>Copy</button>
+          <a id="ns-open" class="pill-btn" href="./" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg><span>Open</span></a>
+        </div>
+        <section class="ns-section" aria-labelledby="ns-sound-title">
+          <h3 id="ns-sound-title">Sound</h3>
+          <div id="ns-sound"></div>
+        </section>
+        <section class="ns-section" aria-labelledby="ns-nearby-title">
+          <h3 id="ns-nearby-title">Nearby spellings</h3>
+          <div id="ns-nearby"></div>
+        </section>
+      </div>
+    </dialog>
+    <p id="toast" class="toast" role="status"></p>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -4,11 +4,9 @@ Usage: python -I scripts/fonts.py SOURCE_DIR
 SOURCE_DIR holds the OFL sources from github.com/google/fonts:
   FunnelDisplay.ttf (ofl/funneldisplay/FunnelDisplay[wght].ttf)
   Inter.ttf (ofl/inter/Inter[opsz,wght].ttf)
-  PlexMono-Regular.ttf (ofl/ibmplexmono/IBMPlexMono-Regular.ttf)
 Requires fonttools and brotli. Writes WOFF2 files to src/fonts/.
 
-IBM Plex declares the Reserved Font Name "Plex", so the subset (a Modified
-Version under the OFL) is renamed "BNE Mono". Licences are in public/fonts-LICENSE.txt.
+Licences are in public/fonts-LICENSE.txt.
 """
 
 import sys
@@ -63,5 +61,5 @@ build("FunnelDisplay.ttf", "funnel-display-500.woff2", {"wght": 500},
 # Inter sets only short UI text, so its 9 KB kerning table is omitted.
 build("Inter.ttf", "inter-400.woff2", {"opsz": 14, "wght": 400}, ["tnum"],
       family="Inter", style="Regular")
-build("PlexMono-Regular.ttf", "bne-mono-400.woff2", None, ["kern"],
-      family="BNE Mono")
+build("Inter.ttf", "inter-600.woff2", {"opsz": 14, "wght": 600}, ["tnum"],
+      family="Inter", style="SemiBold")
