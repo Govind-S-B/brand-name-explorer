@@ -110,5 +110,5 @@ caches provide the repeat-load behavior.
 - CMU is 817 KB gzip on first use and mainly US English. It is optional for
   generation and explicit engine/ARPABET input, but dictionary-based analysis
   needs one online fetch before it works offline.
-- Pages deployment and live github.io service-worker behavior have not been
-  tested; a local repository-subpath preview was tested instead.
+- See [deployment verification](deployment.md) for the live github.io checks;
+  physical iPhone/Safari suspension remains unverified.

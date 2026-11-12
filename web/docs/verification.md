@@ -1,7 +1,8 @@
 # Local verification — 12 November 2026
 
-The static app is built and verified locally at a repository subpath. No GitHub
-repository, remote, push, workflow run, or publication was performed. All eight
+The measurements below document local verification before publication. The app
+is now published at https://govind-s-b.github.io/brand-name-explorer/; see
+[live deployment verification](deployment.md). All eight
 Python source hashes still match the snapshot taken at the start of this port
 ([hashes](python-source-hashes.json)); the existing dirty Python working tree was
 preserved.
@@ -185,14 +186,13 @@ For the spike sweeps, follow [the separate reproduction commands](browser-throug
 
 ## Remaining limits and next check
 
-Physical iPhone/Safari testing and an actual GitHub Pages deployment remain
-unverified. A Pages-like local subpath, gzip, 600-second caching, and absence of
-COOP/COEP were verified. Modern browser APIs are required (approximately Safari
+Physical iPhone/Safari testing remains unverified. Actual GitHub Pages checks
+are documented in [deployment verification](deployment.md). The local checks
+below used a Pages-like subpath, gzip, 600-second caching, and no COOP/COEP. Modern browser APIs are required (approximately Safari
 17.4+). Where Web Locks is unavailable, use one checking tab per origin.
 
 Browser storage can be denied or evicted; persistence is requested, and portable
 JSON shortlist backups are provided. Cache clearing preserves shortlist and
 saved session pages. Large generation pages and replaying very late cursors can
 take longer on a phone. Next: test Safari on a physical iPhone through tab
-suspension/reload, then verify the scoped service worker on the eventual Pages
-URL before treating deployment and mobile lifecycle behavior as established.
+suspension/reload before treating physical mobile lifecycle behavior as established.

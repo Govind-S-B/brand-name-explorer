@@ -1,0 +1,370 @@
+[
+  {
+    "profile": "desktop",
+    "liveStatus": "24 results · 24 candidates. RDAP 12 · DNS 24 · 12 skipped · 0 cached.",
+    "statuses": [
+      "possibly available",
+      "possibly available",
+      "registered",
+      "registered",
+      "registered",
+      "possibly available",
+      "registered",
+      "possibly available",
+      "registered",
+      "registered",
+      "registered",
+      "possibly available",
+      "registered",
+      "registered",
+      "registered",
+      "possibly available",
+      "registered",
+      "possibly available",
+      "possibly available",
+      "registered",
+      "registered",
+      "possibly available",
+      "possibly available",
+      "registered"
+    ],
+    "axeViolations": [],
+    "overflow": false,
+    "errors": [],
+    "sameOriginFailures": [],
+    "apiResponses": [
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=anuwoo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=ralmoo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=lemoru.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=wawoma.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=ferihi.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=wawore.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=runowo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=momosi.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/anuwoo.com",
+        "status": 404
+      },
+      {
+        "url": "https://dns.google/resolve?name=ainala.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=moohee.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=uwoora.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=maluru.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/lemoru.com",
+        "status": 404
+      },
+      {
+        "url": "https://dns.google/resolve?name=mufero.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=walema.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=owirmi.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=wiligo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=ernora.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=oherai.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/ralmoo.com",
+        "status": 404
+      },
+      {
+        "url": "https://dns.google/resolve?name=nolamo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/runowo.com",
+        "status": 404
+      },
+      {
+        "url": "https://dns.google/resolve?name=ligoro.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=lufuma.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/ferihi.com",
+        "status": 404
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=kanawu.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/wawore.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/mufero.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/uwoora.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/owirmi.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/oherai.com",
+        "status": 404
+      },
+      {
+        "url": "https://dns.google/resolve?name=rolama.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/rolama.com",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/linufe.com",
+        "status": 200
+      }
+    ],
+    "serviceWorker": {
+      "scope": "https://govind-s-b.github.io/brand-name-explorer/",
+      "scriptURL": "https://govind-s-b.github.io/brand-name-explorer/sw.js",
+      "state": "activated"
+    },
+    "offlineGeneration": true,
+    "offlineAnalysisAfterFirstUse": true,
+    "shortlistBackupAndImport": true,
+    "cacheClearPreservedShortlist": true,
+    "subpath": "https://govind-s-b.github.io/brand-name-explorer/"
+  },
+  {
+    "profile": "mobile",
+    "liveStatus": "24 results · 24 candidates. RDAP 11 · DNS 24 · 13 skipped · 0 cached.",
+    "statuses": [
+      "possibly available",
+      "possibly available",
+      "registered",
+      "registered",
+      "registered",
+      "possibly available",
+      "registered",
+      "possibly available",
+      "registered",
+      "registered",
+      "registered",
+      "possibly available",
+      "registered",
+      "registered",
+      "registered",
+      "possibly available",
+      "registered",
+      "possibly available",
+      "possibly available",
+      "registered",
+      "registered",
+      "possibly available",
+      "possibly available",
+      "registered"
+    ],
+    "axeViolations": [],
+    "overflow": false,
+    "errors": [],
+    "sameOriginFailures": [],
+    "apiResponses": [
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=moohee.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=anuwoo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=ernora.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=lemoru.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=walema.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=ferihi.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=runowo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=wawoma.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=wawore.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=ralmoo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=momosi.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=ainala.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=uwoora.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/anuwoo.com",
+        "status": 404
+      },
+      {
+        "url": "https://dns.google/resolve?name=maluru.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=mufero.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/lemoru.com",
+        "status": 404
+      },
+      {
+        "url": "https://dns.google/resolve?name=lufuma.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=owirmi.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=ligoro.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=rolama.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://dns.google/resolve?name=oherai.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/runowo.com",
+        "status": 404
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=wiligo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/ralmoo.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/ferihi.com",
+        "status": 404
+      },
+      {
+        "url": "https://dns.google/resolve?name=nolamo.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://cloudflare-dns.com/dns-query?name=kanawu.com&type=NS",
+        "status": 200
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/wawore.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/mufero.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/uwoora.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/owirmi.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/oherai.com",
+        "status": 404
+      },
+      {
+        "url": "https://rdap.verisign.com/com/v1/domain/linufe.com",
+        "status": 200
+      }
+    ],
+    "serviceWorker": {
+      "scope": "https://govind-s-b.github.io/brand-name-explorer/",
+      "scriptURL": "https://govind-s-b.github.io/brand-name-explorer/sw.js",
+      "state": "activated"
+    },
+    "offlineGeneration": true,
+    "offlineAnalysisAfterFirstUse": true,
+    "shortlistBackupAndImport": true,
+    "cacheClearPreservedShortlist": true,
+    "subpath": "https://govind-s-b.github.io/brand-name-explorer/"
+  }
+]

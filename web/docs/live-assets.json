@@ -1,0 +1,98 @@
+{
+  "base": "https://govind-s-b.github.io/brand-name-explorer/",
+  "checkedAt": "2026-11-12T13:18:56.714Z",
+  "allMatchLocalBuild": true,
+  "files": [
+    {
+      "path": "assets/analysis.worker-7N3eWULR.js",
+      "status": 200,
+      "bytes": 21621,
+      "sha256": "cbe3b58ae099279c13ff2649b8c04c38b46cf42dc9d77b14e6ca077862afd096",
+      "contentType": "application/javascript; charset=utf-8"
+    },
+    {
+      "path": "assets/bne-mono-400-Cy94DRbc.woff2",
+      "status": 200,
+      "bytes": 5096,
+      "sha256": "d6020c58160e83f7544bcbb73a17a7633b11ef0f37d503c2f1413f8fc32945db",
+      "contentType": "font/woff2"
+    },
+    {
+      "path": "assets/cmudict-CDVrJOwC.json",
+      "status": 200,
+      "bytes": 2320867,
+      "sha256": "47220b56a05932a55bb744e45e6d72acc43d6d9b51302646418824f28f9f2596",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "path": "assets/funnel-display-500-CacY68Yj.woff2",
+      "status": 200,
+      "bytes": 5496,
+      "sha256": "2eefd868e9dda0a5674299a58135dfbc37f9d4579ffef820b3be6e8d1b200c47",
+      "contentType": "font/woff2"
+    },
+    {
+      "path": "assets/index-CZND0xj_.css",
+      "status": 200,
+      "bytes": 20716,
+      "sha256": "ff2adae6874fbba968ea054b7f0f8f6a5be3878294eb6daa16e3db842747ae2d",
+      "contentType": "text/css; charset=utf-8"
+    },
+    {
+      "path": "assets/index-gkfkdj12.js",
+      "status": 200,
+      "bytes": 27461,
+      "sha256": "67b6f7d915004cc8598135d75e4ca9bfcf5b584e3dd9a03f5c1380a73e062faf",
+      "contentType": "application/javascript; charset=utf-8"
+    },
+    {
+      "path": "assets/inter-400-DGwFTPnX.woff2",
+      "status": 200,
+      "bytes": 6824,
+      "sha256": "f8e92156a3a000de9a704a51e4cd7b0d71d21c017e34327c74d6184566cd845b",
+      "contentType": "font/woff2"
+    },
+    {
+      "path": "assets/lookup.worker-BXK3qfiM.js",
+      "status": 200,
+      "bytes": 26388,
+      "sha256": "637fa85892d4460e41c8eba1e8b47fbb33e07d3cf293032e0cb7f9402a43c2d9",
+      "contentType": "application/javascript; charset=utf-8"
+    },
+    {
+      "path": "cmudict-LICENSE.txt",
+      "status": 200,
+      "bytes": 1754,
+      "sha256": "bd4ce8e44170a5f9f481310ca85c51de3c4f851a65e679b40e603b143bd3542a",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "fonts-LICENSE.txt",
+      "status": 200,
+      "bytes": 13563,
+      "sha256": "d2168f647fa6447cca817a96ddaae541b47319a6ae80ce476dbf487e734f1e1c",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "icon.svg",
+      "status": 200,
+      "bytes": 270,
+      "sha256": "6ffec9a538079841b52631fc5637e880bb85a8da34686862bce13b5e593e338f",
+      "contentType": "image/svg+xml"
+    },
+    {
+      "path": "index.html",
+      "status": 200,
+      "bytes": 13706,
+      "sha256": "e187671ec3210ed4fd2aa0f20bf6375617cc3d765916afa3404811bea26808b9",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "path": "sw.js",
+      "status": 200,
+      "bytes": 1666,
+      "sha256": "3f2e1e64fc0f10adc8275eb5a9ff5705673cabb53aa8dfc23bee690dbd6ee2a7",
+      "contentType": "application/javascript; charset=utf-8"
+    }
+  ]
+}

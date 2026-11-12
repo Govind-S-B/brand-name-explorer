@@ -50,6 +50,10 @@ for (const profile of ["desktop", "mobile"]) {
   );
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
   await page.evaluate(() => navigator.serviceWorker.ready);
+  const serviceWorker = await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    return { scope: registration.scope, scriptURL: registration.active?.scriptURL, state: registration.active?.state };
+  });
   await page.waitForTimeout(500);
   await page.locator("#generate").click();
   await waitDone(page);
@@ -71,6 +75,8 @@ for (const profile of ["desktop", "mobile"]) {
     .first()
     .getAttribute("data-domain");
   await page.evaluate(() => scrollTo(0, 0));
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(300); // Let result fades and the progress meter settle.
   await page.screenshot({
     path: new URL(`screenshots/${prefix}${profile}.png`, root).pathname,
     fullPage: false,
@@ -193,6 +199,7 @@ for (const profile of ["desktop", "mobile"]) {
     errors,
     sameOriginFailures,
     apiResponses,
+    serviceWorker,
     offlineGeneration: true,
     offlineAnalysisAfterFirstUse: true,
     shortlistBackupAndImport: true,
