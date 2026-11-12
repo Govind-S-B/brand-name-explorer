@@ -4,16 +4,20 @@ Live: **https://govind-s-b.github.io/brand-name-explorer/**
 
 ## UX v2 deployment
 
-[Actions run 43241488175](https://github.com/Govind-S-B/brand-name-explorer/actions/runs/43241488175)
-deployed `bc0a5a1` successfully. That commit is the mobile-first browsing feed
-([UX plan](ux-v2.md)), pushed as three commits on top of `c60a909` without
-force-pushing:
+[Actions run 43242790087](https://github.com/Govind-S-B/brand-name-explorer/actions/runs/43242790087)
+deployed `748ae47` successfully. It replaced the first v2 deployment
+([run 43241488175](https://github.com/Govind-S-B/brand-name-explorer/actions/runs/43241488175),
+`bc0a5a1`) with a CSS fix: nearby-spelling names in the name sheet had inherited
+the uppercase section-title style. The mobile-first browsing feed
+([UX plan](ux-v2.md)) was pushed on top of `c60a909` without force-pushing:
 
 | Commit | Change |
 | --- | --- |
 | `c0269a0` | Rebuild the web app as a browsing feed with CLI defaults |
 | `a827fd9` | Update browser verifiers for the v2 IA |
 | `bc0a5a1` | Record v2 verification, measurements and screenshots |
+| `96b27a5` | Record live v2 Pages verification |
+| `748ae47` | Scope name-sheet section titles (style fix), refreshed evidence |
 
 The runner passed the 79 Python tests, the 134 web tests and the production build.
 
@@ -40,11 +44,20 @@ Live screenshots:
 - [390 px feed](screenshots/live-mobile.png) · [name sheet](screenshots/live-mobile-sheet.png) · [Tune](screenshots/live-mobile-tune.png) · [full page](screenshots/live-mobile-full.png)
 - [desktop feed](screenshots/live-desktop.png) · [name sheet](screenshots/live-desktop-sheet.png) · [Tune](screenshots/live-desktop-tune.png)
 
-**Live Lighthouse (mobile).** [Summary](lighthouse-live-mobile-summary.json):
-**performance 100, accessibility 100**, LCP 0.853 s, TBT 32 ms, CLS 0. Two further
-runs gave LCP 0.895 and 0.918 s with TBT 0. The audited transfer is 61,540 bytes:
-42,647 from github.io and the rest from the landing feed's own lookups. v1 measured
-LCP 0.958 s live.
+**Live Lighthouse (mobile).** Over six runs on the live site:
+- **performance 100 and accessibility 100** every time, with CLS 0;
+- LCP 0.85–1.12 s and TBT 0–63 ms.
+
+The last run is in the [summary](lighthouse-live-mobile-summary.json): LCP 1.017 s,
+TBT 63 ms, 66,869 bytes. 42,703 of those bytes come from github.io; the rest is the
+landing feed's own lookups.
+
+LCP equals FCP on the static feed title, so its spread follows github.io
+time-to-first-byte (385 ms in the slowest breakdown, about 2 ms locally). The small
+TBT appears as unattributed tasks around 1 s, when live lookup results render.
+The controlled local preview measures LCP 0.752 s and TBT 0
+([verification](verification.md#bundle-and-load-performance)). v1 measured LCP
+0.958 s live in a single run.
 
 ## v1 deployment (earlier the same day)
 

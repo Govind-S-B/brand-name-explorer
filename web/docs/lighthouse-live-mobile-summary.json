@@ -2,7 +2,7 @@
   "lighthouseVersion": "13.6.0",
   "requestedUrl": "https://govind-s-b.github.io/brand-name-explorer/",
   "finalDisplayedUrl": "https://govind-s-b.github.io/brand-name-explorer/",
-  "fetchTime": "2026-11-12T14:53:49.138Z",
+  "fetchTime": "2026-11-12T15:01:29.177Z",
   "configSettings": {
     "output": [
       "json",
@@ -63,7 +63,7 @@
   "environment": {
     "networkUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Mobile Safari/537.36",
     "hostUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
-    "benchmarkIndex": 4007,
+    "benchmarkIndex": 3919.5,
     "credits": {
       "axe-core": "4.14.0"
     }
@@ -75,11 +75,11 @@
   },
   "metrics": {
     "largest-contentful-paint": {
-      "value": 853.3969999999999,
+      "value": 1016.6709999999999,
       "unit": "millisecond"
     },
     "total-blocking-time": {
-      "value": 32,
+      "value": 62.999999999999886,
       "unit": "millisecond"
     },
     "cumulative-layout-shift": {
@@ -87,23 +87,23 @@
       "unit": "unitless"
     },
     "total-byte-weight": {
-      "value": 61540,
+      "value": 66869,
       "unit": "byte"
     },
     "first-contentful-paint": {
-      "value": 853.3969999999999,
+      "value": 1016.6709999999999,
       "unit": "millisecond"
     },
     "speed-index": {
-      "value": 1466.569008079147,
+      "value": 1720.7531159934042,
       "unit": "millisecond"
     }
   },
   "transferByOrigin": {
-    "https://govind-s-b.github.io": 42647,
-    "https://dns.google": 6930,
-    "https://cloudflare-dns.com": 8603,
-    "https://rdap.verisign.com": 3360,
+    "https://govind-s-b.github.io": 42703,
+    "https://dns.google": 6688,
+    "https://cloudflare-dns.com": 8576,
+    "https://rdap.verisign.com": 8902,
     "null": 0
   }
 }

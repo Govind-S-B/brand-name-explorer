@@ -1,6 +1,6 @@
 {
   "base": "https://govind-s-b.github.io/brand-name-explorer/",
-  "checkedAt": "2026-11-12T14:52:45.332Z",
+  "checkedAt": "2026-11-12T15:00:35.718Z",
   "allMatchLocalBuild": true,
   "files": [
     {
@@ -32,18 +32,18 @@
       "contentType": "font/woff2"
     },
     {
-      "path": "assets/index-BWguVF-A.js",
+      "path": "assets/index-B1pUTyWP.css",
+      "status": 200,
+      "bytes": 24507,
+      "sha256": "b9659bc290362d89e29383ec8a290f8bdbcec74cdde6a832064b7ba9a0231895",
+      "contentType": "text/css; charset=utf-8"
+    },
+    {
+      "path": "assets/index-DtsXMcNI.js",
       "status": 200,
       "bytes": 26283,
       "sha256": "194ce5fe15dbf97c59a93878c313cb49729dbb55780aed732486abe3a6fa2bce",
       "contentType": "application/javascript; charset=utf-8"
-    },
-    {
-      "path": "assets/index-Bx_-zUNL.css",
-      "status": 200,
-      "bytes": 24507,
-      "sha256": "0f02e2a279b0e2648cc7ca50a9f1fec5cb16b41304343195af53dc11f9dcd07e",
-      "contentType": "text/css; charset=utf-8"
     },
     {
       "path": "assets/inter-400-DGwFTPnX.woff2",
@@ -91,14 +91,14 @@
       "path": "index.html",
       "status": 200,
       "bytes": 15823,
-      "sha256": "84528f114c228bb3de70be9413b341f7ca0dc9f77c976e14e71bd5ee65999647",
+      "sha256": "0e1bc83745b59ddc85256a305c59e3330738c241ba324df34d747f2c7d28f60f",
       "contentType": "text/html; charset=utf-8"
     },
     {
       "path": "sw.js",
       "status": 200,
       "bytes": 1696,
-      "sha256": "f3580e19ad098ea2cb865635cd0e76bd3ce6b5ab7438bdd2c7811ea3eec03334",
+      "sha256": "9735856a7e49f9dfd1d4a8fa590e1a07972a72c7c0cd6169c8044ff5479d2c6b",
       "contentType": "application/javascript; charset=utf-8"
     }
   ]
