@@ -1,5 +1,8 @@
 # Inline domain check
 
+Follow-up: [automatic list checks](automatic-list-checks-plan.md) starts checks
+when Nearby, Reverse and Shortlist lists appear; the icon remains for refresh/retry.
+
 Keep the shared name sheet. Group its status pill with a quiet 18 px refresh
 icon inside a 44 px touch target. The accessible name/tooltip says Check, Refresh
 or Retry for the domain. Checking spins the icon (unless reduced motion is on),

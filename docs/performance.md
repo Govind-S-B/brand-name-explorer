@@ -255,3 +255,27 @@ with 200 rendered rows measured 3.055–3.078 MB at 8,000 names. These observati
 establish bounded rows, not a memory improvement. Raw evidence:
 `/private/tmp/bne-inline-memory.json`, `/private/tmp/bne-inline-lighthouse.json`
 and `/private/tmp/bne-inline-check/`.
+
+## Automatic discovery-list checks (2026-11-13)
+
+Compared with `65fc26a` using the same production build and mobile Lighthouse
+harness. Each Lighthouse value is one local observation; there is no speed claim.
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Entry JS gzip | 9,563 B | 9,797 B |
+| All JS gzip | 30,427 B | 30,678 B |
+| CSS gzip | 6,283 B | 6,283 B |
+| Lighthouse performance / accessibility | 100 / 100 | 100 / 100 |
+| Lighthouse LCP / TBT | 752.9 ms / 0 | 753.2 ms / 0 |
+
+Nearby, Reverse references/samples and displayed Shortlist lists now start domain
+checks automatically. Controlled tests confirm recent-cache reopening and repeated
+results make no additional requests, expired domain/DNS cache rechecks, duplicate
+names share a check, and hidden startup Shortlist/hidden Reverse results make no
+requests. Five-minute cache reuse applies to automatic discovery checks; explicit
+refresh still bypasses old evidence. Explore's preference and limits are unchanged.
+No generation, dictionary, font, CSS or runtime dependency change. Heap and
+200/4,000-name throughput were not remeasured for this UI trigger change.
+Evidence: `/private/tmp/bne-auto-lighthouse.json` and the updated
+`/private/tmp/bne-inline-check/` screenshots.

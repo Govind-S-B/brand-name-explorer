@@ -65,6 +65,10 @@ fresh refresh, failures with/without earlier results, offline/retry, and no doma
 control for text references. At 390 px it also checks feed completion/pause/change,
 separate feed counters, close/reopen during a request, mid-request offline, and
 another tab holding the lookup lock. All tested states have zero axe violations.
+The automatic-list scenarios verify Nearby/Reverse/Shortlist statuses before
+opening any name, no requests for hidden startup lists or hidden Reverse results,
+one request per repeated name, recent cache reuse, stale domain/DNS evidence
+refreshing after reload, and offline Reverse results checking on reconnect.
 Screenshots live outside the repo in `/private/tmp/bne-inline-check` by default.
 
 Set `HEAP_SNAPSHOTS=1` for `measure:memory` to also save CDP heap snapshots beside

@@ -24,3 +24,19 @@ unchecked. Verify automatic Nearby/Reverse/Shortlist checks, deduplication, fres
 and stale cache, hidden lists, offline recovery, navigation, manual refresh and
 concurrent Explore. Run unit/build/browser/axe checks at 360/390/desktop, record
 bundle impact, publish and verify the live 390 px flow with actual lookups.
+
+## Verification
+
+139 unit tests pass. Shared-name and automatic-check browser suites pass at
+360, 390 and 1440 px, with zero axe violations. Controlled tests verify statuses
+before opening results, recent cache reuse without network, stale domain and DNS
+cache refresh, hidden lists, duplicate names, offline reconnect, and concurrent
+Explore completion/pause/replacement. The latter exposed and now covers a queue
+ordering issue: a queued list batch must yield to a newly queued feed before it
+opens a replacement lookup session.
+
+Real-provider desktop/mobile smoke and pause/reload/offline/resume checks pass.
+Automatic completion during an accessibility audit now waits for statuses and
+the existing arrival animations to settle before measuring contrast. Immediate
+name-sheet-to-Tune keyboard navigation is covered: the old sheet's queued close
+event cannot steal focus, and closing Tune returns to its mood chip.

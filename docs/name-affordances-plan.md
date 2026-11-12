@@ -1,5 +1,8 @@
 # Shared name rows and modal — implementation plan
 
+Follow-up: [automatic list checks](automatic-list-checks-plan.md) supersedes this
+plan's original rule that browsing suggestions makes no domain requests.
+
 Use the existing Explore row and name sheet as the standard. Preserve the v2
 appearance and the heading mood chip. No changes to generation or ranking.
 
