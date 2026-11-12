@@ -14,6 +14,7 @@ npm run test:resume
 npm run test:browser
 npm run test:names
 npm run test:check
+npm run test:history
 node web/scripts/verify-feed.mjs
 node web/scripts/design-screens.mjs /tmp/bne-screens
 npm run measure:memory -- /tmp/bne-memory.json
@@ -71,9 +72,19 @@ one request per repeated name, recent cache reuse, stale domain/DNS evidence
 refreshing after reload, and offline Reverse results checking on reconnect.
 Screenshots live outside the repo in `/private/tmp/bne-inline-check` by default.
 
+`test:history` checks fresh seeds across three reloads, history timestamps and
+filtering, details without execution, exact Explore/Reverse **Run again** (including
+custom dials, blend, structure, long seed, page and supplied pronunciation), the
+100-entry bound, Clear history, corrupt data, unavailable storage, compact tabs,
+44 px controls, dialog focus and zero axe violations at 360, 390 and 1440 px.
+It defaults to port 4175 and `/private/tmp/bne-history` screenshots. Other browser
+fixtures explicitly disable random-on-reload to preserve their seeded workload.
+The Node suite now has 143 passing tests, including four history model tests.
+
 Set `HEAP_SNAPSHOTS=1` for `measure:memory` to also save CDP heap snapshots beside
 the JSON report. The report separates V8 used heap, backing storage and embedder
 heap after explicit GC; these are not process RSS or physical-phone measurements.
+The memory harness also measures 100 history entries stored, opened and closed.
 
 ## Migration result
 

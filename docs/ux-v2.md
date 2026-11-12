@@ -12,7 +12,7 @@ precise states), not a template for density.
 | --- | --- | --- |
 | Mood, opening, syllables, ending | calm, any, automatic, from mood | same |
 | Length | 6 | same |
-| Seed | 42 | same |
+| Seed | 42 | fresh random seed on each page load; optional fixed-seed reloads in Settings |
 | Check .com | on | on, starts automatically on load |
 | Hide registered | **on** | **on**: the feed lists possibly available names only |
 | Names per page | 200 | **20** (50 / 200 / 1,000 / 4,000 available) |
@@ -22,6 +22,9 @@ Preferences use `bne.preferences.v2`; no old-key migrations run.
 ## Information architecture
 
 There are three destinations: a bottom tab bar on phones and header tabs on desktop.
+Only the selected tab shows its label; the other two show their icons. All retain
+accessible names and 44 px targets. Small History, Settings and GitHub controls
+sit in the header. GitHub opens this repository in a new tab.
 
 1. **Explore**: the feed.
    - **Title** reads from the mood ("Names that feel ● calm ▾"). The mood is a
@@ -63,6 +66,33 @@ There are three destinations: a bottom tab bar on phones and header tabs on desk
 | Substitutions | Name sheet › Nearby spellings; Reverse › Nearby spellings |
 | Copy, open domain, save | Name sheet actions; save is also on every row |
 | Shortlist backup and import | Shortlist header |
+| Past configurations, timestamps and Run again | Header › History |
+| New seed on reload; Clear history | Header › Settings |
+
+### Search history
+
+Every fresh page load uses a new random integer seed and resets to page one,
+retaining the other preferences. Tuning, pagination and pause/resume keep that
+seed. Settings can disable random seeds on reload; the CLI retains seed 42.
+
+History always records the latest 100 searches locally: page loads, submitted
+Explore/Reverse searches, applied settings, Explore similar and Load more. A
+record stores the triggering action, timestamp, exact seed, generation/lookup
+controls, page/count, and Reverse query/pronunciation when supplied. Background
+checks, provider retries and simply opening a name do not add entries. History
+stores configurations, not result lists or domain responses.
+
+Entries show relative time and a short configuration summary. Opening one only
+reveals its exact time and parameters. **Run again →** applies its saved settings
+and seed and runs Explore or Reverse, adding a new timestamped entry. This also
+works when random seeds on reload are enabled. Domain results still follow the
+normal cache/fresh-check rules and may change over time. Search filters entries
+by query, mood, seed or other saved text. Settings offers **Clear history**, with
+no recording toggle; subsequent searches are recorded again.
+
+History's view code loads on demand and its rows are released when closed.
+Malformed stored entries are discarded. If storage is unavailable, generation
+and in-memory history still work and a visible message explains the limitation.
 
 ### Tune
 

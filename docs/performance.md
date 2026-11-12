@@ -279,3 +279,57 @@ No generation, dictionary, font, CSS or runtime dependency change. Heap and
 200/4,000-name throughput were not remeasured for this UI trigger change.
 Evidence: `/private/tmp/bne-auto-lighthouse.json` and the updated
 `/private/tmp/bne-inline-check/` screenshots.
+
+## Fresh seeds, local history and compact navigation (2026-11-13)
+
+Compared with `513c4bd`, rebuilt in an isolated temporary directory. Both memory
+and cold/repeat/offline load use the same current harness, local gzip preview,
+seed 42 and checks disabled. Memory uses 390 px Chrome and forced GC. Load uses
+CDP 4G/4× CPU throttling. Lighthouse uses its separate standard mobile simulation;
+its before value is the preceding recorded audit. These are individual local
+observations, not statistical speed claims or measurements on a physical phone.
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Entry JS gzip | 9,797 B | 11,296 B |
+| All JS gzip | 30,678 B | 33,548 B |
+| CSS gzip | 6,283 B | 6,567 B |
+| Cold usable names, CDP harness | 542 ms | 554 ms |
+| Cold LCP / observed TBT, CDP harness | 460 ms / 0 | 452 ms / 0 |
+| Cold page-resource transfer | 47,708 B | 49,491 B |
+| Cold all-context response bodies, including workers/SW | 69,041 B | 74,007 B |
+| Repeat / offline usable names | 104 / 88 ms | 99 / 89 ms |
+| Landing main V8 heap | 2.163 MB | 2.186 MB |
+| Landing lookup-worker V8 heap | 0.389 MB | 0.389 MB |
+| Analysis-worker V8 + backing storage | 2.266 MB | 2.266 MB |
+| 8,000-name main V8 heap | 2.871 MB | 3.047 MB |
+| Rendered feed rows at 8,000-name heap checkpoint | 200 | 200 |
+| Mobile Lighthouse performance / accessibility | 100 / 100 | 100 / 100 |
+| Mobile Lighthouse LCP / TBT | 753.2 ms / 0 | 754.6 ms / 0 |
+
+With 100 saved history entries, main V8 heap is 2.422 MB before opening History,
+2.549 MB while open and 2.540 MB after closing. Its open-view embedder heap is
+3.780 MB and falls to 1.935 MB on close; all history rows are removed. The lazy
+view module and browser formatting code stay loaded. Details render only when
+expanded, rather than creating parameter fields for all 100 entries upfront.
+The independent feed check still exports 8,000 distinct names with 100 rendered
+rows at its scroll-back checkpoint and zero axe violations.
+
+History's view code executes on first opening; the existing service worker
+caches it in the background for offline use. No framework, runtime dependency,
+font, dictionary, generation algorithm or lookup scheduler changed. Generation
+and 200/4,000-name public-provider throughput were not rebenchmarked for this
+feature; no search-speed improvement is claimed. Exact seeded Explore/Reverse
+reruns, saved-page replay, automatic list checks and real-provider browser tests
+pass. Fixed-seed verification scripts now explicitly disable random reloads.
+
+All 54 baseline/after screenshots were captured at 360, 390 and desktop widths.
+The expected visual changes are the utility icons, inactive tab labels and the
+offline pill wrapping when needed. Cropped Tune/Reverse content is pixel-identical
+at all three sizes, as are the 360 px and desktop feeds. The 390 px feed differs
+by 40 pixels; name-sheet differences are check timestamps/rendering. History and
+Settings use the existing sheet styling. Zero axe violations in tested states.
+
+Raw evidence is outside the tree: `/private/tmp/bne-history-{before,after}/`,
+`bne-history-{memory-before,memory-final,visual,lighthouse}.json` and
+`bne-history-load-{before,after}.log` under `/private/tmp/`.
