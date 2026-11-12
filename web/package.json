@@ -1,0 +1,28 @@
+{
+  "name": "brand-name-explorer-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build && node scripts/build-sw.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "tsx --test tests/*.test.ts",
+    "fixtures": "python3 scripts/fixtures.py",
+    "benchmark:browser": "node scripts/browser-throughput.mjs",
+    "test:browser": "node scripts/verify-browser.mjs",
+    "preview:pages": "node scripts/preview.mjs",
+    "test:resume": "node scripts/verify-resume.mjs",
+    "benchmark:production": "node scripts/benchmark-production.mjs",
+    "measure:load": "node scripts/measure-load.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@types/node": "^24.0.0",
+    "lighthouse": "^13.6.0",
+    "playwright": "^1.56.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.2.0"
+  }
+}

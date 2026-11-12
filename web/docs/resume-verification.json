@@ -1,0 +1,18 @@
+{
+  "mockedNetwork": true,
+  "pauseBeforeComplete": 6,
+  "reloadResume": true,
+  "orderedPagesMatchPython": true,
+  "savedPageNetworkCalls": 0,
+  "refreshRefetched": true,
+  "offlineResume": true,
+  "legacyStyleUI": true,
+  "legacyLimitsRestoredOnReload": true,
+  "keyboardTabs": true,
+  "peakRdap": 2,
+  "stats": {
+    "dns": 258,
+    "rdap": 170
+  },
+  "errors": []
+}

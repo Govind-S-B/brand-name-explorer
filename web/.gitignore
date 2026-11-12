@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.test-results/
+.vite/
+*progress.txt
+*progress.jsonl
+docs/browser-throughput-results.json
+docs/browser-throughput-followup.json
+docs/lighthouse-*.report.json
+docs/lighthouse-*.report.html

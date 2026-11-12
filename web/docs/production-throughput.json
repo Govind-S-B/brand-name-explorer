@@ -1,0 +1,26 @@
+[
+  {
+    "profile": "desktop",
+    "available": 200,
+    "seconds": 18.646,
+    "requests": {
+      "rdap": 220,
+      "dns": 476
+    },
+    "status": "200 results · 476 candidates · 200 possible matches. RDAP 220 · DNS 476 · 256 skipped · 0 cached.",
+    "sameOrderedNamesAsPython": true,
+    "allAvailableRdapConfirmed": true
+  },
+  {
+    "profile": "mobile-slow4g",
+    "available": 200,
+    "seconds": 20.185,
+    "requests": {
+      "rdap": 221,
+      "dns": 476
+    },
+    "status": "200 results · 476 candidates · 200 possible matches. RDAP 221 · DNS 476 · 255 skipped · 0 cached.",
+    "sameOrderedNamesAsPython": true,
+    "allAvailableRdapConfirmed": true
+  }
+]
