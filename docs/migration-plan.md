@@ -1,6 +1,7 @@
 # Lean TypeScript migration
 
-Status: implemented and locally verified; publication verification follows. Branch: `lean-refactor`.
+Status: implemented, verified, merged to `main`, pushed and deployed. Work was
+committed on `lean-refactor` in logical steps before a fast-forward merge.
 
 ## Contract and architecture
 

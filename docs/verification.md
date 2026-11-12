@@ -69,3 +69,22 @@ heap after explicit GC; these are not process RSS or physical-phone measurements
   unchanged. Advanced's removed Original Engine control is the deliberate exception.
 - Final local Lighthouse: performance 100, accessibility 100, TBT 0; see
   [performance.md](performance.md) for the full measurements and limits.
+
+## Published application
+
+[Pages run 43258558427](https://github.com/Govind-S-B/brand-name-explorer/actions/runs/43258558427)
+succeeded from `f49550aca3895823f3d179dc949ebb6e86e1cb51`, including npm clean
+install, all 130 tests and the production build on Node 24. The live URL is
+https://govind-s-b.github.io/brand-name-explorer/.
+
+Post-deployment verification fetched **all 14 published files**, including lazy
+workers, dictionary and service worker: HTTP 200 and exact SHA-256 equality to
+the local production build. Live desktop and 390 px Chrome tests completed real
+RDAP/DoH lookups, name and Tune sheets, Reverse, portable shortlist backup/import,
+offline generation and offline dictionary analysis: zero page errors, failed
+same-origin assets, overflow or axe violations.
+
+The [assets release](https://github.com/Govind-S-B/brand-name-explorer/releases/tag/assets)
+hosts four v2 README PNGs. GitHub was used directly without an additional image
+hosting account. Those captures use deterministic mocked provider answers; they
+illustrate UI state rather than certify current availability of example names.

@@ -135,7 +135,7 @@ names or making lookups. Use `--help` to see the same control hierarchy.
 - **Lookup and cache:** `--check-com` / `--no-check-com`, `--cache`, and `--refresh`
   decide how registration information is obtained. `--lookup-workers` and
   `--lookup-rate` control concurrency and the shared request-rate ceiling;
-  they do not change the generated sequence. See [lookup performance](domain-lookup.md).
+  they do not change the generated sequence. See [lookup performance](performance.md).
 - **Availability filtering:** `--hide-registered` / `--no-hide-registered` decide
   whether registered domains appear. No lookup bypasses this filter too.
 - **Pagination:** `--count` and `--page` slice the chosen results; they do not alter

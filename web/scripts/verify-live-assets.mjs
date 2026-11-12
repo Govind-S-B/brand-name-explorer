@@ -1,5 +1,5 @@
 /** Verify every published asset against a clean local build, including lazy assets. */
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 const base = process.env.BASE_URL || "https://govind-s-b.github.io/brand-name-explorer/";
@@ -23,5 +23,6 @@ for (const path of await walk(root)) {
   files.push({ path, status: response.status, bytes: actual.length, sha256: hash(actual), contentType: response.headers.get("content-type") });
 }
 const result = { base, checkedAt: new Date().toISOString(), allMatchLocalBuild: true, files };
+await mkdir(new URL("../docs/",import.meta.url),{recursive:true});
 await writeFile(new URL("../docs/live-assets.json", import.meta.url), JSON.stringify(result, null, 2) + "\n");
 console.log(`Verified ${files.length} live files: HTTP 200 and exact SHA-256 match to local build`);

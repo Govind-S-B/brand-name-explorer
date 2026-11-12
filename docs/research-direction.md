@@ -216,9 +216,9 @@ registration does not silently select which patterns count as successful.
 
 Related projects provide complementary methods: Wuggy for structural matching,
 UniPseudo for transitions learned from word lists, Lexifer for explicit sound
-rules, and LEX-ICON for sound–meaning evaluation. [1][2][4][5] See the
-[project comparison](project-comparison.md) for concrete examples and the overlap
-with broader LLM naming workflows.
+rules, and LEX-ICON for sound–meaning evaluation. [1][2][4][5] The sources below
+provide the current reference points; these research leads are not runtime
+dependencies.
 
 ## Starting references and projects
 
