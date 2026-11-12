@@ -1,6 +1,15 @@
 # Local lookup state and generated output
-domain_cache.json*
+domain_cache*
 *_cache.json*
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-wal
+*.db-shm
 *_sessions/
 .cache/
 names*.txt
@@ -12,3 +21,11 @@ __pycache__/
 *.py[cod]
 .venv/
 .DS_Store
+node_modules/
+dist/
+.vite/
+.env
+.env.*
+!.env.example
+*.pem
+*.key

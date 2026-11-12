@@ -18,11 +18,11 @@ import itertools
 import random
 import json
 import sys
-import time
+import sqlite3
+import contextlib
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from domain_lookup import DomainLookup, LookupFailure, load_cache
 
 from sound_profiles import DIALS, MOODS, MoodSpace
 
@@ -123,76 +123,11 @@ def page_bounds(count, page, capacity):
     return start, page * count
 
 
-def check_com(domain):
-    """Only definitive registry responses are cacheable; failures stay unknown."""
-    request = Request(f"https://rdap.verisign.com/com/v1/domain/{domain}",
-                      headers={"Accept": "application/rdap+json", "User-Agent": "FauxNameGenerator/1.0"})
-    try:
-        with urlopen(request, timeout=15) as response:
-            record = json.load(response)
-        if isinstance(record, dict) and str(record.get("ldhName", "")).lower() == domain:
-            return "registered"
-        return "unknown (unexpected registry response)"
-    except HTTPError as error:
-        error.close()
-        if error.code == 404:
-            return "possibly available"
-        if error.code == 429:
-            return "unknown (rate limited)"
-        return f"unknown (HTTP {error.code})"
-    except (URLError, TimeoutError, OSError, ValueError):
-        return "unknown (lookup failed)"
-
-
-def load_cache(path):
-    if not path.exists():
-        return {}
-    data = json.loads(path.read_text())
-    if not isinstance(data, dict) or any(
-        not isinstance(record, dict)
-        or record.get("status") not in ("registered", "possibly available")
-        or not isinstance(record.get("checked_at"), str)
-        for record in data.values()
-    ):
-        raise ValueError(f"Invalid cache file: {path}")
-    return data
-
-
 def save_cache(path, cache):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(cache, indent=2) + "\n")
     temporary.replace(path)
-
-
-class LookupFailure(Exception):
-    pass
-
-
-class DomainLookup:
-    def __init__(self, path):
-        self.path = path
-        self.cache = load_cache(path)
-        self.requested = False
-
-    def get(self, domain, fresh_since=None):
-        record = self.cache.get(domain)
-        if record and (fresh_since is None or record["checked_at"] >= fresh_since):
-            return [domain, record["status"], "cache", record["checked_at"]]
-        for attempt in range(3):
-            if attempt:
-                time.sleep(2 ** attempt)
-            elif self.requested:
-                time.sleep(1)
-            status = check_com(domain)
-            self.requested = True
-            if status in ("registered", "possibly available"):
-                checked_at = datetime.now(timezone.utc).isoformat()
-                self.cache[domain] = {"status": status, "checked_at": checked_at}
-                save_cache(self.path, self.cache)
-                return [domain, status, "live", checked_at]
-        raise LookupFailure(f"{domain}: {status} after 3 attempts. "
-                            "Progress saved; rerun without --refresh to retry this domain.")
 
 
 class LegacySpace:
@@ -210,30 +145,92 @@ class LegacySpace:
         return f"style={self.style} length={self.length} seed={self.seed}"
 
 
+class SavedMatches:
+    """Read only the requested saved page; keep newly appended rows in memory."""
+    def __init__(self, path, count):
+        self.path, self.count, self.added = path, count, []
+
+    def __len__(self):
+        return self.count + len(self.added)
+
+    def append(self, row):
+        self.added.append(row)
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            index = index + len(self) if index < 0 else index
+            if not 0 <= index < len(self):
+                raise IndexError(index)
+            return self[index:index+1][0]
+        start, stop, step = index.indices(len(self))
+        if step != 1:
+            return [self[i] for i in range(start, stop, step)]
+        rows = []
+        if start < min(stop, self.count):
+            with contextlib.closing(sqlite3.connect(self.path)) as db:
+                rows = [json.loads(row[0]) for row in db.execute(
+                    'SELECT row FROM matches WHERE idx>=? AND idx<? ORDER BY idx',
+                    (start, min(stop, self.count)))]
+            if any(not isinstance(row, list) or len(row) != 4 or row[1] != 'possibly available' for row in rows):
+                raise ValueError(f'Invalid saved matches: {self.path}')
+        if stop > self.count:
+            rows.extend(self.added[max(0, start-self.count):stop-self.count])
+        return rows
+
+
 class BrowseSession:
     """Persist the checked prefix and available results, independent of page size."""
-    def __init__(self, cache_path, style="calm", seed=42, length=None, refresh=False, space=None):
+    def __init__(self, cache_path, style="calm", seed=42, length=None, refresh=False, space=None,
+                 workers=32, rate=160.0):
         self.space = space if space is not None else LegacySpace(style, seed, length)
         self.capacity = self.space.capacity
         settings = self.space.settings
         key = hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()
         self.path = cache_path.parent / (cache_path.stem + "_sessions") / (key + ".json")
-        self.lookup = DomainLookup(cache_path)
-        if self.path.exists() and not refresh:
-            self.state = json.loads(self.path.read_text())
+        self.lookup = None
+        self.progress_path = self.path.with_suffix('.sqlite3')
+        self.progress_path.parent.mkdir(parents=True, exist_ok=True)
+        with contextlib.closing(sqlite3.connect(self.progress_path)) as db:
+            db.execute('CREATE TABLE IF NOT EXISTS progress (id INTEGER PRIMARY KEY, state TEXT NOT NULL)')
+            db.execute('CREATE TABLE IF NOT EXISTS matches (idx INTEGER PRIMARY KEY, row TEXT NOT NULL)')
+            record = db.execute('SELECT state FROM progress WHERE id=1').fetchone()
+            if record and not refresh:
+                self.state = json.loads(record[0])
+                if not isinstance(self.state, dict):
+                    raise ValueError(f'Invalid browsing progress: {self.progress_path}')
+                count, first, last = db.execute('SELECT COUNT(*), MIN(idx), MAX(idx) FROM matches').fetchone()
+                if count and (first != 0 or last != count-1):
+                    raise ValueError(f'Invalid match index: {self.progress_path}')
+                self.state['matches'] = SavedMatches(self.progress_path, count)
+            elif self.path.exists() and not refresh:
+                self.state = json.loads(self.path.read_text())
+            else:
+                self.state = {'settings': settings, 'cursor': 0, 'matches': [],
+                              'fresh_since': datetime.now(timezone.utc).isoformat() if refresh else None}
             state = self.state
-            if (not isinstance(state, dict) or state.get("settings") != settings
-                    or not isinstance(state.get("cursor"), int)
-                    or not 0 <= state["cursor"] <= self.capacity
-                    or not isinstance(state.get("matches"), list)
-                    or len(state["matches"]) > state["cursor"]
-                    or any(not isinstance(row, list) or len(row) != 4
-                           or row[1] != "possibly available" for row in state["matches"])):
-                raise ValueError(f"Invalid browsing progress: {self.path}")
-        else:
-            self.state = {"settings": settings, "cursor": 0, "matches": [],
-                          "fresh_since": datetime.now(timezone.utc).isoformat() if refresh else None}
-            save_cache(self.path, self.state)
+            if (not isinstance(state, dict) or state.get('settings') != settings
+                    or not isinstance(state.get('cursor'), int)
+                    or not 0 <= state['cursor'] <= self.capacity
+                    or not isinstance(state.get('matches'), (list, SavedMatches))
+                    or len(state['matches']) > state['cursor']
+                    or (isinstance(state['matches'], list) and any(not isinstance(row, list) or len(row) != 4
+                           or row[1] != 'possibly available' for row in state['matches']))):
+                raise ValueError(f'Invalid browsing progress: {self.path}')
+            self.saved_matches = len(state['matches']) if record and not refresh else 0
+            if not record or refresh:
+                with db:
+                    db.execute('DELETE FROM matches')
+                    self._checkpoint(db)
+        self.lookup = DomainLookup(cache_path, workers=workers, rate=rate)
+
+    def _checkpoint(self, db):
+        matches = self.state['matches']
+        with db:
+            db.executemany('INSERT INTO matches VALUES (?, ?)',
+                           ((i, json.dumps(matches[i])) for i in range(self.saved_matches, len(matches))))
+            state = {k: v for k, v in self.state.items() if k != 'matches'}
+            db.execute('INSERT OR REPLACE INTO progress VALUES (1, ?)', (json.dumps(state),))
+        self.saved_matches = len(matches)
 
     def page(self, count, page):
         start, stop = page_bounds(count, page, self.capacity)
@@ -244,17 +241,30 @@ class BrowseSession:
             return
         names = itertools.islice(self.space.names(),
                                  self.state["cursor"], None)
-        for name in names:
-            row = self.lookup.get(name.lower() + ".com", self.state.get("fresh_since"))
-            available = row[1] == "possibly available"
-            if available:
-                matches.append(row)
-            self.state["cursor"] += 1
-            save_cache(self.path, self.state)
-            if available and len(matches) > start:
-                yield row
-            if len(matches) >= stop:
-                return
+        rows = self.lookup.many((name.lower() + '.com' for name in names),
+                                self.state.get('fresh_since'), window=lambda: stop-len(matches))
+        db = sqlite3.connect(self.progress_path)
+        try:
+            for row in rows:
+                available = row[1] == 'possibly available'
+                if available:
+                    matches.append(row)
+                self.state['cursor'] += 1
+                # Append progress rather than rewriting every previous match.
+                # Undisplayed prefixes can commit in batches; displayed rows
+                # are committed before yielding, preserving crash-safe pages.
+                if (available and len(matches) > start) or self.state['cursor'] % 256 == 0:
+                    self._checkpoint(db)
+                if available and len(matches) > start:
+                    yield row
+                if len(matches) >= stop:
+                    return
+        finally:
+            rows.close()
+            try:
+                self._checkpoint(db)
+            finally:
+                db.close()
 
     def summary(self, count, page):
         found = len(self.state["matches"])
@@ -287,6 +297,10 @@ def build_parser():
     lookup.add_argument("--cache", type=Path, default=Path(__file__).resolve().with_name("domain_cache.json"),
                         help="domain cache; progress is in a sibling <cache-stem>_sessions folder")
     lookup.add_argument("--refresh", action="store_true", help="rebuild this filtered session with fresh lookups; pages may change")
+    lookup.add_argument('--lookup-workers', type=int, default=32, metavar='1..64',
+                        help='maximum concurrent registry requests (default: 32)')
+    lookup.add_argument('--lookup-rate', type=float, default=160.0, metavar='RPS',
+                        help='shared request-rate ceiling, >0 to 320 (default: 160); slows on throttling')
     filtering = parser.add_argument_group("Availability filtering")
     filtering.add_argument("--hide-registered", "--exclude-registered", action=argparse.BooleanOptionalAction,
                            default=True, help="show possibly available domains only (default: on)")
@@ -376,23 +390,33 @@ def main():
         return
     print("domain\tstatus\tsource\tchecked_at_utc", flush=True)
     session = None
+    lookup = None
+    rows = None
     shown = 0
     try:
         if filtered:
-            session = BrowseSession(args.cache, refresh=args.refresh, space=space)
+            session = BrowseSession(args.cache, refresh=args.refresh, space=space,
+                                    workers=args.lookup_workers, rate=args.lookup_rate)
+            lookup = session.lookup
             rows = session.page(args.count, args.page)
         else:
-            lookup = DomainLookup(args.cache)
+            lookup = DomainLookup(args.cache, workers=args.lookup_workers, rate=args.lookup_rate)
             fresh_since = datetime.now(timezone.utc).isoformat() if args.refresh else None
             names = itertools.islice(space.names(), start, stop)
-            rows = (lookup.get(name.lower() + ".com", fresh_since) for name in names)
+            rows = lookup.many((name.lower() + ".com" for name in names), fresh_since)
         for row in rows:
             print("\t".join(row), flush=True)
             shown += 1
-    except (LookupFailure, OSError, ValueError, KeyboardInterrupt) as error:
+    except (LookupFailure, OSError, ValueError, sqlite3.Error, KeyboardInterrupt) as error:
         if session:
             print(session.summary(args.count, args.page), file=sys.stderr)
         parser.exit(1, f"Stopped after {shown} displayed results. {error or 'Interrupted; rerun to resume.'}\n")
+    finally:
+        if rows is not None:
+            rows.close()
+        if lookup is not None:
+            lookup.close()
+            print(lookup.summary(), file=sys.stderr)
     if session:
         print(session.summary(args.count, args.page), file=sys.stderr)
         if shown == 0:

@@ -4,9 +4,13 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from urllib.error import HTTPError
 
 import name_generator as g
+import domain_lookup as dl
+
+
+def result(status):
+    return dl.Result(status=status) if status in dl.SUCCESS else dl.Result(error=status, retryable=True)
 
 
 class GeneratorTests(unittest.TestCase):
@@ -43,10 +47,10 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(first + second, g.generate(count=14))
 
     def test_registry_http_responses(self):
-        for code, expected in [(404, 'possibly available'), (429, 'unknown (rate limited)'),
-                               (500, 'unknown (HTTP 500)')]:
-            with patch.object(g, 'urlopen', side_effect=HTTPError('url', code, '', {}, None)):
-                self.assertEqual(g.check_com('example.com'), expected)
+        self.assertEqual(dl.interpret_response(404, b'{"errorCode":404}').status, 'possibly available')
+        self.assertTrue(dl.interpret_response(429, b'').throttled)
+        self.assertTrue(dl.interpret_response(500, b'').retryable)
+        self.assertFalse(dl.interpret_response(404, b'<html>oops</html>').status)
 
 
 class BrowseTests(unittest.TestCase):
@@ -58,12 +62,16 @@ class BrowseTests(unittest.TestCase):
         self.domains = [name.lower() + '.com' for name in self.names]
         self.statuses = {domain: 'registered' if index % 2 == 0 else 'possibly available'
                          for index, domain in enumerate(self.domains)}
-        self.check = patch.object(g, 'check_com', side_effect=lambda domain: self.statuses[domain]).start()
+        self.check = patch.object(dl.RdapClient, 'get', side_effect=lambda domain: result(self.statuses[domain])).start()
         self.addCleanup(patch.stopall)
-        patch.object(g.time, 'sleep').start()
+        patch.object(dl.DohResolver, 'get', return_value=dl.DnsResult('no_ns', 300)).start()
+        patch.object(dl.RateLimiter, 'reserve', return_value=0).start()
+        patch.object(dl.RateLimiter, 'pause').start()
 
     def session(self, refresh=False):
-        return g.BrowseSession(self.cache, 'calm', 42, 2, refresh)
+        session = g.BrowseSession(self.cache, 'calm', 42, 2, refresh, workers=1)
+        self.addCleanup(session.lookup.close)
+        return session
 
     def test_pages_resume_without_duplicate_lookups(self):
         first = list(self.session().page(3, 1))
@@ -91,6 +99,7 @@ class BrowseTests(unittest.TestCase):
 
     def test_existing_global_cache_is_reused(self):
         lookup = g.DomainLookup(self.cache)
+        self.addCleanup(lookup.close)
         for domain in self.domains[:6]:
             lookup.get(domain)
         self.check.reset_mock()
@@ -101,7 +110,7 @@ class BrowseTests(unittest.TestCase):
     def test_failed_lookup_retries_and_resumes_same_position(self):
         failed = self.domains[4]
         def check(domain):
-            return 'unknown (rate limited)' if domain == failed else self.statuses[domain]
+            return result('unknown (rate limited)' if domain == failed else self.statuses[domain])
         self.check.side_effect = check
         session = self.session()
         displayed = []
@@ -114,7 +123,7 @@ class BrowseTests(unittest.TestCase):
         resumed = self.session()
         self.assertEqual(resumed.state['cursor'], 4)
         self.check.reset_mock()
-        self.check.side_effect = lambda domain: self.statuses[domain]
+        self.check.side_effect = lambda domain: result(self.statuses[domain])
         complete = list(resumed.page(3, 1))
         self.assertEqual(len(complete), 3)
         self.assertEqual(self.check.call_args_list[0].args[0], failed)
@@ -124,6 +133,7 @@ class BrowseTests(unittest.TestCase):
         original = list(self.session().page(2, 1))
         self.statuses[self.domains[1]] = 'registered'
         lookup = g.DomainLookup(self.cache)
+        self.addCleanup(lookup.close)
         lookup.get(self.domains[1], fresh_since='9999')
         stable = list(self.session().page(2, 1))
         self.assertEqual([r[0] for r in stable], [r[0] for r in original])
@@ -137,19 +147,19 @@ class BrowseTests(unittest.TestCase):
 
     def test_interrupted_refresh_keeps_freshness_requirement(self):
         list(self.session().page(3, 1))
-        self.check.side_effect = lambda domain: ('unknown (lookup failed)' if domain == self.domains[2]
+        self.check.side_effect = lambda domain: result('unknown (lookup failed)' if domain == self.domains[2]
                                                 else self.statuses[domain])
         with self.assertRaises(g.LookupFailure):
             list(self.session(refresh=True).page(3, 1))
         self.check.reset_mock()
-        self.check.side_effect = lambda domain: self.statuses[domain]
+        self.check.side_effect = lambda domain: result(self.statuses[domain])
         list(self.session().page(3, 1))
         self.assertEqual(self.check.call_args_list[0].args[0], self.domains[2])
         self.assertEqual(self.check.call_count, 4)
 
     def run_cli(self, flags):
         out, err = io.StringIO(), io.StringIO()
-        with patch('sys.argv', ['name_generator.py', '--cache', str(self.cache)] + flags), \
+        with patch('sys.argv', ['name_generator.py', '--lookup-workers', '1', '--cache', str(self.cache)] + flags), \
              contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             g.main()
         return out.getvalue(), err.getvalue()
@@ -182,9 +192,9 @@ class BrowseTests(unittest.TestCase):
 
     def test_cli_failure_is_error_not_domain_row(self):
         self.check.side_effect = None
-        self.check.return_value = 'unknown (lookup failed)'
+        self.check.return_value = result('unknown (lookup failed)')
         out, err = io.StringIO(), io.StringIO()
-        with patch('sys.argv', ['name_generator.py', '--cache', str(self.cache)]), \
+        with patch('sys.argv', ['name_generator.py', '--lookup-workers', '1', '--cache', str(self.cache)]), \
              contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             with self.assertRaises(SystemExit) as exit:
                 g.main()

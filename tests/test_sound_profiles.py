@@ -8,6 +8,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 import name_generator as g
+import domain_lookup as dl
+
+
+def lookup_result(status):
+    return dl.Result(status=status) if status in dl.SUCCESS else dl.Result(error=status, retryable=True)
 from sound_profiles import MOODS, MoodSpace, resolve_profile
 
 
@@ -16,6 +21,16 @@ def take(space, count):
 
 
 class SoundProfileTests(unittest.TestCase):
+    def setUp(self):
+        resolver = patch.object(dl.DohResolver, 'get', return_value=dl.DnsResult('no_ns', 300))
+        resolver.start()
+        self.addCleanup(resolver.stop)
+
+    def session(self, *args, **kwargs):
+        session = g.BrowseSession(*args, **kwargs)
+        self.addCleanup(session.lookup.close)
+        return session
+
     def test_exact_length_and_unique_for_every_mood(self):
         for mood in MOODS:
             names = take(MoodSpace(mood), 300)
@@ -76,39 +91,39 @@ class SoundProfileTests(unittest.TestCase):
             self.assertGreater(direction * (scores[1] - scores[0]), .04, (dial, scores))
 
     def test_mood_sessions_resume_and_share_domain_cache(self):
-        with tempfile.TemporaryDirectory() as folder, patch.object(g.time, 'sleep'):
+        with tempfile.TemporaryDirectory() as folder, patch.object(dl.RateLimiter, 'reserve', return_value=0), patch.object(dl.RateLimiter, 'pause'):
             cache = Path(folder) / 'domain_cache.json'
             space = MoodSpace('playful')
             names = take(space, 20)
             statuses = {n.lower() + '.com': 'registered' if i % 2 == 0 else 'possibly available'
                         for i, n in enumerate(names)}
-            with patch.object(g, 'check_com', side_effect=lambda d: statuses[d]) as check:
-                first_session = g.BrowseSession(cache, space=space)
+            with patch.object(dl.RdapClient, 'get', side_effect=lambda d: lookup_result(statuses[d])) as check:
+                first_session = self.session(cache, workers=1, space=space)
                 first = list(first_session.page(3, 1))
-                second_session = g.BrowseSession(cache, space=MoodSpace('playful'))
+                second_session = self.session(cache, workers=1, space=MoodSpace('playful'))
                 second = list(second_session.page(3, 2))
                 self.assertEqual(check.call_count, 12)
                 self.assertEqual(len({r[0] for r in first + second}), 6)
                 resized = list(second_session.page(6, 1))
                 self.assertEqual([r[0] for r in resized], [r[0] for r in first + second])
                 self.assertEqual(check.call_count, 12)
-                changed = g.BrowseSession(cache, space=MoodSpace('playful', energy=2))
+                changed = self.session(cache, workers=1, space=MoodSpace('playful', energy=2))
                 self.assertNotEqual(changed.path, first_session.path)
                 self.assertEqual(changed.state['cursor'], 0)
                 self.assertEqual(len(changed.lookup.cache), 12)
 
     def test_mood_failure_does_not_advance_cursor(self):
-        with tempfile.TemporaryDirectory() as folder, patch.object(g.time, 'sleep'):
+        with tempfile.TemporaryDirectory() as folder, patch.object(dl.RateLimiter, 'reserve', return_value=0), patch.object(dl.RateLimiter, 'pause'):
             cache = Path(folder) / 'domain_cache.json'
             space = MoodSpace()
             names = take(space, 3)
-            with patch.object(g, 'check_com', side_effect=['possibly available'] + ['unknown (lookup failed)'] * 3):
-                session = g.BrowseSession(cache, space=space)
+            with patch.object(dl.RdapClient, 'get', side_effect=[lookup_result('possibly available')] + [lookup_result('unknown (lookup failed)')] * 3):
+                session = self.session(cache, workers=1, space=space)
                 with self.assertRaises(g.LookupFailure):
                     list(session.page(2, 1))
-            resumed = g.BrowseSession(cache, space=MoodSpace())
+            resumed = self.session(cache, workers=1, space=MoodSpace())
             self.assertEqual(resumed.state['cursor'], 1)
-            with patch.object(g, 'check_com', return_value='possibly available') as check:
+            with patch.object(dl.RdapClient, 'get', return_value=lookup_result('possibly available')) as check:
                 result = list(resumed.page(2, 1))
                 self.assertEqual([r[0] for r in result], [n.lower() + '.com' for n in names[:2]])
                 check.assert_called_once_with(names[1].lower() + '.com')
@@ -162,9 +177,9 @@ class SoundProfileTests(unittest.TestCase):
     def test_opening_session_identity_and_shared_cache(self):
         with tempfile.TemporaryDirectory() as folder:
             cache = Path(folder) / 'domain_cache.json'
-            default = g.BrowseSession(cache, space=MoodSpace())
-            any_opening = g.BrowseSession(cache, space=MoodSpace(opening='any'))
-            forced = g.BrowseSession(cache, space=MoodSpace(opening='vowel'))
+            default = self.session(cache, workers=1, space=MoodSpace())
+            any_opening = self.session(cache, workers=1, space=MoodSpace(opening='any'))
+            forced = self.session(cache, workers=1, space=MoodSpace(opening='vowel'))
             self.assertEqual(default.path, any_opening.path)
             self.assertNotEqual(default.path, forced.path)
             self.assertEqual(default.lookup.path, forced.lookup.path)
