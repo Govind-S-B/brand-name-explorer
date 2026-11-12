@@ -5,6 +5,7 @@ import { searchNames, type Search } from "../../lookup/search";
 let current: LookupEngine | undefined;
 let tail = Promise.resolve();
 let epoch = 0;
+let queuedSearch = 0;
 const checks = new Map<
   string,
   {
@@ -70,7 +71,8 @@ function queueChecks() {
   tail = tail
     .then(async () => {
       checksQueued = false;
-      if (!checks.size) return;
+      // A newer feed must replace the previous session before queued list work.
+      if (!checks.size || queuedSearch) return;
       await locked(async () => {
         const store = await CacheStore.open();
         let engine: LookupEngine | undefined;
@@ -115,6 +117,7 @@ self.onmessage = (event: MessageEvent) => {
   const msg = event.data;
   if (msg.type === "offline") {
     epoch++;
+    queuedSearch = 0;
     for (const [domain, check] of checks)
       self.postMessage({
         type: "checked",
@@ -134,7 +137,7 @@ self.onmessage = (event: MessageEvent) => {
     if (!checks.has(msg.domain))
       checks.set(msg.domain, {
         id: msg.id,
-        fresh: Date.now(),
+        fresh: msg.fresh ?? Date.now(),
         options: msg.options,
       });
     startChecks();
@@ -159,17 +162,20 @@ self.onmessage = (event: MessageEvent) => {
   }
   if (msg.type === "pause") {
     epoch++;
+    queuedSearch = 0;
     void current?.close();
     return;
   }
   if (msg.type === "search") {
     msg.epoch = ++epoch;
+    queuedSearch = msg.epoch;
     void current?.close();
   }
   tail = tail
     .then(async () => {
       if (msg.type === "search") {
         if (msg.epoch !== epoch) return;
+        queuedSearch = 0;
         await locked(() => search(msg));
       } else if (msg.type === "stats" || msg.type === "clear") {
         const store = await CacheStore.open();

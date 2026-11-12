@@ -102,10 +102,19 @@ try {
         text,
       );
     const stage = (text) =>
-      page.waitForFunction(
-        (t) => document.querySelector("#stage").dataset.state === t,
-        text,
-      );
+      page
+        .waitForFunction(
+          (t) => document.querySelector("#stage").dataset.state === t,
+          text,
+        )
+        .catch(async (error) => {
+          console.error(
+            "Feed state",
+            await page.locator("#run-status").textContent(),
+            await page.locator("#ns-note").textContent(),
+          );
+          throw error;
+        });
     const close = () => page.keyboard.press("Escape");
     const openSaved = async (name) => {
       await page.locator("#tab-saved").click();
@@ -146,23 +155,23 @@ try {
     await page.goto(base);
     await stage("idle");
     const originalFeed = await feedSnapshot();
+    assert.equal(requests, 0, "Hidden Shortlist must not start lookups");
+    let release = hold("goftoo.com");
     await openSaved("Goftu");
     await page.locator("#ns-nearby button").click();
     await page
       .locator("#ns-nearby")
       .getByRole("button", { name: "Goftoo", exact: true })
       .click();
-    await status("Not checked yet");
-    assert.equal(requests, 0);
+    await status("Checking…");
     const check = page.locator("#ns-check");
-    assert.equal(await check.getAttribute("aria-label"), "Check goftoo.com");
+    assert.equal(await check.getAttribute("aria-label"), "Checking goftoo.com");
     const box = await check.boundingBox(),
       pill = await page.locator("#ns-status").boundingBox();
     assert.ok(box.width >= 44 && box.height >= 44);
     assert.ok(Math.abs(box.x - pill.x - pill.width) < 2);
     await axe();
-    await shot("unchecked");
-    let release = hold("goftoo.com");
+    await shot("automatic-check");
     await check.focus();
     await page.keyboard.press("Enter");
     await status("Checking…");
@@ -190,7 +199,7 @@ try {
     await awaitCall("goftoo.com");
     await shot("checking");
     await page.locator("#ns-back").click();
-    await status("Not checked yet");
+    await status("Possibly available");
     release();
     await page
       .locator('#ns-nearby [data-domain="goftoo.com"][data-status="available"]')
@@ -247,8 +256,13 @@ try {
     await check.click();
     await status("Possibly available");
     await close();
-    await openSaved("Goftu");
-    responses.set("goftu.com", 403);
+    await page.locator("#tab-explore").click();
+    const unchecked = await page
+      .locator("#results .name-card")
+      .first()
+      .getAttribute("data-domain");
+    responses.set(unchecked, 403);
+    await page.locator("#results .name-open").first().click();
     await check.click();
     await status("Not confirmed");
     await shot("failed");
@@ -260,15 +274,137 @@ try {
       document.querySelector("#ns-note").textContent.includes("offline"),
     );
     assert.equal(requests, beforeOffline);
+    responses.set(unchecked, 404);
     await context.setOffline(false);
     await page.waitForFunction(() => navigator.onLine);
-    responses.set("goftu.com", 404);
-    await check.click();
     await status("Possibly available");
     await close();
     await openSaved("Open AI");
     assert.equal(await check.isVisible(), false);
     await close();
+
+    // Reverse checks the reference and every sample before opening any name.
+    // Results rendered into a hidden tab wait until that list is displayed.
+    responses.set("figma.com", 200);
+    const beforeReverse = requests;
+    await page.locator("#tab-reverse").click();
+    await page.locator("#reverse-word").fill("figma");
+    await page
+      .locator("#panel-reverse button[type=submit]")
+      .evaluate((button) => {
+        button.click();
+        document.querySelector("#tab-explore").click();
+      });
+    await page.waitForFunction(
+      () =>
+        document.querySelector("#panel-reverse").dataset.busy === undefined &&
+        document.querySelector(".candidate .name-card"),
+    );
+    assert.equal(requests, beforeReverse);
+    await page.locator("#tab-reverse").click();
+    await page.waitForFunction(() =>
+      [
+        ...document.querySelectorAll("#panel-reverse .name-card[data-domain]"),
+      ].every((e) => ["available", "registered"].includes(e.dataset.status)),
+    );
+    assert.equal(
+      await page.locator(".reference-name .domain-status").textContent(),
+      "registered",
+    );
+    const reverseDomains = await page
+      .locator("#panel-reverse .name-card[data-domain]")
+      .evaluateAll((cards) => cards.map((e) => e.dataset.domain));
+    assert.ok(reverseDomains.length > 1);
+    for (const domain of new Set(reverseDomains))
+      assert.equal(
+        counts.get(domain),
+        1,
+        `One automatic request per unique ${domain}`,
+      );
+    await axe();
+    await shot("reverse-checked");
+    const beforeRepeat = requests;
+    await page.locator("#panel-reverse button[type=submit]").click();
+    await page.waitForFunction(
+      () => document.querySelector("#panel-reverse").dataset.busy === undefined,
+    );
+    assert.equal(requests, beforeRepeat);
+    await page.locator("[data-follow=substitutions]").click();
+    await page.locator(".tool-more .name-card").first().waitFor();
+    await page.waitForFunction(() =>
+      [
+        ...document.querySelectorAll(".tool-more .name-card[data-domain]"),
+      ].every((e) => ["available", "registered"].includes(e.dataset.status)),
+    );
+    await shot("reverse-nearby-checked");
+
+    if (width === 390) {
+      // Expired durable records recheck without a click, including stale DNS evidence.
+      await page.evaluate(async () => {
+        const db = await new Promise((resolve, reject) => {
+          const r = indexedDB.open("brand-name-explorer", 1);
+          r.onsuccess = () => resolve(r.result);
+          r.onerror = () => reject(r.error);
+        });
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(["domains", "dns"], "readwrite"),
+            checkedAt = Date.now() - 6 * 60 * 1000;
+          tx.objectStore("domains").put({
+            domain: "goftoo.com",
+            status: "registered",
+            source: "rdap",
+            checkedAt,
+          });
+          tx.objectStore("dns").put({
+            domain: "goftoo.com",
+            outcome: "ns",
+            provider: "google",
+            checkedAt,
+            expiresAt: Date.now() + 86400000,
+          });
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+      });
+      const beforeStale = counts.get("goftoo.com");
+      await page.reload();
+      await stage("idle");
+      await page.locator("#tab-saved").click();
+      await page
+        .locator(
+          '#saved-list [data-domain="goftoo.com"][data-status="available"]',
+        )
+        .waitFor();
+      assert.equal(counts.get("goftoo.com"), beforeStale + 1);
+      await openSaved("Goftoo");
+      await page.locator("#ns-sound .dialbars").waitFor();
+      await close();
+
+      // Offline lists retain cached evidence, and a newly discovered domain checks on reconnect.
+      await context.setOffline(true);
+      await page.waitForFunction(() => !navigator.onLine);
+      await page.locator("#tab-reverse").click();
+      await page.locator("#reverse-word").fill("nintendo");
+      await page.locator(".pron").evaluate((e) => (e.open = true));
+      await page.locator("[name=reading-mode]").selectOption("phones");
+      await page.locator("[name=reading-value]").fill("N IH N T EH N D OW");
+      await page.locator("#panel-reverse button[type=submit]").click();
+      await page
+        .locator(
+          '.reference-name [data-domain="nintendo.com"][data-status="error"]',
+        )
+        .waitFor();
+      assert.equal(counts.has("nintendo.com"), false);
+      responses.set("nintendo.com", 200);
+      await context.setOffline(false);
+      await page
+        .locator(
+          '.reference-name [data-domain="nintendo.com"][data-status="registered"]',
+        )
+        .waitFor();
+      assert.equal(counts.get("nintendo.com"), 1);
+    }
 
     if (width === 390) {
       const startFeed = async (seed, count = "20") => {
@@ -400,6 +536,8 @@ try {
     );
     results.push({
       width,
+      automaticNearbyReverseShortlist: true,
+      hiddenListsWait: true,
       cachedRead: true,
       refreshRetryOffline: true,
       sharedStatus: true,

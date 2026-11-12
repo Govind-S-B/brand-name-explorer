@@ -41,6 +41,9 @@ for (const profile of ["desktop", "mobile"]) {
       fullPage,
     });
   const axe = async (where) => {
+    // Automatic lists may finish checks during an audit; settle their statuses
+    // before measuring the existing status-arrival opacity animation.
+    await page.waitForFunction(() => ![...document.querySelectorAll('.name-card[data-auto-check]')].some(e => !e.closest('[hidden]') && !e.closest('dialog:not([open])') && e.dataset.status === 'checking'), null, {timeout:90000});
     await page.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
     const report = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])

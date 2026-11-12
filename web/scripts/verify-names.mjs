@@ -130,7 +130,33 @@ try {
       await first.evaluate((e) => e === document.activeElement),
       true,
     );
-    // User's exact Goftu -> Goftoo example, without starting any lookups.
+    // Closing a name and immediately opening Tune must not let the queued close
+    // handler steal its keyboard focus (especially the non-modal desktop panel).
+    await first.click();
+    await page.evaluate(async () => {
+      const sheet = document.querySelector("#name-sheet"),
+        mood = document.querySelector("#mood-picker");
+      const closed = new Promise((resolve) =>
+        sheet.addEventListener("close", resolve, { once: true }),
+      );
+      sheet.close();
+      mood.focus();
+      mood.click();
+      await closed;
+    });
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(
+      () =>
+        document.querySelector("#mood-picker").getAttribute("aria-expanded") ===
+        "false",
+    );
+    assert.equal(
+      await page
+        .locator("#mood-picker")
+        .evaluate((e) => e === document.activeElement),
+      true,
+    );
+    // User's exact Goftu -> Goftoo example; the list checks domains automatically.
     await page.locator("#tab-saved").click();
     await row("#saved-list", "Goftu").locator(".name-open").click();
     await fit();
@@ -160,9 +186,10 @@ try {
       await page.locator("#ns-save").getAttribute("aria-pressed"),
       "true",
     );
-    assert.equal(
-      await page.locator("#ns-status").textContent(),
-      "Not checked yet",
+    await page.waitForFunction(
+      () =>
+        document.querySelector("#ns-status").textContent ===
+        "Possibly available",
     );
     assert.match(
       await page.locator("#ns-open").getAttribute("href"),
@@ -213,7 +240,10 @@ try {
     assert.equal(await page.locator("#length").inputValue(), "6");
     for (const [i, dial] of ["energy", "weight", "novelty"].entries())
       assert.equal(await page.locator("#" + dial).inputValue(), childDials[i]);
-    assert.equal(requests, 0);
+    assert.ok(requests > 0);
+    await page.waitForFunction(
+      () => document.querySelector("#stage").dataset.state === "idle",
+    );
     if (width === 390) {
       await page.locator("#tab-saved").click();
       await row("#saved-list", "Goftu").locator(".name-open").click();

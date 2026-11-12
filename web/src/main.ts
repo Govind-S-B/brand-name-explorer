@@ -277,6 +277,7 @@ function openTune() {
 }
 tune.onclose = () => {
   $("#mood-picker").setAttribute("aria-expanded", "false");
+  $("#mood-picker").focus({ preventScroll: true });
   if (dirty) run();
 };
 tune.onkeydown = (e) => {
@@ -370,6 +371,27 @@ function nameCard(value: Name | string, reading?: Reading): HTMLLIElement {
   if (item.domain && domainChecks.has(item.domain)) updateCardStatus(card);
   return card;
 }
+function discoveryCard(value: Name | string, reading?: Reading) {
+  const card = nameCard(value, reading);
+  card.dataset.autoCheck = "";
+  // Analysis builds lists synchronously; wait until their rows are attached.
+  queueMicrotask(() => checkList(card));
+  return card;
+}
+function checkList(root: ParentNode = document) {
+  const cards =
+    root instanceof HTMLElement && root.matches("[data-auto-check]")
+      ? [root]
+      : [...root.querySelectorAll<HTMLElement>("[data-auto-check]")];
+  for (const card of cards)
+    if (
+      card.isConnected &&
+      !card.closest("[hidden]") &&
+      (!card.closest("dialog") || sheet.open) &&
+      card.dataset.domain
+    )
+      checkDomain(card.dataset.domain, false);
+}
 function updateCardStatus(card: HTMLElement) {
   const domain = card.dataset.domain!,
     row = rows.get(domain),
@@ -457,7 +479,7 @@ document.addEventListener("click", (event) => {
 function renderSaved() {
   const domains = Object.keys(saved),
     saveList = $("#saved-list");
-  saveList.replaceChildren(...domains.map((key) => nameCard(saved[key])));
+  saveList.replaceChildren(...domains.map((key) => discoveryCard(saved[key])));
   if (!domains.length) {
     const li = el("li", "empty-state"),
       browse = el("button", "secondary", "Browse names");
@@ -765,6 +787,7 @@ function switchTab(id: string) {
       $("#panel-" + button.dataset.tab).hidden = !selected;
     });
   if (id === "saved") renderSaved();
+  else if (id === "reverse") checkList($("#panel-reverse"));
   scrollTo({ top: 0 });
 }
 document.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((button) => {
@@ -901,6 +924,7 @@ function showNameView(view: NameView, restore = false) {
   updateNameDetails();
   syncNameStatuses();
   if (!sheet.open) sheet.showModal();
+  checkList(view.nearby);
   if (view.item.domain)
     lookup.postMessage({
       type: "cached",
@@ -944,7 +968,7 @@ function openName(item: Name, opener: HTMLElement) {
         sound,
         nearby,
         applySettings,
-        nameCard,
+        discoveryCard,
       );
   });
 }
@@ -981,7 +1005,8 @@ sheet.onclose = () => {
       : document.querySelector<HTMLElement>(
           '[role="tab"][aria-selected="true"]',
         );
-  focus?.focus({ preventScroll: true });
+  // A delayed close event must not steal focus from a newly opened Tune sheet.
+  if (!tune.open) focus?.focus({ preventScroll: true });
   rootOpener = undefined;
 };
 $("#ns-copy").onclick = () => {
@@ -992,9 +1017,15 @@ $("#ns-copy").onclick = () => {
     () => toast("Copy is not available here"),
   );
 };
-$("#ns-check").onclick = () => {
-  const domain = activeView?.item.domain;
+function checkDomain(domain: string | undefined, refresh = true) {
   if (!domain || domainChecks.get(domain)?.pending) return;
+  const fresh = Date.now() - (refresh ? 0 : 5 * 60 * 1000);
+  if (
+    !refresh &&
+    ((rows.get(domain)?.checkedAt || 0) >= fresh ||
+      domainChecks.get(domain)?.error)
+  )
+    return;
   const id = ++detailId;
   if (lookupFailed) {
     domainChecks.set(domain, {
@@ -1014,7 +1045,17 @@ $("#ns-check").onclick = () => {
   });
   syncNameStatuses(domain);
   if (navigator.onLine)
-    lookup.postMessage({ type: "check", id, domain, options: options() });
+    lookup.postMessage({
+      type: "check",
+      id,
+      domain,
+      fresh,
+      options: options(),
+    });
+  else lookup.postMessage({ type: "cached", id, domain });
+}
+$("#ns-check").onclick = () => {
+  checkDomain(activeView?.item.domain);
 };
 
 // Reverse: type a name, get the result; follow-ups fold in the other tools.
@@ -1056,7 +1097,8 @@ function analyseReverse(mode: string) {
         if (revision !== reverseAnalysis) return;
         delete reverse.dataset.busy;
         line.textContent =
-          error || "Analysis complete. No domain lookups were made.";
+          error ||
+          "Analysis complete. Domain availability updates beside each name.";
         if (mode === "reverse") {
           follow.hidden = Boolean(error);
           more.replaceChildren();
@@ -1065,11 +1107,11 @@ function analyseReverse(mode: string) {
             result,
             error,
             applySettings,
-            nameCard,
+            discoveryCard,
           );
         } else if (mode === "inverter")
           m.showFit(more, result, error, applySettings);
-        else m.showNearby(more, result, error, nameCard);
+        else m.showNearby(more, result, error, discoveryCard);
       },
     ),
   );
@@ -1107,6 +1149,14 @@ addEventListener("offline", () => {
   }
 });
 addEventListener("online", () => {
+  const retryCurrent =
+    activeView?.item.domain &&
+    domainChecks.get(activeView.item.domain)?.error?.includes("offline");
+  for (const [domain, check] of domainChecks)
+    if (check.error?.includes("offline")) domainChecks.delete(domain);
+  checkList();
+  if (retryCurrent && sheet.open) checkDomain(activeView?.item.domain, false);
+  syncNameStatuses();
   if (resumeOnVisible && !document.hidden && activeSearch) {
     resumeOnVisible = false;
     beginSearch(activeSearch);
