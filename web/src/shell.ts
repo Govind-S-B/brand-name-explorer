@@ -71,7 +71,7 @@ ${fold(
 ${fold(
   "advanced-controls",
   "Advanced",
-  "20 per page · seed 42",
+  "20 per page · fresh seed",
   `<div class="form-grid">${field(
     "Names per page",
     `<select id="count"><option>20</option><option>50</option><option>200</option><option>1000</option><option>4000</option></select>`,
@@ -124,5 +124,21 @@ ${panel(
   `<div class="head-actions"><button id="backup" type="button" class="pill-btn">Download backup</button><label class="pill-btn file-button">Import backup<input id="import" type="file" accept="application/json,.json"></label></div>
 <p id="saved-status" class="status-line" role="status"></p><h2 class="sr-only">Saved names</h2><ul id="saved-list" class="feed" aria-label="Saved names"></ul>`,
 )}
+<dialog id="history-sheet" class="sheet utility-sheet" aria-labelledby="history-title">
+  <div class="sheet-head"><h2 id="history-title">Search history</h2>${close}</div>
+  <div class="sheet-body">
+    <p class="lede">Your latest 100 searches, saved in this browser.</p>
+    <label class="history-filter">Find a search<input id="history-filter" type="search" placeholder="Name, mood or seed" autocomplete="off"></label>
+    <ul id="history-list" class="history-list" aria-label="Past searches"></ul>
+  </div>
+</dialog>
+<dialog id="settings-sheet" class="sheet utility-sheet" aria-labelledby="settings-title">
+  <div class="sheet-head"><h2 id="settings-title">Settings</h2>${close}</div>
+  <div class="sheet-body">
+    ${toggle("random-seed", "New seed on reload", "Start each visit with different names. Use Run again in History to revisit an earlier search.", true)}
+    <div class="history-storage"><h3>Search history</h3><p class="fine-print">The latest 100 searches stay in this browser. New searches are recorded automatically.</p>
+    <button type="button" class="pill-btn" id="clear-history">Clear history</button><p id="history-storage-status" class="fine-print" role="status"></p></div>
+  </div>
+</dialog>
 <div id="notice" role="alert" hidden></div>
 </main>`;

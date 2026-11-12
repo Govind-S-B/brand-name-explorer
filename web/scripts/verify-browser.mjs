@@ -21,6 +21,7 @@ for (const profile of ["desktop", "mobile"]) {
       ? { viewport: { width: 1440, height: 1000 } }
       : { ...devices["iPhone 13"], viewport: { width: 390, height: 844 } },
   );
+  await context.addInitScript(() => localStorage.setItem("bne.settings.v1", JSON.stringify({ randomSeed: false })));
   const page = await context.newPage(),
     errors = [],
     network = [],

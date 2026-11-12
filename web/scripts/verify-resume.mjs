@@ -25,6 +25,7 @@ const context = await browser.newContext({
   ...devices["iPhone 13"],
   serviceWorkers: "block",
 });
+await context.addInitScript(() => localStorage.setItem("bne.settings.v1", JSON.stringify({ randomSeed: false })));
 const page = await context.newPage();
 const calls = { dns: 0, rdap: 0 };
 const attempts = new Map();

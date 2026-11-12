@@ -17,8 +17,15 @@ await context.addInitScript(() =>
     JSON.stringify({ "check-domains": false }),
   ),
 );
+await context.addInitScript(() =>
+  localStorage.setItem(
+    "bne.settings.v1",
+    JSON.stringify({ randomSeed: false }),
+  ),
+);
 const page = await context.newPage();
-const base = process.env.BASE_URL || "http://127.0.0.1:4173/brand-name-explorer/";
+const base =
+  process.env.BASE_URL || "http://127.0.0.1:4173/brand-name-explorer/";
 await page.goto(base);
 await page.waitForSelector("#results .name-card");
 const root = await browser.newBrowserCDPSession();
@@ -113,6 +120,32 @@ await page.waitForFunction(
   () => document.querySelector("#stage").dataset.state === "idle",
 );
 results.push(await heaps("feed-8000"));
+if (await page.locator("#open-history").count()) {
+  await page.evaluate(() => {
+    const sample = JSON.parse(localStorage.getItem("bne.history.v1"))[0];
+    localStorage.setItem(
+      "bne.history.v1",
+      JSON.stringify(
+        Array.from({ length: 100 }, (_, i) => ({
+          ...sample,
+          id: "past-" + i,
+          at: sample.at - i - 1,
+        })),
+      ),
+    );
+  });
+  await page.reload();
+  await page.waitForSelector("#results .name-card");
+  results.push(await heaps("history-100-stored"));
+  await page.locator("#open-history").click();
+  await page.waitForFunction(
+    () => document.querySelectorAll(".history-entry").length === 100,
+  );
+  results.push(await heaps("history-100-open"));
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(() => !document.querySelector(".history-entry"));
+  results.push(await heaps("history-100-closed"));
+}
 console.log(JSON.stringify(results, null, 2));
 await writeFile(
   process.argv[2] || "/private/tmp/bne-memory.json",

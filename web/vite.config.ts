@@ -11,7 +11,7 @@ export default defineConfig({
         html.replace('<div id="app"></div>', `<div id="app">${shell()}</div>`),
     },
     {
-      // The only dynamic import (analysis-ui) has no CSS or chunk dependencies,
+      // Lazy UI imports have no CSS or chunk dependencies,
       // so Vite's preload helper has nothing to do; replace it with a pass-through.
       name: "no-preload-helper",
       enforce: "pre",

@@ -1,5 +1,16 @@
 import { Feed } from "./feed";
 import {
+  CONTROL_IDS,
+  HISTORY_KEY,
+  APP_SETTINGS_KEY,
+  addHistory,
+  readHistory,
+  readAppSettings,
+  freshSeed,
+  type Controls,
+  type HistoryEntry,
+} from "./history";
+import {
   nameFrom,
   nameKey,
   rowName,
@@ -43,6 +54,7 @@ let mood = "calm",
   requestId = 0,
   activeSearch: SearchState | undefined,
   lastSearch: SearchState | undefined,
+  lastControls: Controls | undefined,
   checksOn = true,
   pageStart = 0,
   pageDone = 0,
@@ -75,11 +87,13 @@ function storageSet(key: string, value: string | null) {
     return true;
   } catch {
     showError(
-      "Browser storage is unavailable. Download a shortlist backup to keep it.",
+      "Browser storage is unavailable. History and settings may be lost on reload. Download a shortlist backup to keep saved names.",
     );
     return false;
   }
 }
+let appSettings = readAppSettings(storageGet(APP_SETTINGS_KEY));
+let searchHistory = readHistory(storageGet(HISTORY_KEY));
 try {
   const value = JSON.parse(storageGet(savedKey) || "{}");
   if (validSaved(value)) saved = value;
@@ -186,44 +200,74 @@ function setMood(value: string) {
   for (const d of DIALS) delete input(d).dataset.explicit;
   syncProfile();
 }
-function savePreferences() {
-  const values: Record<string, string | boolean> = { mood };
-  document
-    .querySelectorAll<HTMLInputElement | HTMLSelectElement>(
-      "#panel-explore input, #panel-explore select",
-    )
-    .forEach((el) => {
-      if (el.id === "refresh") return;
-      values[el.id] =
-        el instanceof HTMLInputElement && el.type === "checkbox"
-          ? el.checked
-          : el.value;
-    });
+function captureControls(): Controls {
+  const values: Controls = { mood };
+  for (const id of CONTROL_IDS) {
+    const field = input(id);
+    values[id] = field.type === "checkbox" ? field.checked : field.value;
+  }
   values.explicit = DIALS.filter(
     (d) => input(d).dataset.explicit === "true",
   ).join(",");
-  storageSet(prefKey, JSON.stringify(values));
+  return values;
 }
-try {
-  const prefs = JSON.parse(storageGet(prefKey) || "{}");
-  for (const [id, value] of Object.entries(prefs)) {
-    const el = document.getElementById(id);
-    if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
-      if (el instanceof HTMLInputElement && el.type === "checkbox")
-        el.checked = Boolean(value);
-      else if (typeof value === "string") el.value = value;
-    }
+function savePreferences() {
+  storageSet(prefKey, JSON.stringify(captureControls()));
+}
+function recordSearch(
+  source: string,
+  controls: Controls,
+  reverse?: HistoryEntry["reverse"],
+) {
+  const entry: HistoryEntry = {
+    id: crypto.randomUUID(),
+    at: Date.now(),
+    source,
+    controls,
+    fresh: input("refresh").checked,
+    ...(reverse ? { reverse } : {}),
+  };
+  const stored = storageGet(HISTORY_KEY);
+  searchHistory = addHistory(
+    stored === null ? searchHistory : readHistory(stored),
+    entry,
+  );
+  storageSet(HISTORY_KEY, JSON.stringify(searchHistory));
+  if (historySheet.open) void renderSearchHistory();
+}
+function applyControls(prefs: Controls) {
+  for (const id of CONTROL_IDS) {
+    const field = input(id),
+      value = prefs[id];
+    if (field.type === "checkbox" && typeof value === "boolean")
+      field.checked = value;
+    else if (typeof value === "string") field.value = value;
   }
-  if (Object.hasOwn(MOODS, prefs.mood)) mood = prefs.mood;
-  for (const d of DIALS)
+  if (typeof prefs.mood === "string" && Object.hasOwn(MOODS, prefs.mood))
+    mood = prefs.mood;
+  for (const d of DIALS) {
+    delete input(d).dataset.explicit;
     if (
       String(prefs.explicit || "")
         .split(",")
         .includes(d)
     )
       input(d).dataset.explicit = "true";
+  }
+  document
+    .querySelectorAll<HTMLElement>("[data-mood]")
+    .forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.mood === mood)),
+    );
+}
+try {
+  applyControls(JSON.parse(storageGet(prefKey) || "{}"));
 } catch {
   /* use defaults */
+}
+if (appSettings.randomSeed) {
+  input("seed").value = freshSeed(input("seed").value);
+  input("page").value = "1";
 }
 document.querySelectorAll<HTMLButtonElement>("[data-mood]").forEach((b) => {
   b.setAttribute("aria-pressed", String(b.dataset.mood === mood));
@@ -288,7 +332,7 @@ $("#generate-form").onsubmit = (event) => {
   event.preventDefault();
   dirty = false;
   tune.close();
-  run();
+  run(false, "Show names");
 };
 document
   .querySelectorAll<HTMLElement>("[data-close]")
@@ -298,6 +342,92 @@ document.querySelectorAll("dialog").forEach((d) =>
     if (e.target === d && d.matches(":modal")) d.close();
   }),
 );
+
+const historySheet = $<HTMLDialogElement>("#history-sheet"),
+  settingsSheet = $<HTMLDialogElement>("#settings-sheet");
+const historyUi = () => import("./history-ui");
+let historyRevision = 0,
+  rerunningHistory = false;
+let historyTimer: ReturnType<typeof setInterval> | undefined;
+async function renderSearchHistory() {
+  const revision = ++historyRevision,
+    module = await historyUi();
+  if (revision !== historyRevision || !historySheet.open) return;
+  module.renderHistory(
+    $("#history-list"),
+    searchHistory,
+    input("history-filter").value,
+    runHistoryAgain,
+  );
+}
+$("#open-history").onclick = () => {
+  const stored = storageGet(HISTORY_KEY);
+  if (stored !== null) searchHistory = readHistory(stored);
+  input("history-filter").value = "";
+  historySheet.showModal();
+  void renderSearchHistory();
+  historyTimer = setInterval(() => {
+    void historyUi().then((m) => m.updateTimes($("#history-list")));
+  }, 30000);
+};
+input("history-filter").oninput = () => {
+  void renderSearchHistory();
+};
+historySheet.onclose = () => {
+  if (historySheet.open) return;
+  historyRevision++;
+  clearInterval(historyTimer);
+  $("#history-list").replaceChildren();
+  if (!rerunningHistory) $("#open-history").focus({ preventScroll: true });
+  rerunningHistory = false;
+};
+function runHistoryAgain(entry: HistoryEntry) {
+  rerunningHistory = true;
+  historySheet.close();
+  applyControls(entry.controls);
+  input("refresh").checked = entry.fresh;
+  syncProfile();
+  savePreferences();
+  dirty = false;
+  if (entry.reverse) {
+    input("reverse-word").value = entry.reverse.word;
+    modeSelect.value = entry.reverse.mode;
+    readingValue.value = entry.reverse.value;
+    modeSelect.dispatchEvent(new Event("change"));
+    switchTab("reverse");
+    analyseReverse("reverse", "Reverse run again");
+    input("reverse-word").focus({ preventScroll: true });
+  } else {
+    switchTab("explore");
+    void run(false, "Run again");
+    $("#tab-explore").focus({ preventScroll: true });
+  }
+}
+$("#open-settings").onclick = () => {
+  input("random-seed").checked = appSettings.randomSeed;
+  $("#history-storage-status").textContent =
+    `${searchHistory.length} saved searches.`;
+  settingsSheet.showModal();
+};
+settingsSheet.onclose = () => {
+  if (!settingsSheet.open) $("#open-settings").focus({ preventScroll: true });
+};
+input("random-seed").onchange = () => {
+  appSettings.randomSeed = input("random-seed").checked;
+  storageSet(APP_SETTINGS_KEY, JSON.stringify(appSettings));
+};
+$("#clear-history").onclick = () => {
+  if (!storageSet(HISTORY_KEY, "[]")) return;
+  searchHistory = [];
+  $("#history-storage-status").textContent =
+    "History cleared. New searches will appear automatically.";
+};
+addEventListener("storage", (event) => {
+  if (event.key === HISTORY_KEY) {
+    searchHistory = readHistory(event.newValue);
+    if (historySheet.open) void renderSearchHistory();
+  }
+});
 
 function showError(message: string) {
   $("#notice").hidden = false;
@@ -346,6 +476,7 @@ function updateSavedButtons(root: ParentNode = document) {
   const n = Object.keys(saved).length;
   $("#saved-count").textContent = String(n);
   $("#saved-count").dataset.n = String(n);
+  $("#tab-saved").setAttribute("aria-label", `Shortlist ${n} saved`);
   root.querySelectorAll<HTMLButtonElement>("[data-save]").forEach((button) => {
     const yes = Boolean(saved[button.dataset.save!]);
     button.setAttribute("aria-pressed", String(yes));
@@ -539,7 +670,7 @@ async function beginSearch(search: SearchState, refresh = false) {
   }
 }
 let generationEpoch = 0;
-async function run(more = false) {
+async function run(more = false, source = "Changed settings") {
   const token = ++generationEpoch;
   try {
     let search: SearchState;
@@ -562,6 +693,7 @@ async function run(more = false) {
       };
       savePreferences();
     }
+    const controls = more && lastControls ? lastControls : captureControls();
     cancel();
     runState("running");
     const names =
@@ -571,6 +703,11 @@ async function run(more = false) {
     $("#notice").hidden = true;
     activeSearch = undefined;
     lastSearch = search;
+    lastControls = controls;
+    recordSearch(more ? "More names" : source, {
+      ...controls,
+      page: String(search.page),
+    });
     pageStart = more ? feed.length : 0;
     if (!more) {
       const retained = new Set(
@@ -816,6 +953,9 @@ function applySettings(
   structure: Record<string, string | number>,
   recipe: string,
 ) {
+  const source =
+    "Similar to " +
+    (activeView?.item.name || input("reverse-word").value.trim());
   (document.querySelector("dialog[open]") as HTMLDialogElement)?.close();
   switchTab("explore");
   setMood(recipe);
@@ -829,7 +969,7 @@ function applySettings(
     );
   input("page").value = "1";
   syncProfile();
-  run();
+  run(false, source);
 }
 
 // Name sheet: details and actions for one name.
@@ -1006,7 +1146,8 @@ sheet.onclose = () => {
           '[role="tab"][aria-selected="true"]',
         );
   // A delayed close event must not steal focus from a newly opened Tune sheet.
-  if (!tune.open) focus?.focus({ preventScroll: true });
+  if (!document.querySelector("dialog[open]"))
+    focus?.focus({ preventScroll: true });
   rootOpener = undefined;
 };
 $("#ns-copy").onclick = () => {
@@ -1076,7 +1217,7 @@ modeSelect.onchange = () => {
   );
 };
 let reverseAnalysis = 0;
-function analyseReverse(mode: string) {
+function analyseReverse(mode: string, source = "Reverse search") {
   const revision = ++reverseAnalysis;
   const extra = {
     seed: input("seed").value,
@@ -1086,34 +1227,36 @@ function analyseReverse(mode: string) {
         ? { phones: readingValue.value }
         : {}),
   };
+  const word = input("reverse-word").value.trim();
+  if (mode === "reverse")
+    recordSearch(source, captureControls(), {
+      word,
+      mode: modeSelect.value as "dictionary" | "reading" | "phones",
+      value: readingValue.value,
+    });
   reverse.dataset.busy = "";
   line.textContent = "Reading the sound…";
   ui().then((m) =>
-    m.analyse(
-      mode,
-      input("reverse-word").value.trim(),
-      extra,
-      (result, error) => {
-        if (revision !== reverseAnalysis) return;
-        delete reverse.dataset.busy;
-        line.textContent =
-          error ||
-          "Analysis complete. Domain availability updates beside each name.";
-        if (mode === "reverse") {
-          follow.hidden = Boolean(error);
-          more.replaceChildren();
-          m.showReport(
-            reverse.querySelector(".tool-result")!,
-            result,
-            error,
-            applySettings,
-            discoveryCard,
-          );
-        } else if (mode === "inverter")
-          m.showFit(more, result, error, applySettings);
-        else m.showNearby(more, result, error, discoveryCard);
-      },
-    ),
+    m.analyse(mode, word, extra, (result, error) => {
+      if (revision !== reverseAnalysis) return;
+      delete reverse.dataset.busy;
+      line.textContent =
+        error ||
+        "Analysis complete. Domain availability updates beside each name.";
+      if (mode === "reverse") {
+        follow.hidden = Boolean(error);
+        more.replaceChildren();
+        m.showReport(
+          reverse.querySelector(".tool-result")!,
+          result,
+          error,
+          applySettings,
+          discoveryCard,
+        );
+      } else if (mode === "inverter")
+        m.showFit(more, result, error, applySettings);
+      else m.showNearby(more, result, error, discoveryCard);
+    }),
   );
 }
 form.onsubmit = (event) => {
@@ -1179,7 +1322,7 @@ try {
 } catch {
   setMood("calm");
 }
-run();
+run(false, "Opened page");
 renderSaved();
 // Web fonts after the first frame (see style.css); cached visits
 // already enabled them in <head>.
@@ -1190,10 +1333,9 @@ requestAnimationFrame(() =>
       ["500 1em Funnel Display", "1em Inter", "600 1em Inter"].map((f) =>
         document.fonts.load(f),
       ),
-    ).then(
-      () => localStorage.setItem("bne.fonts.v2", "1"),
-      () => {},
-    );
+    )
+      .then(() => localStorage.setItem("bne.fonts.v2", "1"))
+      .catch(() => {});
   }),
 );
 if ("serviceWorker" in navigator)

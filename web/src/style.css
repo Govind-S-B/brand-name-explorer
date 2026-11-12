@@ -164,6 +164,7 @@ svg {
   margin: 0 auto;
   padding: 0 var(--m);
   min-height: 56px;
+  flex-wrap: wrap;
 }
 .wordmark {
   display: flex;
@@ -173,6 +174,24 @@ svg {
   font: 500 17px/1 var(--display);
   letter-spacing: -0.01em;
   text-decoration: none;
+}
+.app-tools {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+.app-tools .icon-btn {
+  margin: 0;
+}
+.app-tools svg.github-icon {
+  fill: currentColor;
+  stroke: none;
+}
+.tabs button:not([aria-selected="true"]) .tab-label {
+  display: none;
+}
+.tabs button:not([aria-selected="true"]) {
+  min-width: 44px;
 }
 .mark {
   width: 18px;
@@ -838,6 +857,73 @@ svg {
 .ns-actions .heart {
   width: 22px;
   height: 22px;
+}
+.history-filter {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0 8px;
+  font-size: 14px;
+}
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.history-entry {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.history-entry summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.history-entry summary::after {
+  content: "+";
+  grid-area: 1 / 2;
+  padding-left: 8px;
+}
+.history-entry details[open] summary::after {
+  content: "−";
+}
+.history-title {
+  grid-column: 1;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.history-entry time,
+.history-description {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.history-params {
+  display: grid;
+  grid-template-columns: 95px minmax(0, 1fr);
+  gap: 8px 12px;
+  font-size: 13px;
+  line-height: 19px;
+  margin: 18px 0;
+}
+.history-params dt {
+  color: var(--ink-2);
+}
+.history-params dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.history-storage {
+  margin: 24px 0 12px;
+}
+.history-storage .pill-btn {
+  margin-top: 16px;
+}
+.empty-history {
+  padding: 24px 0;
+  color: var(--ink-2);
 }
 #name-sheet .sheet-head {
   position: sticky;
@@ -1570,7 +1656,8 @@ pre {
   .tune .sheet-foot .primary {
     width: auto;
   }
-  #name-sheet {
+  #name-sheet,
+  .utility-sheet {
     inset: 0;
     width: min(560px, calc(100% - 48px));
     max-height: min(86vh, 860px);
@@ -1578,10 +1665,12 @@ pre {
     border-radius: 22px;
     box-shadow: 0 24px 64px rgb(0 0 0 / 0.18);
   }
-  #name-sheet[open] {
+  #name-sheet[open],
+  .utility-sheet[open] {
     animation: rise 0.24s var(--ease);
   }
-  #name-sheet::before {
+  #name-sheet::before,
+  .utility-sheet::before {
     display: none;
   }
   .sheet-head {

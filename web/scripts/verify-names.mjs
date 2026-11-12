@@ -70,6 +70,7 @@ try {
           domain === "ralmoo.com" ? JSON.stringify({ ldhName: domain }) : "",
       });
     });
+    await context.addInitScript(() => localStorage.setItem("bne.settings.v1", JSON.stringify({ randomSeed: false })));
     const page = await context.newPage(),
       errors = [];
     page.on("pageerror", (e) => errors.push(e.message));

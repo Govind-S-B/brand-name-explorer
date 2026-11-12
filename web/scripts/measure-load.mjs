@@ -33,6 +33,7 @@ let responses = [],
 context.on("response", (r) => responses.push(r));
 context.on("request", (r) => requests.push(r));
 await context.addInitScript(() => {
+  localStorage.setItem("bne.settings.v1", JSON.stringify({ randomSeed: false }));
   // Generation enabled, no domain work: landing would otherwise start lookups.
   localStorage.setItem("bne.preferences.v2", JSON.stringify({ "check-domains": false }));
   window.__metrics = { lcp: 0, long: [] };

@@ -12,6 +12,7 @@
     "test:browser": "node web/scripts/verify-browser.mjs",
     "test:names": "node web/scripts/verify-names.mjs",
     "test:check": "node web/scripts/verify-check.mjs",
+    "test:history": "node web/scripts/verify-history.mjs",
     "test:resume": "node web/scripts/verify-resume.mjs",
     "measure:load": "node web/scripts/measure-load.mjs",
     "measure:memory": "node web/scripts/measure-memory.mjs",

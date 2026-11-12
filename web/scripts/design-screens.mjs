@@ -57,6 +57,7 @@ const profiles = {
 for (const name of only) {
   const context = await browser.newContext({ ...profiles[name], serviceWorkers: "block" });
   await mock(context);
+  await context.addInitScript(() => localStorage.setItem("bne.settings.v1", JSON.stringify({ randomSeed: false })));
   const page = await context.newPage();
   const shot = (label, fullPage = false) =>
     page.screenshot({ path: `${out}/v2-${name}-${label}.png`, fullPage, animations: "disabled" });

@@ -14,12 +14,17 @@
   </head>
   <body>
     <header class="appbar">
-      <a class="wordmark" href="./"><i class="mark" aria-hidden="true"></i>Brand name explorer</a>
+      <a class="wordmark" href="./" aria-label="Brand name explorer"><i class="mark" aria-hidden="true"></i><span>Brand name explorer</span></a>
       <nav class="tabs" aria-label="Sections" role="tablist">
-        <button role="tab" id="tab-explore" aria-controls="panel-explore" aria-selected="true" tabindex="0" data-tab="explore"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Explore</button>
-        <button role="tab" id="tab-reverse" aria-controls="panel-reverse" aria-selected="false" tabindex="-1" data-tab="reverse"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>Reverse</button>
-        <button role="tab" id="tab-saved" aria-controls="panel-saved" aria-selected="false" tabindex="-1" data-tab="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.4-9.2-9.3C1.6 7.2 3.8 4.5 7 4.5c2.1 0 3.8 1.1 5 2.9 1.2-1.8 2.9-2.9 5-2.9 3.2 0 5.4 2.7 4.2 6.2C19.5 15.6 12 20 12 20z"/></svg>Shortlist<span class="badge" id="saved-count" data-n="0">0</span></button>
+        <button role="tab" id="tab-explore" aria-label="Explore" title="Explore" aria-controls="panel-explore" aria-selected="true" tabindex="0" data-tab="explore"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="tab-label">Explore</span></button>
+        <button role="tab" id="tab-reverse" aria-label="Reverse" title="Reverse" aria-controls="panel-reverse" aria-selected="false" tabindex="-1" data-tab="reverse"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span class="tab-label">Reverse</span></button>
+        <button role="tab" id="tab-saved" aria-label="Shortlist" title="Shortlist" aria-controls="panel-saved" aria-selected="false" tabindex="-1" data-tab="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.4-9.2-9.3C1.6 7.2 3.8 4.5 7 4.5c2.1 0 3.8 1.1 5 2.9 1.2-1.8 2.9-2.9 5-2.9 3.2 0 5.4 2.7 4.2 6.2C19.5 15.6 12 20 12 20z"/></svg><span class="tab-label">Shortlist</span> <span class="badge" id="saved-count" data-n="0">0</span></button>
       </nav>
+      <div class="app-tools">
+        <button type="button" id="open-history" class="icon-btn" aria-label="Search history" title="Search history" aria-haspopup="dialog" aria-controls="history-sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4v5h5M3.5 8.5a9 9 0 1 1-.3 6M12 7v5l3 2"/></svg></button>
+        <button type="button" id="open-settings" class="icon-btn" aria-label="Settings" title="Settings" aria-haspopup="dialog" aria-controls="settings-sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.7 2.3-2 .9-2.2-.6-2 3.4 1.5 1.7v2.6L2.1 15l2 3.4 2.2-.6 2 .9L9 21h4l.7-2.3 2-.9 2.2.6 2-3.4-1.5-1.7v-2.6L19.9 9l-2-3.4-2.2.6-2-.9L13 3z"/><circle cx="11" cy="12" r="3"/></svg></button>
+        <a id="github-link" class="icon-btn" href="https://github.com/Govind-S-B/brand-name-explorer" target="_blank" rel="noopener" aria-label="GitHub repository (opens in a new tab)" title="GitHub repository"><svg class="github-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.77-.24.77-.54v-2.1c-3.14.68-3.8-1.34-3.8-1.34-.51-1.3-1.25-1.65-1.25-1.65-1.03-.7.08-.69.08-.69 1.14.08 1.74 1.17 1.74 1.17 1.01 1.73 2.65 1.23 3.3.94.1-.73.4-1.23.72-1.51-2.5-.29-5.13-1.25-5.13-5.57 0-1.23.44-2.24 1.16-3.03-.12-.29-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.16a10.8 10.8 0 0 1 5.6 0c2.14-1.45 3.08-1.16 3.08-1.16.61 1.55.23 2.69.12 2.98.72.79 1.15 1.8 1.15 3.03 0 4.33-2.63 5.28-5.14 5.56.4.35.76 1.04.76 2.1v3.09c0 .3.2.65.78.54A11.2 11.2 0 0 0 12 .8z"/></svg></a>
+      </div>
       <span class="net" id="net" data-online="true"><i aria-hidden="true"></i><span id="net-label">Online</span></span>
     </header>
     <div id="app"></div>

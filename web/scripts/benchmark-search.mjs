@@ -19,6 +19,7 @@ await context.addInitScript(
     ),
   count,
 );
+await context.addInitScript(() => localStorage.setItem("bne.settings.v1", JSON.stringify({ randomSeed: false })));
 const page = await context.newPage();
 const calls = { rdap: 0, dns: 0 };
 context.on("request", (r) => {
