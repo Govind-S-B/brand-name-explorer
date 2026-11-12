@@ -4,6 +4,24 @@ making up brand names based on how they sound and feel, with a .com check to fil
 
 <img width="1009" height="341" alt="image" src="https://github.com/user-attachments/assets/224fc6a2-b153-42be-b1b1-9f8b5712cf38" />
 
+## Web app
+
+[Open the web app](https://govind-s-b.github.io/brand-name-explorer/).
+
+The static TypeScript app lives in [`web/`](web/README.md), with mobile and desktop
+layouts, offline generation, live domain checks, and a portable shortlist.
+The Python CLI below remains unchanged.
+
+```bash
+cd web
+npm ci
+npm run build
+npm run preview:pages
+# http://127.0.0.1:4173/brand-name-explorer/
+```
+
+See the [browser throughput findings](web/docs/browser-throughput.md) and
+[verification results](web/docs/verification.md).
 
 ## Motivation
 
@@ -103,7 +121,7 @@ and pagination. Flag order is for readability; argparse accepts any order.
 | Define structure | `--opening`, `--syllables`, `--ending` | Constrain word shape |
 | Constrain spelling | `--length` | Exact character count |
 | Order | `--seed` | Repeatable weighted ordering without repeated spellings |
-| Look up | `--check-com` / `--no-check-com`, `--cache`, `--refresh` | Reuse domain checks or make new ones |
+| Look up | `--check-com` / `--no-check-com`, `--cache`, `--refresh`, `--lookup-workers`, `--lookup-rate` | Reuse checks or run bounded concurrent requests |
 | Filter | `--hide-registered` / `--no-hide-registered` | Possibly available domains only, or include registered ones |
 | Paginate | `--count`, `--page` | Slice the selected results |
 
@@ -134,22 +152,34 @@ The CLI reports `?` until then, alongside matches found and candidates checked.
 
 ## Saved progress and errors
 
-Public Verisign RDAP needs no API key. New domain lookups are sequential, with
-a one-second pause between domains. Errors get three attempts total, with two-
-and four-second waits before retries. A persistent failure stops the run with an
-error summary and nonzero exit status. Successful checks and progress are saved.
-Rerun without `--refresh` to resume at the failed domain.
+Uncached domains first get a live Cloudflare DNS-over-HTTPS NS query. Matching NS
+answers mark the domain registered and skip RDAP; NXDOMAIN, missing NS, and DNS
+errors still require Verisign RDAP. Availability is always RDAP-confirmed. DNS
+has its own pool, limiter, and durable cache; the resolver can be replaced.
+The [DNS measurements](docs/domain-lookup-dns.md) show a 4,000-result search falling
+from 133.51 to 95.23 seconds, while short pages did not consistently get faster.
 
-`domain_cache.json` holds successful checks. `domain_cache_sessions/` holds
-ordered matching results and progress. Both are local and gitignored, as are
-Python caches and `names*.txt`, `names*.tsv`, and `names*.csv` outputs.
-`--cache PATH` selects another location, with a sibling `<cache-stem>_sessions/`
-folder. Add an ignore rule for custom cache filenames if necessary. Use one
-checking process at a time per cache.
+Public Verisign RDAP needs no API key. Its pool defaults to **32 workers and a
+shared 160-attempt/second ceiling**, starting at 16 and adapting as requests
+succeed. Retry timers do not occupy workers; correlated failures reduce active
+concurrency, and server throttling applies a shared cooldown. Results are saved
+as they finish and displayed in seed order. No failed check is marked available.
+See [lookup performance](docs/domain-lookup.md) for measurements and limits.
+
+```bash
+python3 name_generator.py --mood calm --length 6 --seed 42 --lookup-workers 32 --lookup-rate 160 --count 200 --page 1
+```
+
+Domain records live in `domain_cache.sqlite3`; saved pages use indexed SQLite
+files in `domain_cache_sessions/`. Legacy JSON caches and sessions import once,
+leaving their originals untouched. These files and database sidecars are local
+and gitignored. `--cache PATH` selects another location, with a sibling
+`<cache-stem>_sessions/` folder. Use one checking process per cache/session.
 
 Saved pages stay stable until `--refresh` rebuilds the current session with fresh
-lookups. Other sessions are unchanged. A later run without `--refresh` resumes
-an interrupted rebuild. Unfiltered refresh only rechecks that page.
+lookups. Other sessions are unchanged. Rerun without `--refresh` to resume an
+interrupted search; later successful checks remain cached even if an earlier
+name needs another attempt. `--no-check-com` performs no cache or lookup IO.
 
 “Possibly available” means no RDAP registration record was found; a registrar
 must confirm availability. Saved checks can become stale. Names are not screened
