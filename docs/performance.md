@@ -19,6 +19,9 @@ Values below are measured unless explicitly described otherwise.
 | Dictionary, gzip | 816,962 B | 781,317 B |
 | CLI program, raw (dictionary separate) | Python multi-file runtime | 40,798 B |
 
+Tracked source-tree payload fell from 16.09 MB to 2.57 MB (84% smaller); old
+Git history is deliberately preserved and is not included in that comparison.
+
 The complete Node distribution is the CLI program plus the dictionary. It is
 JavaScript for an installed Node runtime, not a standalone native executable.
 The browser has zero runtime npm dependencies. Fonts and CSS are preserved for
@@ -67,6 +70,15 @@ string prefix keys and per-candidate allocations as the generation hot path.
 | 10,000 repeated pronunciation requests | 16.55 ms | 54.46 ms |
 | Node dictionary retained allocation | ~31.77 MB V8 heap | ~1.76 MB byte buffers, negligible added V8 heap |
 
+The same minified engines also ran in Chrome 156.0.8078.48, five warmed samples,
+without network or CPU throttling (`web/scripts/benchmark-generation.mjs`):
+
+| Browser CPU workload | Before | After |
+| --- | ---: | ---: |
+| 200 names | 4.6 ms / 43,478 names/s | 1.2 ms / 166,667 names/s |
+| 4,000 names | 63.7 ms / 62,794 names/s | 8.4 ms / 476,190 names/s |
+| 10,000 names | 158.7 ms / 63,012 names/s | 16.5 ms / 606,061 names/s |
+
 The compact dictionary deliberately trades a few microseconds per lookup for a
 much smaller retained representation. It does not expand 126,052 word/reading
 object trees. Every word and alternate reading has exact digest parity. No WASM
@@ -81,16 +93,17 @@ and TLS state are uncontrolled. Runs are sequential observations, not provider
 quotas or causal estimates. Every displayed name was RDAP-confirmed; both new
 runtimes returned exactly the same ordered names as their fresh baseline runs.
 Candidate counts were 476 for 200 matches and 8,749 for 4,000.
+The final saved 200-name CLI page reopened in 4.97 ms with zero RDAP/DoH calls.
 
 | Runtime / available results | Before seconds | After seconds | Candidate checks/s before → after | RDAP attempts before → after |
 | --- | ---: | ---: | ---: | ---: |
-| CLI, 200 | 17.956 | 10.421 | 26.5 → 45.7 | 218 → 302 |
-| CLI, 4,000 | 94.015 | 73.905 | 93.1 → 118.4 | 4,328 → 5,085 |
+| CLI, 200 | 17.956 | 7.969 | 26.5 → 59.7 | 218 → 246 |
+| CLI, 4,000 | 94.015 | 73.079 | 93.1 → 119.7 | 4,328 → 4,961 |
 | Browser, 200 | 15.627 | 15.134 | 30.5 → 31.5 | 223 → 221 |
 | Browser, 4,000 | 226.786 | 191.705 | 38.6 → 45.6 | 4,333 → 4,328 |
 
 RDAP attempt throughput (whole run, including ramp-up and other work) was
-12.1 → 29.0/s for CLI 200; 46.0 → 68.8/s for CLI 4,000;
+12.1 → 30.9/s for CLI 200; 46.0 → 67.9/s for CLI 4,000;
 14.3 → 14.6/s for browser 200; 19.1 → 22.6/s for browser 4,000.
 Browser transport still has the six HTTP/1.1 connection ceiling. The new CLI
 also beats the previously supplied historical targets of about 10.7–11 seconds
@@ -98,9 +111,12 @@ for 200 and 95 seconds for 4,000, although those older runs are not controlled
 contemporaneous comparisons.
 
 DoH queries remained 476 / 8,749. The new Node runtime's earlier 32/sec RDAP ramp
-and idle-slot hedging use more requests while cutting elapsed time: 900 hedges,
-29 retries and 176 DNS errors falling back in the 4,000 run. DNS avoided 3,693
+and idle-slot hedging use more requests while cutting elapsed time: 766 hedges,
+25 retries and 165 DNS errors falling back in the 4,000 run. DNS avoided 3,813
 RDAP calls there, versus 4,445 in Python; browser DNS avoided 4,421 versus 4,416.
+An earlier implementation run measured 10.421/73.905 seconds for Node 200/4,000.
+The final repeat above aligns both DoH ramp-up rates at 32/sec. Faster 200-name
+time may also reflect uncontrolled remote caches/network conditions.
 No provider throttles were observed in these final runs. The user can disable
 DNS, but negative DNS replies must still go to RDAP. Errors remain unknown.
 
