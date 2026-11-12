@@ -2,6 +2,9 @@
 
 making up brand names based on how they sound and feel, with a .com check to filter some out.
 
+<img width="1009" height="341" alt="image" src="https://github.com/user-attachments/assets/224fc6a2-b153-42be-b1b1-9f8b5712cf38" />
+
+
 ## Motivation
 
 I always used to struggle with coming up with brand names but had a friend who came up with things effortlessly. He just spews random words and they sound nice. I came across the old [bouba/kiki experiment](https://en.wikipedia.org/wiki/Bouba/kiki_effect) and experimented with a few moods based on it.
