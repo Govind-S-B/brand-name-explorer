@@ -29,3 +29,8 @@ dist/
 !.env.example
 *.pem
 *.key
+
+# Reproducible local measurement artifacts (summaries live in docs/performance.md)
+web/docs/
+*.heapsnapshot
+*.cpuprofile

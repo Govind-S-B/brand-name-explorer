@@ -139,6 +139,8 @@ test("Node limits allow 32 sockets; browser retains the six-connection ceiling",
     assert.throws(() => new LookupEngine(store, { rdapConcurrency: 32 }));
     const e = new LookupEngine(store, {}, providers, "node");
     assert.equal(e.rdap.limit, 32);
+    assert.equal(e.dns.cloudflare.rate, 32);
+    assert.equal(e.dns.google.rate, 32);
     await e.close();
   } finally {
     store.close();

@@ -1,0 +1,71 @@
+# Verification
+
+Run from the root with Node 24.12+, npm and installed Chrome. `CHROME_PATH` can
+select another Chrome executable in the newer harnesses. Older recovery/load
+harnesses use the standard macOS Chrome path.
+
+```sh
+npm ci
+npm test
+npm run build
+npm run preview:pages
+# In a second terminal:
+npm run test:resume
+npm run test:browser
+node web/scripts/verify-feed.mjs
+node web/scripts/design-screens.mjs /tmp/bne-screens
+npm run measure:memory -- /tmp/bne-memory.json
+npm run measure:load
+npm run benchmark:core
+COUNT=200 npm run benchmark:browser -- /tmp/bne-200.json
+COUNT=4000 npm run benchmark:browser -- /tmp/bne-4000.json
+node dist/cli.mjs --count 200 --cache /tmp/unique-cold-200.sqlite
+node dist/cli.mjs --count 4000 --cache /tmp/unique-cold-4000.sqlite
+```
+
+Use unused cache paths/browser contexts for cold runs. Run performance tools
+sequentially; do not compare measurements while another benchmark is active.
+Reports and screenshots are ignored artifacts; the concise permanent record is
+[performance.md](performance.md). Screenshots for the README live on the `assets`
+GitHub Release. The pre-migration baseline and full evidence for this migration
+were captured outside the repository in `/private/tmp/bne-migration/`.
+
+The suite covers independent Python goldens, all dictionary readings, provider
+validation, independent DNS/RDAP budgets, bounded retry/backoff, failure handling,
+Node CLI arguments, SQLite atomic pages, changed page sizes, cancellation/resume,
+fresh checks and concurrent-CLI exclusion. Browser tests cover real providers,
+name-sheet analysis without the dictionary, lazy dictionary and offline analysis,
+shortlist backup/import, keyboard tabs and zero axe violations. Controlled
+recovery tests use delayed fake providers; live results are not synthetic.
+
+The 8,000-name feed test checks bounded rendered rows, scroll-back, keyboard
+traversal across recycled blocks, all 8,000 unique CSV rows and zero axe issues.
+Screenshots cover 18 states at 390 × 844, 360 × 740 and 1440 × 900. CSS and fonts
+are unchanged; the only removed control is the Original Engine selector.
+
+Physical iPhone/Safari suspension, actual cellular links and unlimited feed
+length are not established by desktop Chrome emulation. Internet benchmarks are
+individual observations with uncontrolled remote resolver/registry caches.
+Availability remains a timestamped RDAP observation, not a purchase guarantee.
+
+Set `HEAP_SNAPSHOTS=1` for `measure:memory` to also save CDP heap snapshots beside
+the JSON report. The report separates V8 used heap, backing storage and embedder
+heap after explicit GC; these are not process RSS or physical-phone measurements.
+
+## Migration result
+
+- 130 Node tests pass; the original baseline had 79 Python and 134 web tests.
+  Removing 27 Original-engine cases and adding direct pronunciation, long-sequence,
+  whole-dictionary, CLI and SQLite recovery coverage explains the changed count.
+- Exact algorithm parity holds for retained functionality. The only normalized
+  output is Reverse's suggested command launcher (`node dist/cli.mjs`).
+- Desktop and 390 px live-provider verification: zero page errors, failed local
+  assets, overflow or axe violations. Axe waits for finite row transitions to
+  settle so it measures final colors, rather than intermediate animation opacity.
+- 54 baseline/final screenshots: **43 pixel-identical**; the remaining 11 differ
+  by at most 1.08% of pixels. Inspected differences are check timestamps, focus/
+  hover/animation capture and composited sheet background, without layout changes.
+  The 390 px feed and Tune snapshots are pixel-identical. CSS and font files are
+  unchanged. Advanced's removed Original Engine control is the deliberate exception.
+- Final local Lighthouse: performance 100, accessibility 100, TBT 0; see
+  [performance.md](performance.md) for the full measurements and limits.

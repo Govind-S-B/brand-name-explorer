@@ -124,7 +124,7 @@ export class LookupEngine {
       o.dnsConcurrency > (runtime === "node" ? 64 : 24) ||
       !Number.isFinite(o.rdapRate) ||
       o.rdapRate <= 0 ||
-      o.rdapRate > 160 ||
+      o.rdapRate > (runtime === "node" ? 320 : 160) ||
       !Number.isFinite(o.dnsRate) ||
       o.dnsRate <= 0 ||
       o.dnsRate > 160 ||
@@ -150,7 +150,11 @@ export class LookupEngine {
         o.dnsConcurrency,
         runtime === "node" ? 32 : 16,
       ),
-      google: new Gate(o.dnsRate, o.dnsConcurrency),
+      google: new Gate(
+        o.dnsRate,
+        o.dnsConcurrency,
+        runtime === "node" ? 32 : 16,
+      ),
     };
     this.initialized = Promise.all(
       ["rdap", "cloudflare", "google"].map(async (p) => {

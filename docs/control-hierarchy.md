@@ -98,7 +98,7 @@ silently change syllables, opening, or ending.
 ## Example: energetic, vowel-opening words
 
 ```bash
-python3 name_generator.py \
+node dist/cli.mjs \
   --mood calm \
   --energy 8 \
   --opening vowel --syllables 3 --ending open \
@@ -150,8 +150,7 @@ and session identities.
 The resolution order is **base defaults → mood → optional dial blend → explicit
 overrides → compatibility check → generation**. This is a hierarchy of meaning
 and precedence, not a requirement to type flags in that order. Examples follow
-the hierarchy so they are easier to read. The original `--style` engine remains
-a separate compatibility mode and does not accept mood structure controls.
+the hierarchy so they are easier to read. The sound engine is shared by the browser and Node CLI.
 
 ## Research review behind this cleanup
 

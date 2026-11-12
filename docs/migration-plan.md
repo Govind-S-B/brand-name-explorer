@@ -1,6 +1,6 @@
 # Lean TypeScript migration
 
-Status: baseline capture. Branch: `lean-refactor`.
+Status: implemented and locally verified; publication verification follows. Branch: `lean-refactor`.
 
 ## Contract and architecture
 
@@ -78,3 +78,78 @@ Use the same harness before/after, sequentially for timings:
 `docs/performance.md` will separate measured results, historical supplied numbers
 and inference. Record full removals, uncertain retained items, UI differences,
 test counts, release asset URLs, deploy run and remaining verification limits.
+
+## Executed changes and full removal inventory
+
+- Deleted `name_generator.py`, `domain_lookup.py`, `sound_engine.py`,
+  `sound_profiles.py`, `pronunciation.py`, `reverse_finder.py`, `inverter.py`,
+  `substitutions.py`; all five `tests/test_*.py` files; all five Python benchmark/
+  stress/verification scripts; `web/scripts/fixtures.py` and `fonts.py`.
+- Removed Original calm/flowing/expansive presets, LegacySpace, permutation and
+  swap-map generation, `--style`, `--list-variants`, `--exclude-registered` alias,
+  the Advanced Engine selector, style-dependent length limits and disabled mood
+  controls, and 27 Original-only parity cases. Calm **mood** remains a core recipe.
+- Removed JSON-to-SQLite cache import, legacy progress import, sibling session
+  directory compatibility, old HTTP socket/SSL/address-selection plumbing,
+  thread pools and Python's duplicate algorithms.
+- Removed unused `getrandbits`/`randbelow` from the PRNG after the Original
+  engine's removal. Integer-seeded `random()` is required for current deterministic
+  generation and remains, with independent goldens.
+- Removed the fully expanded dictionary map, old JSON dictionary and duplicate
+  upstream text. Retained the compact binary, upstream checksum and licenses.
+- Removed the separate web package, lockfile, tsconfig, Python fixture build
+  command and Python CI setup. Root npm commands now build/test both runtimes.
+- Removed the old HTTP/2/browser throughput spike scripts, production benchmark
+  duplicate, probe script and obsolete Lighthouse-summary script. Retained one
+  parameterized live browser benchmark plus CPU/load/memory/UI verification tools.
+- Removed `web/docs`' tracked screenshots (before/v1/v2/live/comparison), boat.dev
+  reference images, full and aggregate benchmark JSON, source hashes, old test
+  output, deployment notes, port plan and superseded architecture/design briefs.
+  Reports now write to ignored `web/docs/`; permanent conclusions live in
+  `docs/performance.md`, `docs/architecture.md`, and `docs/verification.md`.
+- Removed old `docs/domain-lookup-history.md`, `domain-lookup.md`,
+  `domain-lookup-dns.md`, its bulky JSON and `project-comparison.md`; retained the
+  important measurements and current domain semantics in the new docs.
+- Removed repeated Promise.race subscriptions in ordered search, main-thread
+  generation, unbounded result-row DOM, and old search metadata retained across
+  unrelated searches.
+
+No old preference-key migration exists in the current code. The v2 preference
+key and v1 shortlist backup format are active user data, not obsolete migration
+logic, and remain unchanged. No fallback import for removed Original settings
+was added; unknown stored controls are ignored by ordinary current-field loading.
+
+### Preserved and potentially debatable
+
+Reverse, exact inversion, substitutions, supplied syllables/ARPABET, arbitrary
+integer seeds, lookup tuning, cache management, shortlists and all exports remain.
+The sound-model research documents (`research-direction.md`, `sound-dials.md`,
+`control-hierarchy.md`) remain because they explain the model's assumptions and
+limits. They are historical rationale, not product-validated psychological claims.
+The service worker and self-hosted font subsets remain for current offline and
+visual behavior. None of these was treated as legacy without evidence.
+
+### UI differences
+
+The only removed visible control is Advanced → Engine and its Original-style
+choices. Default feed, Tune, name sheet, Reverse and Shortlist keep the v2 CSS,
+fonts, labels and interactions. Above 200 names, off-screen rows recycle while
+retaining order, scroll-back, keyboard traversal and full CSV export. Generation
+moves to the worker; the existing loading state now also covers local-generation
+work. Screenshot timestamps/progress can differ because those are live values.
+
+### Fixture provenance
+
+Captured from the pre-migration Python revision recorded in
+`tests/parity.json.provenance`, including source SHA-256 values: 58 generation
+cases, three 10,000-name sequences, 13 direct pronunciations and reverse reports,
+six inverter grids (top ten), ten substitution reports, and four PRNG seeds.
+The whole dictionary's independent expanded digest covers all 126,052 words.
+No retained capability has an intentional parity exception. Removed Original
+styles and their associated unused PRNG methods are the only discarded cases.
+
+One necessary presentation-only fixture adaptation: suggested commands in Reverse
+reports now start with `node dist/cli.mjs` instead of `python3 name_generator.py`.
+The raw Python fixture is preserved, and the parity test normalizes only that
+launcher prefix. Dial fits, scores, structures, pronunciations and names still
+match exactly. The expandable raw report reflects this new CLI command.

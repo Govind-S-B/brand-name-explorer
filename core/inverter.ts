@@ -243,8 +243,8 @@ export function generatorCommand(
   seed: string | number,
 ): string {
   return [
-    "python3",
-    "name_generator.py",
+    "node",
+    "dist/cli.mjs",
     "--mood",
     closestRecipe(dials),
     ...Object.entries(dials).flatMap(([d, v]) => ["--" + d, String(v)]),

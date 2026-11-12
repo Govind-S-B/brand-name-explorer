@@ -14,7 +14,8 @@
     "measure:load": "node web/scripts/measure-load.mjs",
     "measure:memory": "node web/scripts/measure-memory.mjs",
     "benchmark:core": "node --expose-gc --import tsx web/scripts/benchmark-core.ts",
-    "benchmark:browser": "node web/scripts/benchmark-search.mjs"
+    "benchmark:browser": "node web/scripts/benchmark-search.mjs",
+    "test:feed": "node web/scripts/verify-feed.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

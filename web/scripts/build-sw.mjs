@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile, stat } from "node:fs/promises";
+import { readdir, readFile, writeFile, stat, mkdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 const root = new URL("../dist/", import.meta.url);
@@ -13,6 +13,18 @@ async function walk(dir, prefix = "") {
     else files.push(prefix + name);
   }
   return files;
+}
+const files = await walk(root);
+const worker = files.find((p) => /lookup\.worker-.*\.js$/.test(p));
+if (worker) {
+  const path = new URL("index.html", root);
+  await writeFile(
+    path,
+    (await readFile(path, "utf8")).replace(
+      "</head>",
+      `<link rel="modulepreload" href="./${worker}"></head>`,
+    ),
+  );
 }
 const all = await walk(root),
   precache = all.filter((p) => !p.endsWith(".bin") && !p.endsWith(".map"));
@@ -35,9 +47,14 @@ self.addEventListener('fetch',event=>{const r=event.request,url=new URL(r.url);i
 `,
 );
 const html = await readFile(new URL("index.html", root), "utf8");
-const initial = [
-  ...html.matchAll(/(?:src|href)="\.\/([^"\s]+\.(?:js|css))"/g),
-].map((m) => m[1]);
+const initial = [...html.matchAll(/<(?:script|link)\b[^>]*>/g)]
+  .map((m) => m[0])
+  .filter((tag) => !tag.includes("modulepreload"))
+  .flatMap((tag) =>
+    [...tag.matchAll(/(?:src|href)="\.\/([^"\s]+\.(?:js|css))"/g)].map(
+      (m) => m[1],
+    ),
+  );
 const sizes = [];
 for (const path of all) {
   const bytes = await readFile(new URL(path, root));
@@ -58,6 +75,7 @@ const summary = {
     .reduce((n, x) => n + x.gzip, 0),
   assets: sizes,
 };
+await mkdir(new URL("../docs/", import.meta.url), { recursive: true });
 await writeFile(
   new URL("../docs/bundle-size.json", import.meta.url),
   JSON.stringify(summary, null, 2) + "\n",

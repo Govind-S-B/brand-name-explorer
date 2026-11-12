@@ -6,7 +6,7 @@ already filtered and simply browse. Configuration is opt-in, above the feed,
 folded by default. boat.dev remains the bar for craft (type, restraint and
 precise states), not a template for density.
 
-## Defaults (match the Python CLI)
+## Defaults (match the Node CLI)
 
 | Setting | CLI default | Web v2 |
 | --- | --- | --- |
@@ -17,8 +17,7 @@ precise states), not a template for density.
 | Hide registered | **on** | **on**: the feed lists possibly available names only |
 | Names per page | 200 | **20** (50 / 200 / 1,000 / 4,000 available) |
 
-Preferences move to a new storage key (`bne.preferences.v2`), so earlier stored
-choices from the old defaults (registered names shown, 24 per page) don't override them.
+Preferences use `bne.preferences.v2`; no old-key migrations run.
 
 ## Information architecture
 
@@ -55,7 +54,7 @@ There are three destinations: a bottom tab bar on phones and header tabs on desk
 | Syllables, opening and ending | Tune › Sound |
 | Letters (length) | Tune › Spelling |
 | Show registered names, check .com, DNS pre-filter, fresh recheck | Tune › Domains |
-| Names per page, start page, seed, original engine styles | Tune › Advanced |
+| Names per page, start page, seed | Tune › Advanced |
 | Lookup tuning (RDAP and DNS slots, rates, timeouts) | Tune › Advanced › Lookup tuning |
 | Cache inspect and clear, CSV export, last-search lookup statistics | Tune › Advanced |
 | Pagination | Load more (feed); start page (Advanced) |

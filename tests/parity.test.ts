@@ -54,7 +54,14 @@ installDictionary(
 for (const [i, fixture] of fixtures.reports.entries())
   test(`Reverse report parity ${i} ${fixture.input.word}`, async () => {
     const { word, reading, phones } = fixture.input;
-    assert.deepEqual(await report(word, reading, phones), fixture.result);
+    // Only the launcher changes when retiring Python; all model outputs stay exact.
+    const expected = structuredClone(fixture.result);
+    for (const candidate of expected.candidates)
+      candidate.command = candidate.command.replace(
+        /^python3 name_generator\.py /,
+        "node dist/cli.mjs ",
+      );
+    assert.deepEqual(await report(word, reading, phones), expected);
   });
 for (const fixture of fixtures.fits)
   test(`Inverter grid parity ${fixture.word}`, () => {

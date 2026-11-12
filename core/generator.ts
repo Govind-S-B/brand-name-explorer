@@ -260,10 +260,11 @@ export function generate(
   page = 1,
 ): string[] {
   if (
-    !Number.isInteger(count) ||
+    !Number.isSafeInteger(count) ||
     count < 1 ||
-    !Number.isInteger(page) ||
-    page < 1
+    !Number.isSafeInteger(page) ||
+    page < 1 ||
+    !Number.isSafeInteger(page * count)
   )
     throw new Error("count and page must be at least 1");
   const space = new MoodSpace(settings),

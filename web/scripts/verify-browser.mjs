@@ -41,6 +41,7 @@ for (const profile of ["desktop", "mobile"]) {
       fullPage,
     });
   const axe = async (where) => {
+    await page.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
     const report = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
       .analyze();
