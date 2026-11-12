@@ -26,6 +26,13 @@ export const DEFAULT_LOOKUP: LookupOptions = {
   hedgeDelay: 250,
   dns: true,
 };
+export const NODE_LOOKUP: LookupOptions = {
+  ...DEFAULT_LOOKUP,
+  rdapConcurrency: 32,
+  rdapRate: 160,
+  dnsConcurrency: 32,
+  dnsRate: 160,
+};
 export class Gate {
   active = 0;
   next = 0;
@@ -101,16 +108,20 @@ export class LookupEngine {
     private store: LookupStore,
     options: Partial<LookupOptions> = {},
     private providers: Providers = liveProviders,
+    runtime: "browser" | "node" = "browser",
   ) {
-    this.options = { ...DEFAULT_LOOKUP, ...options };
+    this.options = {
+      ...(runtime === "node" ? NODE_LOOKUP : DEFAULT_LOOKUP),
+      ...options,
+    };
     const o = this.options;
     if (
       !Number.isInteger(o.rdapConcurrency) ||
       o.rdapConcurrency < 1 ||
-      o.rdapConcurrency > 6 ||
+      o.rdapConcurrency > (runtime === "node" ? 64 : 6) ||
       !Number.isInteger(o.dnsConcurrency) ||
       o.dnsConcurrency < 1 ||
-      o.dnsConcurrency > 24 ||
+      o.dnsConcurrency > (runtime === "node" ? 64 : 24) ||
       !Number.isFinite(o.rdapRate) ||
       o.rdapRate <= 0 ||
       o.rdapRate > 160 ||
@@ -127,10 +138,18 @@ export class LookupEngine {
       o.hedgeDelay < 0 ||
       o.hedgeDelay > 30000
     )
-      throw new Error("Invalid browser lookup limits");
-    this.rdap = new Gate(o.rdapRate, o.rdapConcurrency, 8);
+      throw new Error("Invalid lookup limits");
+    this.rdap = new Gate(
+      o.rdapRate,
+      o.rdapConcurrency,
+      runtime === "node" ? 32 : 8,
+    );
     this.dns = {
-      cloudflare: new Gate(o.dnsRate, o.dnsConcurrency),
+      cloudflare: new Gate(
+        o.dnsRate,
+        o.dnsConcurrency,
+        runtime === "node" ? 32 : 16,
+      ),
       google: new Gate(o.dnsRate, o.dnsConcurrency),
     };
     this.initialized = Promise.all(
@@ -465,6 +484,9 @@ export class LookupEngine {
         this.wake();
       });
     this.track(task);
+  }
+  get stopped() {
+    return this.closed;
   }
   async close() {
     if (this.closed) return;

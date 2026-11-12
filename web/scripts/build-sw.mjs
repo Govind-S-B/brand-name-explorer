@@ -15,7 +15,7 @@ async function walk(dir, prefix = "") {
   return files;
 }
 const all = await walk(root),
-  precache = all.filter((p) => !p.endsWith(".json") && !p.endsWith(".map"));
+  precache = all.filter((p) => !p.endsWith(".bin") && !p.endsWith(".map"));
 const hash = createHash("sha256");
 for (const file of precache.sort())
   hash.update(file).update(await readFile(new URL(file, root)));
@@ -30,7 +30,7 @@ self.addEventListener('activate',event=>{event.waitUntil(Promise.all([caches.key
 self.addEventListener('fetch',event=>{const r=event.request,url=new URL(r.url);if(r.method!=='GET'||url.origin!==location.origin||!url.href.startsWith(SCOPE))return;
  if(r.mode==='navigate'){event.respondWith(fetch(r).catch(()=>caches.open(VERSION).then(c=>c.match(new URL('index.html',SCOPE))).then(r=>r||Response.error())));return;}
  if(ASSETS.includes(url.href)){event.respondWith(caches.open(VERSION).then(async c=>(await c.match(r))||fetch(r)));return;}
- if(/\\/assets\\/cmudict-[^/]+\\.json$/.test(url.pathname)){event.respondWith(caches.open(RUNTIME).then(async c=>{const hit=await c.match(r);if(hit)return hit;const response=await fetch(r);if(response.ok){try{await c.put(r,response.clone());}catch{/* Analysis can still use this response if storage is full. */}}return response;}));}
+ if(/\\/assets\\/cmudict-[^/]+\\.bin$/.test(url.pathname)){event.respondWith(caches.open(RUNTIME).then(async c=>{const hit=await c.match(r);if(hit)return hit;const response=await fetch(r);if(response.ok){try{await c.put(r,response.clone());}catch{/* Analysis can still use this response if storage is full. */}}return response;}));}
 });
 `,
 );

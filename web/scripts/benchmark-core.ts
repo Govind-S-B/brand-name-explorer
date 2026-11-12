@@ -1,9 +1,9 @@
 /** Fixed CPU workload; run node --expose-gc --import tsx scripts/benchmark-core.ts. */
 import { readFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
-import { generate } from '../src/core/generator';
-import { installDictionary, readReference } from '../src/core/pronunciation';
-import { parseSpelling, fitProfiles } from '../src/core/inverter';
+import { generate } from '../../core/generator';
+import { installDictionary, readReference } from '../../core/pronunciation';
+import { parseSpelling, fitProfiles } from '../../core/inverter';
 const samples: Record<string, unknown>[] = [];
 function bench(label: string, count: number, fn: () => unknown) {
   fn();
@@ -19,7 +19,7 @@ bench('inverter-1331',1331,()=>fitProfiles(parseSpelling('lemoru')));
 global.gc?.();
 const before = process.memoryUsage();
 const start = performance.now();
-installDictionary(JSON.parse(readFileSync(new URL('../src/data/cmudict.json',import.meta.url),'utf8')));
+installDictionary(readFileSync(new URL('../../data/cmudict.bin',import.meta.url)));
 global.gc?.();
 const after = process.memoryUsage();
 const installMs = performance.now()-start;

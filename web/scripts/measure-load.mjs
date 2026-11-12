@@ -113,7 +113,7 @@ for (const mode of ["cold", "repeat", "offline"]) {
       0,
     ),
     requests: requests.length,
-    dictionaryFetched: requests.some((r) => /cmudict.*json/.test(r.url())),
+    dictionaryFetched: requests.some((r) => /cmudict.*bin/.test(r.url())),
     responses: responseData,
     metrics: measured,
   };

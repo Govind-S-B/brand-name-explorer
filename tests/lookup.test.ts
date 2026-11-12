@@ -1,13 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { LookupEngine, Gate } from "../src/lookup/engine";
+import { LookupEngine, Gate } from "../lookup/engine";
 import {
   interpretRdap,
   interpretDns,
   retryAfter,
   type Providers,
-} from "../src/lookup/providers";
-import type { DnsRow, DomainRow, LookupStore } from "../src/lookup/store";
+} from "../lookup/providers";
+import type { DnsRow, DomainRow, LookupStore } from "../lookup/store";
 class MemoryStore implements LookupStore {
   domains = new Map<string, DomainRow>();
   dns = new Map<string, DnsRow>();

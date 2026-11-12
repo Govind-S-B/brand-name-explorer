@@ -176,13 +176,12 @@ export async function readBackup(file?: File) {
   return data.saved;
 }
 export function exportCsv(
-  list: HTMLElement,
+  domains: string[],
   rows: Map<string, { status: string; source: string; checkedAt: number }>,
 ) {
-  const csv = Array.from(list.children)
-    .map((el) => {
-      const domain = (el as HTMLElement).dataset.domain!,
-        r = rows.get(domain);
+  const csv = domains
+    .map((domain) => {
+      const r = rows.get(domain);
       return [
         domain,
         r?.status || "not checked",

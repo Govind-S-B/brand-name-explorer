@@ -9,7 +9,7 @@ const browser = await chromium.launch({
   }),
   expected = JSON.parse(
     await readFile(
-      new URL("../tests/available-fixture.json", import.meta.url),
+      new URL("../../tests/available-fixture.json", import.meta.url),
       "utf8",
     ),
   ),

@@ -1,4 +1,4 @@
-/** CPython integer-seeded MT19937, including getrandbits/_randbelow semantics. */
+/** Integer-seeded MT19937 with the frozen reference random() sequence. */
 export class PythonRandom {
   private mt = new Uint32Array(624);
   private index = 624;
@@ -73,19 +73,5 @@ export class PythonRandom {
       ((this.uint32() >>> 5) * 67108864 + (this.uint32() >>> 6)) /
       9007199254740992
     );
-  }
-  getrandbits(bits: number): number {
-    if (bits <= 32) return this.uint32() >>> (32 - bits);
-    return this.uint32() + (this.uint32() >>> (64 - bits)) * 4294967296;
-  }
-  randbelow(n: number): number {
-    if (!Number.isSafeInteger(n) || n <= 0)
-      throw new Error("Random bound must be a positive safe integer");
-    const bits = Math.floor(Math.log2(n)) + 1;
-    let value;
-    do {
-      value = this.getrandbits(bits);
-    } while (value >= n);
-    return value;
   }
 }

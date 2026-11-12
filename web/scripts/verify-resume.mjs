@@ -11,7 +11,7 @@ const workload = JSON.parse(
   ),
   available = JSON.parse(
     await readFile(
-      new URL("../tests/available-fixture.json", import.meta.url),
+      new URL("../../tests/available-fixture.json", import.meta.url),
       "utf8",
     ),
   );
@@ -131,24 +131,8 @@ await page.locator("#tune-btn").click();
 await page.locator("#domain-controls").evaluate((el) => (el.open = true));
 await page.locator("#check-domains").uncheck();
 await page.locator("#advanced-controls").evaluate((el) => (el.open = true));
-await page.locator("#engine").selectOption("flowing");
 await page.locator("#generate").click();
-assert.equal(await page.locator("#results .name-card").count(), 20);
-assert.ok(
-  (await page.locator("#results h3").allTextContents()).every(
-    (n) => n.length === 5,
-  ),
-);
-await page.locator("#tune-btn").click();
-await page.locator("#engine").selectOption("expansive");
-await page.locator("#spelling-controls").evaluate((el) => (el.open = true));
-await page.locator("#length").fill("15");
-await page.locator("#generate").click();
-await page.reload();
-assert.equal(await page.locator("#length").getAttribute("max"), "15");
 await page.waitForSelector("#results .name-card");
-assert.equal(await page.locator("#results .name-card").count(), 20);
-assert.ok((await page.locator("#results h3").allTextContents()).every(n => n.length === 15));
 await page.locator("#tab-reverse").focus();
 await page.keyboard.press("ArrowRight");
 assert.equal(
@@ -170,8 +154,6 @@ const result = {
   savedPageNetworkCalls: 0,
   refreshRefetched: true,
   offlineResume: true,
-  legacyStyleUI: true,
-  legacyLimitsRestoredOnReload: true,
   keyboardTabs: true,
   peakRdap: peak,
   stats: calls,

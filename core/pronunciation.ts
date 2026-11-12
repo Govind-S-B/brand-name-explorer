@@ -1,3 +1,4 @@
+import { Dictionary } from "./dictionary";
 export const VOWEL_SOUNDS = new Set(
   "AA AE AH AO AW AY EH ER EY IH IY OW OY UH UW".split(" "),
 );
@@ -87,42 +88,19 @@ export function spellingPhones(text: string): string[] {
   }
   return result;
 }
-export interface CompactDictionary {
-  phones: string[];
-  alphabet: string;
-  entries: string;
-}
-let dictionary: Map<string, string[][]> | null = null;
+let dictionary: Dictionary | null = null;
 let pending: Promise<void> | null = null;
-export function installDictionary(data: CompactDictionary) {
-  const decode = Object.fromEntries(
-    [...data.alphabet].map((char, i) => [char, data.phones[i]]),
-  );
-  dictionary = new Map();
-  for (const line of data.entries.split("\n")) {
-    const i = line.indexOf("\t");
-    dictionary.set(
-      line.slice(0, i),
-      line
-        .slice(i + 1)
-        .split("|")
-        .map((p) => [...p].map((c) => decode[c])),
-    );
-  }
+export function installDictionary(data: Uint8Array) {
+  dictionary = new Dictionary(data);
+}
+let loader: (() => Promise<void>) | undefined;
+export function setDictionaryLoader(load: () => Promise<void>) {
+  loader = load;
 }
 export async function loadDictionary() {
   if (dictionary) return;
-  if (!pending)
-    pending = (async () => {
-      const response = await fetch(
-        new URL("../data/cmudict.json", import.meta.url),
-      );
-      if (!response.ok)
-        throw new Error(
-          "The pronunciation dictionary is not available offline yet. Supply ARPABET or an unsegmented engine reading.",
-        );
-      installDictionary(await response.json());
-    })();
+  if (!loader) throw new Error("No pronunciation dictionary loader configured");
+  pending ??= loader();
   try {
     await pending;
   } catch (error) {

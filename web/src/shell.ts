@@ -1,7 +1,7 @@
 /* Static app shell, rendered into index.html at build time (see vite.config.ts)
    so the first screen paints before any JavaScript runs. main.ts wires it up.
    Information architecture: docs/ux-v2.md. */
-import { MOODS, DIALS } from "./core/generator";
+import { MOODS, DIALS } from "../../core/profile";
 const moods = Object.keys(MOODS);
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 const close = `<button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>`;
@@ -78,9 +78,6 @@ ${fold(
   )}${field("Start at page", `<input id="page" type="number" min="1" value="1" required>`)}${field(
     "Seed",
     `<input id="seed" value="42" inputmode="numeric" pattern="-?[0-9]+" required>`,
-  )}${field(
-    "Engine",
-    `<select id="engine"><option value="">Sound moods</option><option value="calm">Original calm</option><option value="flowing">Original flowing</option><option value="expansive">Original expansive</option></select>`,
   )}</div>
 <details class="subfold"><summary>Lookup tuning</summary><div class="form-grid">${field("RDAP connections", number("rdap-concurrency", 1, 6, 6))}${field("RDAP attempts / sec", number("rdap-rate", 1, 160, 30))}${field("DNS slots / provider", number("dns-concurrency", 1, 24, 12))}${field("DNS queries / sec", number("dns-rate", 1, 160, 40))}${field("DNS timeout (ms)", number("dns-timeout", 100, 30000, 2000))}${field("Idle RDAP fallback (ms)", number("hedge-delay", 0, 30000, 250))}</div></details>
 <div class="button-row"><button id="inspect-cache" type="button" class="pill-btn">Inspect cache</button><button id="clear-cache" type="button" class="pill-btn">Clear lookup cache</button><button id="export-results" type="button" class="pill-btn">Export CSV</button></div>

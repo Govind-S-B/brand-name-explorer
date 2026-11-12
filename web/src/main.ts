@@ -1,15 +1,15 @@
+import { Feed } from "./feed";
 import "./style.css";
 import {
   MOODS,
   DIALS,
-  generate,
   resolveProfile,
   type Settings,
   type Ending,
   type Opening,
-} from "./core/generator";
-import type { DomainRow } from "./lookup/store";
-import { DEFAULT_LOOKUP, type LookupOptions } from "./lookup/engine";
+} from "../../core/profile";
+import type { DomainRow } from "../../lookup/store";
+import { DEFAULT_LOOKUP, type LookupOptions } from "../../lookup/engine";
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
   document.querySelector<T>(selector)!;
 const el = (tag: string, cls = "", text = "") => {
@@ -37,7 +37,7 @@ let mood = "calm",
   dirty = false,
   userScrolled = false,
   resumeOnVisible = false,
-  toastTimer = 0;
+  toastTimer: ReturnType<typeof setTimeout> | undefined;
 interface SearchState {
   settings: Settings;
   count: number;
@@ -101,11 +101,8 @@ const input = (id: string) => $<HTMLInputElement>("#" + id),
   select = (id: string) => $<HTMLSelectElement>("#" + id),
   number = (id: string) => Number(input(id).value);
 function settings(): Settings {
-  const style = select("engine").value;
   if (!/^-?\d+$/.test(input("seed").value))
     throw new Error("Seed must be an integer");
-  if (style)
-    return { style, length: number("length"), seed: input("seed").value };
   const result: Settings = {
     mood,
     length: number("length"),
@@ -136,7 +133,6 @@ function options(): Partial<LookupOptions> {
 }
 function syncProfile() {
   const blend = select("blend").value,
-    style = select("engine").value,
     custom = DIALS.some((d) => input(d).dataset.explicit === "true"),
     profile = resolveProfile({
       mood,
@@ -151,11 +147,8 @@ function syncProfile() {
   $("#blend-amount-value").textContent = input("blend-amount").value;
   input("blend-amount").disabled = !blend;
   $("#mood-swatch").className = "swatch mood-" + mood;
-  setText($("#mood-label"), style ? "Original " + style : label);
-  setText(
-    $("#feed-title"),
-    style ? `Original ${style} names` : `Names that feel ${mood}`,
-  );
+  setText($("#mood-label"), label);
+  setText($("#feed-title"), `Names that feel ${mood}`);
   setText($("#mood-summary"), label);
   setText(
     $("#sound-summary"),
@@ -256,21 +249,6 @@ document.querySelectorAll<HTMLButtonElement>("[data-step]").forEach(
       }
     }),
 );
-function syncEngine(resetLength = false) {
-  const style = select("engine").value;
-  if (resetLength)
-    input("length").value =
-      style === "flowing" ? "5" : style === "expansive" ? "7" : "6";
-  input("length").min = style === "calm" ? "2" : "3";
-  input("length").max =
-    style === "expansive" ? "15" : style === "flowing" ? "13" : "14";
-  input("length").step = style ? "2" : "1";
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-mood]")
-    .forEach((b) => (b.disabled = Boolean(style)));
-}
-syncEngine();
-select("engine").onchange = () => syncEngine(true);
 $("#panel-explore").addEventListener("change", (event) => {
   try {
     syncProfile();
@@ -304,9 +282,9 @@ $("#generate-form").onsubmit = (event) => {
   tune.close();
   run();
 };
-document.querySelectorAll<HTMLElement>("[data-close]").forEach(
-  (b) => (b.onclick = () => b.closest("dialog")!.close()),
-);
+document
+  .querySelectorAll<HTMLElement>("[data-close]")
+  .forEach((b) => (b.onclick = () => b.closest("dialog")!.close()));
 document.querySelectorAll("dialog").forEach((d) =>
   d.addEventListener("click", (e) => {
     if (e.target === d && d.matches(":modal")) d.close();
@@ -343,22 +321,20 @@ function setBusy(value: boolean) {
 const onPage = (page: number) => (page > 1 ? ` · page ${page}` : "");
 
 // Feed rows. Clicks are delegated: the heart saves, the name opens the sheet.
-function updateSavedButtons() {
+function updateSavedButtons(root: ParentNode = document) {
   const n = Object.keys(saved).length;
   $("#saved-count").textContent = String(n);
   $("#saved-count").dataset.n = String(n);
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-save]")
-    .forEach((button) => {
-      const yes = Boolean(saved[button.dataset.save!]);
-      button.setAttribute("aria-pressed", String(yes));
-      // The sheet's button is named by its visible "Save"/"Saved" label.
-      if (button.id !== "ns-save")
-        button.setAttribute(
-          "aria-label",
+  root.querySelectorAll<HTMLButtonElement>("[data-save]").forEach((button) => {
+    const yes = Boolean(saved[button.dataset.save!]);
+    button.setAttribute("aria-pressed", String(yes));
+    // The sheet's button is named by its visible "Save"/"Saved" label.
+    if (button.id !== "ns-save")
+      button.setAttribute(
+        "aria-label",
         `${yes ? "Remove" : "Save"} ${button.dataset.name}${yes ? " from shortlist" : " to shortlist"}`,
       );
-    });
+  });
   setText($("#ns-save span"), saved[sheetDomain] ? "Saved" : "Save");
 }
 function nameCard(domain: string, row?: DomainRow): HTMLLIElement {
@@ -396,26 +372,31 @@ function mark(li: HTMLElement, badge: Element, state: string, text: string) {
   badge.className = "domain-status " + state;
   badge.textContent = text;
 }
+const feed = new Feed(
+  list,
+  (domain) => {
+    const card = nameCard(domain, rows.get(domain));
+    if (!rows.has(domain) && activeSearch && !activeSearch.filtered && running)
+      mark(
+        card,
+        card.querySelector(".domain-status")!,
+        "checking",
+        "checking…",
+      );
+    return card;
+  },
+  () => updateSavedButtons(list),
+);
 function trim() {
-  while (list.children.length > pageStart) list.lastElementChild!.remove();
+  feed.truncate(pageStart);
 }
-function renderNames(names: string[], checking: boolean) {
-  for (const n of names) {
-    const card = nameCard(n.toLowerCase() + ".com");
-    if (checking)
-      mark(card, card.querySelector(".domain-status")!, "checking", "checking…");
-    list.append(card);
-  }
-  updateSavedButtons();
+function renderNames(names: string[], _checking: boolean) {
+  for (const name of names) feed.add(name.toLowerCase() + ".com");
 }
 function addRow(row: DomainRow) {
   rows.set(row.domain, row);
-  const card = nameCard(row.domain, row),
-    old = list.querySelector(`[data-domain="${row.domain}"]`);
-  if (old) old.replaceWith(card);
-  else list.append(card);
+  feed.update(row.domain);
   pageDone++;
-  updateSavedButtons();
   meter();
 }
 function toggleSave(domain: string) {
@@ -480,24 +461,38 @@ async function requestPersistence() {
     /* IDB errors are reported by the worker */
   }
 }
-function beginSearch(search: SearchState, refresh = false) {
-  trim();
-  if (!search.filtered)
-    renderNames(generate(search.settings, search.count, search.page), true);
-  list.dataset.filtered = String(search.filtered);
+async function beginSearch(search: SearchState, refresh = false) {
+  const id = ++requestId;
   activeSearch = search;
   paused = false;
   pageDone = 0;
-  requestId++;
   setBusy(true);
   runState("running");
-  meter();
-  lookup.postMessage({ type: "search", id: requestId, ...search, refresh });
+  try {
+    trim();
+    if (!search.filtered) {
+      const names = await generateNames(search);
+      if (id !== requestId) return;
+      renderNames(names, true);
+      feed.flush();
+    }
+    list.dataset.filtered = String(search.filtered);
+    meter();
+    lookup.postMessage({ type: "search", id, ...search, refresh });
+  } catch (error) {
+    if (id === requestId) {
+      setBusy(false);
+      showError((error as Error).message);
+    }
+  }
 }
-function run(more = false) {
+let generationEpoch = 0;
+async function run(more = false) {
+  const token = ++generationEpoch;
   try {
     let search: SearchState;
-    if (more && lastSearch) search = { ...lastSearch, page: lastSearch.page + 1 };
+    if (more && lastSearch)
+      search = { ...lastSearch, page: lastSearch.page + 1 };
     else {
       const count = Number(select("count").value),
         page = number("page");
@@ -515,30 +510,34 @@ function run(more = false) {
       };
       savePreferences();
     }
-    const names = generate(search.settings, search.count, search.page);
     cancel();
+    runState("running");
+    const names =
+      !checksOn || !navigator.onLine ? await generateNames(search) : [];
+    if (token !== generationEpoch) return;
     dirty = false;
     $("#notice").hidden = true;
     activeSearch = undefined;
     lastSearch = search;
-    pageStart = more ? list.children.length : 0;
+    pageStart = more ? feed.length : 0;
+    if (!more)
+      for (const domain of rows.keys()) if (!saved[domain]) rows.delete(domain);
     if (!more) scrollTo({ top: 0 });
     if (!checksOn || !navigator.onLine) {
       trim();
       renderNames(names, false);
+      feed.flush();
       list.dataset.filtered = "false";
       if (checksOn) {
         activeSearch = search;
         paused = resumeOnVisible = true;
         $("#resume").hidden = false;
         runState("offline");
-        status(
-          "You’re offline. Showing unchecked names until you reconnect.",
-        );
+        status("You’re offline. Showing unchecked names until you reconnect.");
       } else {
         runState("idle");
         status(
-          `${list.children.length} names · availability checks are off${onPage(search.page)}`,
+          `${feed.length} names · availability checks are off${onPage(search.page)}`,
         );
       }
       return;
@@ -579,8 +578,34 @@ new IntersectionObserver(([entry]) => {
   )
     run(true);
 }).observe($("#next"));
+let generationId = 0;
+const generations = new Map<
+  number,
+  { resolve: (names: string[]) => void; reject: (error: Error) => void }
+>();
+function generateNames(search: SearchState): Promise<string[]> {
+  const id = ++generationId;
+  return new Promise((resolve, reject) => {
+    generations.set(id, { resolve, reject });
+    lookup.postMessage({
+      type: "generate",
+      id,
+      settings: search.settings,
+      count: search.count,
+      page: search.page,
+    });
+  });
+}
 lookup.onmessage = (event) => {
   const msg = event.data;
+  if (msg.type === "generated") {
+    const pending = generations.get(msg.id);
+    generations.delete(msg.id);
+    msg.error
+      ? pending?.reject(new Error(msg.error))
+      : pending?.resolve(msg.names);
+    return;
+  }
   if (msg.type === "cache") {
     const s = msg.stats;
     $("#cache-status").textContent =
@@ -596,6 +621,7 @@ lookup.onmessage = (event) => {
         : `Checking .com availability… ${pageDone} of ${activeSearch?.count}`,
     );
   else if (msg.type === "done") {
+    feed.flush();
     const filtered = activeSearch?.filtered,
       page = activeSearch?.page || 1;
     paused = false;
@@ -604,8 +630,8 @@ lookup.onmessage = (event) => {
     runState("done");
     status(
       filtered
-        ? `${list.children.length} possibly available .com names${onPage(page)}`
-        : `${list.children.length} names · ${list.querySelectorAll(".available").length} possibly available${onPage(page)}`,
+        ? `${feed.length} possibly available .com names${onPage(page)}`
+        : `${feed.length} names · ${feed.domains.filter((d) => rows.get(d)?.status === "possibly available").length} possibly available${onPage(page)}`,
     );
     $("#lookup-stats").textContent =
       `Last page: ${msg.emitted} results from ${msg.cursor.toLocaleString()} candidates. RDAP ${msg.stats.rdap} · DNS ${msg.stats.dns} · ${msg.stats.skipped} RDAP checks skipped · ${msg.stats.cacheHits} cached.`;
@@ -646,21 +672,20 @@ $("#backup").onclick = () =>
 input("import").onchange = () =>
   ui()
     .then((m) => m.readBackup(input("import").files?.[0]))
-    .then(
-      (data) => {
-        if (!data) return;
-        if (!validSaved(data)) throw new Error("This is not a valid shortlist backup");
-        saved = { ...saved, ...data };
-        storageSet(savedKey, JSON.stringify(saved));
-        renderSaved();
-        $("#saved-status").textContent =
-          `Imported. ${Object.keys(saved).length} saved names.`;
-      },
-    )
+    .then((data) => {
+      if (!data) return;
+      if (!validSaved(data))
+        throw new Error("This is not a valid shortlist backup");
+      saved = { ...saved, ...data };
+      storageSet(savedKey, JSON.stringify(saved));
+      renderSaved();
+      $("#saved-status").textContent =
+        `Imported. ${Object.keys(saved).length} saved names.`;
+    })
     .catch((error) => ($("#saved-status").textContent = error.message))
     .finally(() => (input("import").value = ""));
 $("#export-results").onclick = () =>
-  ui().then((m) => m.exportCsv(list, rows));
+  ui().then((m) => m.exportCsv(feed.domains, rows));
 function switchTab(id: string) {
   document
     .querySelectorAll<HTMLButtonElement>("[data-tab]")
@@ -701,8 +726,6 @@ function applySettings(
 ) {
   (document.querySelector("dialog[open]") as HTMLDialogElement)?.close();
   switchTab("explore");
-  select("engine").value = "";
-  syncEngine();
   if (recipe) setMood(recipe);
   for (const d of DIALS) {
     input(d).value = String(dials[d]);
@@ -758,12 +781,10 @@ sheet.onclose = () => {
   if (!$("#panel-saved").hidden) renderSaved();
 };
 $("#ns-copy").onclick = () =>
-  navigator.clipboard
-    .writeText($("#ns-name").textContent!)
-    .then(
-      () => toast("Copied " + $("#ns-name").textContent),
-      () => toast("Copy is not available here"),
-    );
+  navigator.clipboard.writeText($("#ns-name").textContent!).then(
+    () => toast("Copied " + $("#ns-name").textContent),
+    () => toast("Copy is not available here"),
+  );
 
 // Reverse: type a name, get the result; follow-ups fold in the other tools.
 const reverse = $("#panel-reverse"),
@@ -794,17 +815,28 @@ function analyseReverse(mode: string) {
   reverse.dataset.busy = "";
   line.textContent = "Reading the sound…";
   ui().then((m) =>
-    m.analyse(mode, input("reverse-word").value.trim(), extra, (result, error) => {
-      delete reverse.dataset.busy;
-      line.textContent =
-        error || "Analysis complete. No domain lookups were made.";
-      if (mode === "reverse") {
-        follow.hidden = Boolean(error);
-        more.replaceChildren();
-        m.showReport(reverse.querySelector(".tool-result")!, result, error, applySettings);
-      } else if (mode === "inverter") m.showFit(more, result, error, applySettings);
-      else m.showNearby(more, result, error);
-    }),
+    m.analyse(
+      mode,
+      input("reverse-word").value.trim(),
+      extra,
+      (result, error) => {
+        delete reverse.dataset.busy;
+        line.textContent =
+          error || "Analysis complete. No domain lookups were made.";
+        if (mode === "reverse") {
+          follow.hidden = Boolean(error);
+          more.replaceChildren();
+          m.showReport(
+            reverse.querySelector(".tool-result")!,
+            result,
+            error,
+            applySettings,
+          );
+        } else if (mode === "inverter")
+          m.showFit(more, result, error, applySettings);
+        else m.showNearby(more, result, error);
+      },
+    ),
   );
 }
 form.onsubmit = (event) => {

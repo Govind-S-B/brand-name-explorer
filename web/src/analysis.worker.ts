@@ -3,9 +3,23 @@ import {
   fitProfiles,
   parseSpelling,
   spellingPhoneSequence,
-} from "./core/inverter";
-import { readReference } from "./core/pronunciation";
-import { suggest } from "./core/substitutions";
+} from "../../core/inverter";
+import {
+  readReference,
+  setDictionaryLoader,
+  installDictionary,
+} from "../../core/pronunciation";
+import { suggest } from "../../core/substitutions";
+setDictionaryLoader(async () => {
+  const response = await fetch(
+    new URL("../../data/cmudict.bin", import.meta.url),
+  );
+  if (!response.ok)
+    throw new Error(
+      "The pronunciation dictionary is not available offline yet. Supply ARPABET or an unsegmented engine reading.",
+    );
+  installDictionary(new Uint8Array(await response.arrayBuffer()));
+});
 self.onmessage = async (event: MessageEvent) => {
   const { id, mode, word, reading, phones, seed, count } = event.data;
   try {
