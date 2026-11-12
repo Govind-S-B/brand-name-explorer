@@ -1,21 +1,21 @@
 {
   "base": "https://govind-s-b.github.io/brand-name-explorer/",
-  "checkedAt": "2026-11-12T13:18:56.714Z",
+  "checkedAt": "2026-11-12T14:52:45.332Z",
   "allMatchLocalBuild": true,
   "files": [
     {
-      "path": "assets/analysis.worker-7N3eWULR.js",
+      "path": "assets/analysis-ui-CCldbBeL.js",
       "status": 200,
-      "bytes": 21621,
-      "sha256": "cbe3b58ae099279c13ff2649b8c04c38b46cf42dc9d77b14e6ca077862afd096",
+      "bytes": 3603,
+      "sha256": "be64f8904783c5c472af46e5521396414dba1d0fe3e39d108f173dbcc291fca3",
       "contentType": "application/javascript; charset=utf-8"
     },
     {
-      "path": "assets/bne-mono-400-Cy94DRbc.woff2",
+      "path": "assets/analysis.worker-D69Vq7sW.js",
       "status": 200,
-      "bytes": 5096,
-      "sha256": "d6020c58160e83f7544bcbb73a17a7633b11ef0f37d503c2f1413f8fc32945db",
-      "contentType": "font/woff2"
+      "bytes": 21633,
+      "sha256": "51d212ff740e67e5f6d230bb8a19c8fe5b68a1a9943ad091a37f6323a6ba1705",
+      "contentType": "application/javascript; charset=utf-8"
     },
     {
       "path": "assets/cmudict-CDVrJOwC.json",
@@ -32,24 +32,31 @@
       "contentType": "font/woff2"
     },
     {
-      "path": "assets/index-CZND0xj_.css",
+      "path": "assets/index-BWguVF-A.js",
       "status": 200,
-      "bytes": 20716,
-      "sha256": "ff2adae6874fbba968ea054b7f0f8f6a5be3878294eb6daa16e3db842747ae2d",
-      "contentType": "text/css; charset=utf-8"
+      "bytes": 26283,
+      "sha256": "194ce5fe15dbf97c59a93878c313cb49729dbb55780aed732486abe3a6fa2bce",
+      "contentType": "application/javascript; charset=utf-8"
     },
     {
-      "path": "assets/index-gkfkdj12.js",
+      "path": "assets/index-Bx_-zUNL.css",
       "status": 200,
-      "bytes": 27461,
-      "sha256": "67b6f7d915004cc8598135d75e4ca9bfcf5b584e3dd9a03f5c1380a73e062faf",
-      "contentType": "application/javascript; charset=utf-8"
+      "bytes": 24507,
+      "sha256": "0f02e2a279b0e2648cc7ca50a9f1fec5cb16b41304343195af53dc11f9dcd07e",
+      "contentType": "text/css; charset=utf-8"
     },
     {
       "path": "assets/inter-400-DGwFTPnX.woff2",
       "status": 200,
       "bytes": 6824,
       "sha256": "f8e92156a3a000de9a704a51e4cd7b0d71d21c017e34327c74d6184566cd845b",
+      "contentType": "font/woff2"
+    },
+    {
+      "path": "assets/inter-600-CrnvEuSK.woff2",
+      "status": 200,
+      "bytes": 7072,
+      "sha256": "fb3bf0f1739a25ea99ad0a054eaa338b5c4c8d79bb585b77ad39c4aa67318ad2",
       "contentType": "font/woff2"
     },
     {
@@ -69,8 +76,8 @@
     {
       "path": "fonts-LICENSE.txt",
       "status": 200,
-      "bytes": 13563,
-      "sha256": "d2168f647fa6447cca817a96ddaae541b47319a6ae80ce476dbf487e734f1e1c",
+      "bytes": 8981,
+      "sha256": "5fdf4617b3cd10a452604d5179f5c7144ee16939e4e7dfe128023cc981bb764e",
       "contentType": "text/plain; charset=utf-8"
     },
     {
@@ -83,15 +90,15 @@
     {
       "path": "index.html",
       "status": 200,
-      "bytes": 13706,
-      "sha256": "e187671ec3210ed4fd2aa0f20bf6375617cc3d765916afa3404811bea26808b9",
+      "bytes": 15823,
+      "sha256": "84528f114c228bb3de70be9413b341f7ca0dc9f77c976e14e71bd5ee65999647",
       "contentType": "text/html; charset=utf-8"
     },
     {
       "path": "sw.js",
       "status": 200,
-      "bytes": 1666,
-      "sha256": "3f2e1e64fc0f10adc8275eb5a9ff5705673cabb53aa8dfc23bee690dbd6ee2a7",
+      "bytes": 1696,
+      "sha256": "f3580e19ad098ea2cb865635cd0e76bd3ce6b5ab7438bdd2c7811ea3eec03334",
       "contentType": "application/javascript; charset=utf-8"
     }
   ]

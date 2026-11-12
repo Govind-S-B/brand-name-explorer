@@ -2,6 +2,52 @@
 
 Live: **https://govind-s-b.github.io/brand-name-explorer/**
 
+## UX v2 deployment
+
+[Actions run 43241488175](https://github.com/Govind-S-B/brand-name-explorer/actions/runs/43241488175)
+deployed `bc0a5a1` successfully. That commit is the mobile-first browsing feed
+([UX plan](ux-v2.md)), pushed as three commits on top of `c60a909` without
+force-pushing:
+
+| Commit | Change |
+| --- | --- |
+| `c0269a0` | Rebuild the web app as a browsing feed with CLI defaults |
+| `a827fd9` | Update browser verifiers for the v2 IA |
+| `bc0a5a1` | Record v2 verification, measurements and screenshots |
+
+The runner passed the 79 Python tests, the 134 web tests and the production build.
+
+**Live assets.** [Evidence](live-assets.json): all **14** published files return
+HTTP 200 and match the local build by SHA-256. That includes the lazy
+`analysis-ui` chunk, both workers, the fonts and the dictionary.
+
+**Live browser checks.** [Evidence](live-browser-verification.json): installed
+Chrome at **390 × 844** (iPhone 13 emulation) and 1440 × 1000, with real lookups.
+- **Landing:** each profile shows the CLI-default feed, 20 names that are all
+  possibly available. Responses came from Verisign RDAP, Cloudflare and Google DoH.
+- **Reveal toggle:** shows 12 registered names among 20.
+- **Name sheet:** the sound breakdown and inverter run without the dictionary;
+  nearby spellings work.
+- **Reverse:** loads the dictionary, and its substitutions follow-up works.
+- **Shortlist and cache:** backup and import work, and cache clearing keeps the
+  shortlist.
+- **Offline:** an offline reload and offline analysis both work.
+- **Quality:** zero page errors, same-origin failures, overflow and axe violations
+  (feed, both sheets, Reverse and Shortlist).
+- **Service worker:** activated with the repository scope.
+
+Live screenshots:
+- [390 px feed](screenshots/live-mobile.png) · [name sheet](screenshots/live-mobile-sheet.png) · [Tune](screenshots/live-mobile-tune.png) · [full page](screenshots/live-mobile-full.png)
+- [desktop feed](screenshots/live-desktop.png) · [name sheet](screenshots/live-desktop-sheet.png) · [Tune](screenshots/live-desktop-tune.png)
+
+**Live Lighthouse (mobile).** [Summary](lighthouse-live-mobile-summary.json):
+**performance 100, accessibility 100**, LCP 0.853 s, TBT 32 ms, CLS 0. Two further
+runs gave LCP 0.895 and 0.918 s with TBT 0. The audited transfer is 61,540 bytes:
+42,647 from github.io and the rest from the landing feed's own lookups. v1 measured
+LCP 0.958 s live.
+
+## v1 deployment (earlier the same day)
+
 [Successful Actions deployment](https://github.com/Govind-S-B/brand-name-explorer/actions/runs/43225800126)
 of `bc313369fdd6bdb4fa8191d82f819a127eba8b33`. Pages uses the GitHub Actions build
 type. The workflow is manual (`workflow_dispatch`); pushing future commits does
