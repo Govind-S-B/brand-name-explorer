@@ -3,6 +3,7 @@ import {
   fitProfiles,
   parseSpelling,
   spellingPhoneSequence,
+  closestRecipe,
 } from "../../core/inverter";
 import {
   readReference,
@@ -31,6 +32,7 @@ self.onmessage = async (event: MessageEvent) => {
         parsed,
         phones: spellingPhoneSequence(parsed),
         fits: fits.slice(0, 10),
+        nearest_recipe: closestRecipe(fits[0][1]),
         note: "Integer dial-grid fits with neutral regularization, not recovered original settings.",
       };
     } else if (mode === "substitutions")

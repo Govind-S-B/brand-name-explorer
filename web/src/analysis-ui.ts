@@ -5,7 +5,7 @@ type Result = any;
 type Apply = (
   dials: Record<string, number>,
   structure: Record<string, string | number>,
-  recipe?: string,
+  recipe: string,
 ) => void;
 type Done = (result: Result, error?: string) => void;
 const DIALS = ["energy", "weight", "novelty"];
@@ -66,8 +66,8 @@ export function showFit(box: HTMLElement, result: Result, error: string | undefi
   box.replaceChildren();
   if (error) return box.append(el("p", "err", error));
   const [, dials] = result.fits[0],
-    use = el("button", "pill-btn", "Use these settings");
-  use.onclick = () => apply(dials, result.parsed.structure);
+    use = el("button", "pill-btn", "Explore similar →");
+  use.onclick = () => apply(dials, result.parsed.structure, result.nearest_recipe);
   box.append(
     el("p", "phones", result.phones.join(" ")),
     chips(result.parsed.structure),
@@ -110,7 +110,7 @@ export function showReport(box: HTMLElement, result: Result, error: string | und
     box.append(el("p", "analysis-summary", "Settings that make this sound"));
   for (const item of result.candidates) {
     const card = el("article", "candidate"),
-      go = el("button", "pill-btn", "Explore these →");
+      go = el("button", "pill-btn", "Explore similar →");
     go.onclick = () => apply(item.dials, result.structure, item.nearest_recipe);
     card.append(
       el("h3", "", `Nearest mood: ${cap(item.nearest_recipe)}`),

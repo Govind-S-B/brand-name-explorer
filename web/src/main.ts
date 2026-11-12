@@ -722,11 +722,11 @@ document.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((button) => {
 function applySettings(
   dials: Record<string, number>,
   structure: Record<string, string | number>,
-  recipe?: string,
+  recipe: string,
 ) {
   (document.querySelector("dialog[open]") as HTMLDialogElement)?.close();
   switchTab("explore");
-  if (recipe) setMood(recipe);
+  setMood(recipe);
   for (const d of DIALS) {
     input(d).value = String(dials[d]);
     input(d).dataset.explicit = "true";

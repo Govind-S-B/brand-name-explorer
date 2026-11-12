@@ -41,7 +41,7 @@ There are three destinations: a bottom tab bar on phones and header tabs on desk
    - The result offers follow-ups:
      - **Nearby spellings** (the substitutions tool);
      - **Exact fit** (the inverter);
-     - "Explore these" for each candidate setting.
+     - "Explore similar →" for each candidate setting.
 3. **Shortlist**: saved names in the same rows, also opening the name sheet.
    Backup and import are two quiet actions under the title. There is an empty state.
 
@@ -85,9 +85,13 @@ There are three destinations: a bottom tab bar on phones and header tabs on desk
   - the inverter runs in the analysis worker from the generator grammar, so no
     dictionary download is needed;
   - it shows phones, syllables, opening and ending, plus the closest dial
-    settings, with "Use these settings".
+    settings, with "Explore similar →".
 - **Nearby spellings:** substitution suggestions, computed on request from the
   same phones.
+
+"Explore similar →" consistently applies the displayed dials and structure,
+selects their nearest mood, and starts a new Explore feed from page 1. This action
+is shared by name-sheet Sound, Reverse candidates, and Reverse's Exact fit.
 
 ## First screen at 390 px
 
