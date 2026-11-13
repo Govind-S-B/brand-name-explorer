@@ -37,7 +37,7 @@ sit in the header. GitHub opens this repository in a new tab.
    - **Feed**:
      - one row per name: the name, its domain, a status dot and a save heart;
      - tapping a row opens the **name sheet**.
-   - **Load more** appends the next page underneath. Pages keep their
+   - Scrolling to the end appends the next page underneath, with placeholder rows while it loads. A **Load more** button appears only when the end of the list is already on screen. Pages keep their
      resume/cache semantics; the feed just reads as continuous.
 2. **Reverse**: one field, "Type a name you like", then the result.
    - Pronunciation options (reading source, supplied reading) are folded.
@@ -60,7 +60,7 @@ sit in the header. GitHub opens this repository in a new tab.
 | Names per page, start page, seed | Tune › Advanced |
 | Lookup tuning (RDAP and DNS slots, rates, timeouts) | Tune › Advanced › Lookup tuning |
 | Cache inspect and clear, CSV export, last-search lookup statistics | Tune › Advanced |
-| Pagination | Load more (feed); start page (Advanced) |
+| Pagination | Scroll to the end (feed; Load more button only as a fallback); start page (Advanced) |
 | Pause and resume | Status line, contextual |
 | Pronunciation and sound breakdown | Name sheet › Sound (runs automatically, no dictionary) |
 | Inverter ("fit this spelling") | Name sheet › Sound; Reverse › Exact fit |
@@ -186,7 +186,7 @@ nothing visible is pushed around. About eight 68 px rows fit above the bottom ta
 | --- | --- |
 | Loading | Placeholder rows; quiet shimmer, static under reduced motion |
 | Checking | Progress bar; "Checked 132 · 9 available so far"; rows land with a 2 px fade |
-| Done | "20 names · possibly available .com"; Load more appears |
+| Done | "20 names · possibly available .com"; the next page loads when the end scrolls into view |
 | Empty | "No available names on this page" with Load more and a hint to tap the mood above |
 | Show-all mode | Registered rows dim, labelled "registered"; unchecked rows "checking…" |
 | Offline | Header pill "Offline"; the feed shows unchecked names and resumes automatically when back online |

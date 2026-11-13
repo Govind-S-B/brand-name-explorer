@@ -618,9 +618,7 @@ svg {
     26% 12px;
   animation-delay: 0.45s;
 }
-.stage:is([data-state="loading"], [data-state="running"])
-  #results:empty
-  + .skeletons {
+.stage[data-state="loading"] #results:empty + .skeletons {
   display: block;
 }
 .empty {
@@ -644,16 +642,20 @@ svg {
 #next {
   margin: 20px 0 8px;
 }
-.stage:is([data-state="paused"], [data-state="error"]) #next,
-.stage:is([data-state="loading"], [data-state="running"])
-  #results:empty
-  ~ #next {
+/* The feed loads on scroll. Placeholder rows hold the end of the list while
+   the next page arrives; the button appears only when the end is already on
+   screen and scrolling cannot trigger a load. */
+.stage[data-state="running"] .skeletons {
+  display: block;
+}
+#feed-end {
+  height: 1px;
+}
+#next {
   display: none;
 }
-/* While more names load, the button stays in place as the progress line, so
-   the end of the list neither jumps nor goes blank. */
-#next:disabled {
-  animation: shimmer 1.4s ease-in-out infinite;
+.stage.ends-in-view:is([data-state="done"], [data-state="idle"]) #next {
+  display: inline-flex;
 }
 
 /* Buttons. */

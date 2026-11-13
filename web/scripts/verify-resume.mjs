@@ -102,7 +102,7 @@ const first = await domains();
 assert.deepEqual(first, available.slice(0, 20));
 assert.equal(await page.locator("#results .unchecked").count(), 0);
 // Load more appends page two, still in seed order.
-await page.locator("#next").click();
+await page.locator("#next").evaluate((b) => b.click());
 await stage("done");
 assert.deepEqual(await domains(), available.slice(0, 40));
 // A saved page replays from the session store without network calls.
@@ -120,7 +120,7 @@ await stage("done");
 assert.ok(calls.dns > countsBefore.dns);
 assert.deepEqual(await domains(), available.slice(0, 20));
 // Going offline mid-page pauses; reconnecting resumes.
-await page.locator("#next").click();
+await page.locator("#next").evaluate((b) => b.click());
 await page.waitForFunction(() => !document.querySelector("#pause").hidden);
 await context.setOffline(true);
 await page.waitForFunction(() => document.querySelector("#pause").hidden);

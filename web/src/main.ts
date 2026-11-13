@@ -467,10 +467,16 @@ function status(text: string) {
 type RunState = "idle" | "running" | "paused" | "done" | "error" | "offline";
 function runState(state: RunState) {
   $("#stage").dataset.state = state;
-  const busy = state === "running",
-    next = $<HTMLButtonElement>("#next");
-  next.disabled = busy;
-  setText(next, busy ? "Finding more names…" : "Load more names");
+  if (state === "done" || state === "idle") requestAnimationFrame(endOfFeed);
+}
+/**
+ * The feed loads its next page when its end scrolls into view. The button is
+ * only a fallback for when that cannot happen: the end is already on screen
+ * once a page has finished (a short list, or a page that added nothing).
+ */
+function endOfFeed() {
+  const end = $("#feed-end").getBoundingClientRect();
+  $("#stage").classList.toggle("ends-in-view", end.top < innerHeight);
 }
 function meter() {
   $("#meter").style.width =
@@ -795,18 +801,22 @@ $("#resume").onclick = () => {
   } else status("Reconnect to resume checking.");
 };
 $("#next").onclick = () => run(true);
-// Infinite-scroll feel: after a real scroll gesture, reaching Load more loads it.
+// Infinite scroll: once the reader has scrolled, reaching the end of the feed
+// loads the next page. Wheel, touch and keyboard scrolling all count.
 addEventListener("wheel", () => (userScrolled = true), { passive: true });
 addEventListener("touchmove", () => (userScrolled = true), { passive: true });
+addEventListener("scroll", () => scrollY > 0 && (userScrolled = true), {
+  passive: true,
+});
 new IntersectionObserver(([entry]) => {
   if (
     entry.isIntersecting &&
     userScrolled &&
     !running &&
-    $("#stage").dataset.state === "done"
+    ["done", "idle"].includes($("#stage").dataset.state!)
   )
     run(true);
-}).observe($("#next"));
+}).observe($("#feed-end"));
 let generationId = 0;
 const generations = new Map<
   number,

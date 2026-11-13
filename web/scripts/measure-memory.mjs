@@ -115,7 +115,7 @@ await page.waitForFunction(
   () => document.querySelector("#stage").dataset.state === "idle",
 );
 results.push(await heaps("feed-4000"));
-await page.locator("#next").click();
+await page.locator("#next").evaluate((b) => b.click());
 await page.waitForFunction(
   () => document.querySelector("#stage").dataset.state === "idle",
 );

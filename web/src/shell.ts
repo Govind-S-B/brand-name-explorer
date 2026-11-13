@@ -105,6 +105,7 @@ ${tune}
 <h2 class="sr-only">Names</h2><ul id="results" class="feed" aria-label="Names" data-filtered="true"></ul>
 <div class="skeletons" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 <div class="empty"><p><b>No available names on this page.</b></p><p>Tap the mood above to change settings, or load the next page.</p></div>
+<div id="feed-end" aria-hidden="true"></div>
 <button id="next" type="button" class="secondary wide">Load more names</button>
 </div>
 </section>

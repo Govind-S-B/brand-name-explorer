@@ -118,9 +118,9 @@ for (const name of only) {
   await page.locator("#filter-available").check();
   await page.locator("#generate").click();
   await state(page, "done");
-  await page.locator("#next").click();
+  await page.locator("#next").evaluate((b) => b.click());
   await state(page, "done");
-  await page.locator("#next").scrollIntoViewIfNeeded();
+  await page.locator("#feed-end").evaluate((e) => e.scrollIntoView());
   await settle(page);
   await shot("load-more");
   // Error: a second tab cannot check while this one holds the lookup lock.

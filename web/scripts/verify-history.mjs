@@ -200,7 +200,7 @@ try {
     assert.equal(await page.locator("#seed").inputValue(), stableSeed);
     assert.equal(await page.locator("#mood-label").textContent(), stableMood);
     const previous = (await history()).length;
-    await page.locator("#next").click();
+    await page.locator("#next").evaluate((b) => b.click());
     await idle();
     assert.equal((await history()).length, previous + 1);
     assert.equal((await history())[0].controls.page, "2");
