@@ -1,6 +1,6 @@
 # Inventing words from the feelings of sound
 
-Research direction · Updated 12 November 2026 · Exploratory
+Research direction · Updated 13 November 2026 · Exploratory
 
 ## The thesis
 
@@ -196,6 +196,21 @@ preferences, numeric recipe blending, opening/syllable/ending constraints, exact
 character length, seeded generation, and cached domain checks. See the
 [control hierarchy](control-hierarchy.md) and [sound-dial implementation notes](sound-dials.md).
 Current blending interpolates recipe settings; it is not learned vector mixing.
+
+Engine v2 (13 November 2026) advanced topics 1 and 4 with rules and small
+linear models, not a neural network. Topic 1: sounds now carry seven
+dimensions recomputed from the Sidhu ratings, and moods add structure (rhythm,
+endings, repetition, complexity) because sound choice alone separates little
+more than one light–heavy axis. Topic 4: 3,091 blind LLM judgments were
+distilled into a compact mood-reading and quality model used during selection,
+with the judgments kept separate from a held-out round as this document asks.
+A third signal was not anticipated here: whether a generated spelling's `.com`
+is already registered, used as a behavioural prior for name-likeness. This
+departs from the earlier rule that availability must not shape sound design. It
+is applied as a declared, capped prior and never as a mood signal, and its
+winner's-curse effect on short names is documented in
+[sound-dials.md](sound-dials.md). No listener study exists yet; agreement with
+rules, with the teacher and with people remain three different things.
 A local [reverse-finder prototype](reverse-finder.md) now fits candidate dial
 configurations only for references the generator can represent, and reports gaps
 otherwise. Supplied readings, an offline dictionary, and labelled spelling

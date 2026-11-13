@@ -23,6 +23,12 @@ Every “possibly available” result is RDAP-confirmed. DNS only filters regist
 names. Registry absence does not guarantee purchase availability; confirm with
 a registrar. Sound preferences are experimental, not measured emotions.
 
+The sound engine combines published sound-symbolism ratings, a sample of which
+generated names are already registered, and blind judgments of its own output.
+In the latest blind round a judge read the intended mood in 81% of
+default-setting names; the first engine scored about 28% in earlier rounds. The
+[engine notes](docs/sound-dials.md) give the evidence, the numbers and the limits.
+
 <p>
   <img src="https://github.com/Govind-S-B/brand-name-explorer/releases/download/assets/mobile-feed.png" width="240" alt="Mobile name feed">
   <img src="https://github.com/Govind-S-B/brand-name-explorer/releases/download/assets/tune.png" width="240" alt="Tune mood sheet">
@@ -53,7 +59,7 @@ a browser can be evicted; download a Shortlist backup for a portable copy.
 ## Node CLI
 
 Build once with `npm run build`, then run `node dist/cli.mjs` (or `npm run cli -- …`).
-The default is **200 possibly available .com names**, calm mood, six letters,
+The default is **200 possibly available .com names**, calm mood, seven letters,
 seed 42, page one. Lookup caches and ordered pages persist in `.cache/names.sqlite`.
 
 ```sh
@@ -79,6 +85,7 @@ node dist/cli.mjs reverse figma
 node dist/cli.mjs reverse shien --reading she-en
 node dist/cli.mjs invert lemoru
 node dist/cli.mjs substitute lemoru --phones 'L EH1 M OW0 R UW0' --count 5
+node dist/cli.mjs judge velora --mood lyrical
 
 node dist/cli.mjs --cache-stats
 node dist/cli.mjs --clear-cache
@@ -99,7 +106,8 @@ These ceilings are application settings, not claims about provider quotas.
 ## One engine, two adapters
 
 - `core/`: pure TypeScript generation, pronunciation, reverse finding, exact
-  inversion and substitutions; compact dictionary lookup.
+  inversion and substitutions; compact dictionary lookup. `core/constants.json`
+  holds the editable mood recipes; `core/prior.json` is built from `data/`.
 - `lookup/`: provider parsing, adaptive scheduling and ordered durable searches.
 - `web/`: static HTML, vanilla views, workers, IndexedDB and offline caching.
 - `cli/`: Node argument parsing and SQLite persistence.
@@ -119,4 +127,5 @@ node web/scripts/verify-feed.mjs
 
 [Architecture](docs/architecture.md) · [Performance](docs/performance.md) ·
 [Verification](docs/verification.md) · [Migration/removals](docs/migration-plan.md) ·
-[Sound model](docs/control-hierarchy.md) · [Dictionary provenance](data/README.md)
+[Controls](docs/control-hierarchy.md) · [Sound engine](docs/sound-dials.md) ·
+[Data provenance](data/README.md)

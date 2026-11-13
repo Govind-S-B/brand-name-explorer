@@ -1,226 +1,356 @@
-# Sound dials: evidence, decisions, and implementation
+# Sound engine: evidence, decisions, and implementation
 
-11 November 2026 · Experimental implementation, not a validated emotion model
+13 November 2026 · Engine v2 · Experimental, not a validated emotion model
 
-## Research decision
+Engine v2 replaces the first three-dial sampler. The first version knew five
+consonant classes and a front/back vowel direction; blind judges read its
+intended mood correctly about 28% of the time (chance is 14%) and rated its
+available names 1.9 / 5. This document records what changed, which parts rest
+on published evidence, which on data we collected, and which on taste.
 
-Use **energy**, **weight**, and **novelty** as the first perceptual controls.
-Use **opening**, **syllable count**, and **ending** as explicit structural constraints.
-See the [control hierarchy](control-hierarchy.md) for their relationship to the dials. Provide
-named moods as editable starting recipes, not discrete psychological categories.
+## The model in one page
 
-The reference words mentioned during discussion were illustrative, not a training
-set, target list, or basis for the dial definitions. No model was fitted to them.
-The research direction is to invent words from sound impressions, with example
-transformation remaining a separate potential approach.
+A name is scored by three separate things, each with its own source:
 
-## What was studied
+| Part | Question | Source |
+| --- | --- | --- |
+| **Mood** | Does it carry the requested feeling? | Published sound-symbolism ratings → a seven-dimension sound table; mood recipes and accents are design choices |
+| **Name prior** | Does it look like a name people want? | Our own sample of 29,165 generated spellings labelled by whether the `.com` is registered |
+| **Teacher** | Would a reader call it that mood, and call it good? | 3,091 blind judgments of generated names by an LLM acting as a naming consultant |
 
-The closest empirical foundation is Sidhu, Vigliocco & Pexman's *Higher order
-factors of sound symbolism* (2022). For this implementation we inspected the
-accepted manuscript, supplementary material, and shared R analysis source,
-rather than relying only on its abstract. [1][2]
+Generation has two stages:
 
-Experiment 1 recruited 104 English-fluent University of Calgary undergraduates;
-the paper reports removing 19 participants during cleaning. Participants rated
-40 CVCV nonwords across 25 semantic dimensions. Consonants came from five
-classes: sonorants, voiced/voiceless fricatives, and voiced/voiceless stops.
-Vowels contrasted two front vowels with two back vowels. The stimuli used two
-different consonants from the same class, and two different vowels from the same
-group. List A and List B differed in recording speaker and collection setting.
+1. **Propose.** A grammar of spelling tokens (below) is sampled without
+   replacement. Each token's weight is its learned prior times its mood fit.
+   Shapes fix the letter count and the syllable count exactly.
+2. **Select.** Proposals are judged as whole words in rounds of 256. Each round
+   keeps its best candidates until it expects about 1.5 unregistered names among
+   them (2–16 kept). Hard rules reject ambiguous or unfortunate spellings. A
+   kept name blocks later one-token variants of itself, and a distinctive
+   consonant group (`zzl`, `str`, `ndr`) may recur only after 12 other names.
 
-The authors extracted four broader factors: **activity, valence, potency, and
-novelty**. Their factors were correlated: activity and potency correlated .50
-in the reported factor solution. Sliders therefore should not promise fully
-independent perceptual effects. The authors reported clearer phoneme-category
-relationships with activity, potency, and novelty than with valence.
+Everything is deterministic for a given seed, settings and engine data.
 
-Table 2 reports modest marginal R-squared values for sound-class predictors:
-.110 for exciting–calming, .069 for heavy–light, .030 for ordinary–unique, and
-.141 for sharp–round. The paper cautions that these mixed-model quantities are
-approximations, not exact percentages of explained variance. This supports
-useful biases, not confident predictions for individual names.
+## Grammar
 
-### The three implemented dials
+A word is alternating runs of consonant letters and vowel letters (`a e i o u y`;
+the `u` of `qu` stays with its `q`). Every run is one token, so a spelling has
+exactly one decomposition. Tokens are position-specific:
 
-| CLI dial | Low | High | Research connection |
-| --- | --- | --- | --- |
-| `--energy` | Restful | Energetic | Activity: fast/slow, exciting/calming, passive/active, and related dimensions |
-| `--weight` | Light/delicate | Heavy/substantial | Potency: big/small, heavy/light, strong/weak, and related dimensions |
-| `--novelty` | Familiar-sounding | Unusual/buzzy | Novelty: ordinary/unique, realistic/fantastical, simple/complex |
+- **Onsets** (`l`, `k`, `c`, `st`, `br`, `qu`, `x`…), **medials** (`n`, `nd`,
+  `ll`, `ndr`, `zzl`…), **codas** (`n`, `x`, `rk`, `ck`…).
+- **Vowels** by position: single letters, a few one-syllable digraphs (`ai`,
+  `au`, `ou`, `ee`, `oo`, final `ie`/`ue`), and two-syllable hiatus (`ia`,
+  `io`, `eo`, final `ea`). Medial digraphs are heavily penalised in every mood;
+  judges kept reading them as typos.
+- Each token lists the abstract sounds it stands for (`c` and `k` are both /k/;
+  `x` is /k s/; `ph` is /f/) and tags such as `dbl` (doubled letter), `hi`
+  (hiatus), `exotic`, `long`.
 
-Each accepts **0–10**, including decimals. **5 means no directional sampling bias
-from that dial**. It is not a prediction that listeners would rate the word 5/10.
-Novelty concerns an experimental sound preference; it does not measure dictionary
-rarity, originality, domain availability, or trademark distinctiveness.
+`--syllables` now counts intended spoken syllables (a hiatus token counts two),
+not vowel groups. Vowel letters are read as plain qualities; the engine still
+does not model stress or English vowel alternations.
 
-The following consonant-category contrasts are reported in the manuscript's
-factor analysis discussion, pp. 33–34. We use them as directional sampling
-priors. Zero means no directional preference implemented for that cell; it is
-not proof that the true effect is zero.
+Spellings that an English reader would sound two ways are never shown: soft
+`c`/`g` before `e i y`, doubled consonants after a digraph, a second `y`. A
+`y` is only a clean vowel right after the opening consonant or at the very end;
+`i-`/`e-`/`u-` openings and long `-er` endings are marked down for unclear
+stress. A blocklist of about 560 fragments removes profanity and unfortunate resemblances
+(`-noma`, `fist`, `vile`, `covid`…). It is deliberately broad: a false positive
+costs one candidate.
 
-| Category | Energy/activity | Weight/potency | Novelty |
-| --- | ---: | ---: | ---: |
-| Sonorants | −0.60 | −0.49 | −0.26 |
-| Voiced fricatives | +0.39 | +0.28 | +0.40 |
-| Voiceless fricatives | 0 | −0.26 | 0 |
-| Voiceless stops | +0.36 | +0.23 | 0 |
-| Voiced stops | 0 | +0.24 | −0.17 |
+## Mood: the evidence
 
-Front vowels were associated with higher activity and lower potency in that
-experiment. The implementation uses this direction, not its regression
-coefficient as a calibrated generator probability.
+### What the literature supports
 
-We deliberately did not expose a “beauty,” “likability,” “trustworthiness,” or
-“luxury” dial. Those would overstate what this small model can control. Sharpness
-and softness load substantially on activity in this study, so they are not
-presented as additional independent dials in this first version.
+The primary source remains Sidhu, Vigliocco & Pexman (2022). [1] For v2 we
+downloaded the raw ratings from the study's OSF archive and recomputed class
+means for all 25 rated scales rather than using only the four factors. Values
+are class mean minus grand mean on a 1–7 scale; positive means toward the second
+word of the pair.
 
-### Why the grammar goes beyond the experiment
+| Scale | Sonorant | Voiced fric. | Voiceless fric. | Voiceless stop | Voiced stop | Front − back vowel |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Exciting–Calming | +0.87 | −0.59 | +0.09 | −0.42 | +0.05 | −0.34 |
+| Fast–Slow | +0.70 | −0.53 | −0.06 | −0.38 | +0.27 | −0.50 |
+| Heavy–Light | +0.63 | −0.40 | +0.40 | −0.24 | −0.38 | +0.37 |
+| Big–Small | +0.50 | −0.48 | +0.31 | +0.03 | −0.36 | +0.72 |
+| Delicate–Rugged | −0.89 | +0.40 | −0.30 | +0.49 | +0.29 | −0.11 |
+| Sharp–Round | +0.98 | −0.81 | 0.00 | −0.65 | +0.47 | −0.53 |
+| Abrupt–Continuous | +0.83 | −0.48 | +0.27 | −0.49 | −0.13 | −0.14 |
+| Hard–Soft | +0.89 | −0.52 | +0.37 | −0.59 | −0.15 | −0.09 |
+| Ordinary–Unique | −0.32 | +0.48 | +0.12 | −0.14 | −0.15 | +0.12 |
+| Simple–Complex | −0.71 | +0.78 | −0.01 | +0.11 | −0.17 | +0.05 |
+| Masculine–Feminine | +0.73 | −0.30 | +0.68 | −0.68 | −0.43 | +0.46 |
+| Happy–Sad | +0.14 | −0.04 | −0.08 | −0.01 | 0.00 | −0.41 |
 
-The original study used same-category CVCV words. Our generator mixes categories,
-allows repeated sounds, and adds variable syllable structures, clusters, endings,
-and spellings. Those are engineering and naming hypotheses, not experimentally
-verified extensions of the factor model.
+Recomputed cells match the authors' published coefficient file within 0.03
+where it reports a value. Three findings shaped the design:
 
-Argo, Popa & Smith report that spoken repetition can influence brand evaluations,
-with moderators. That supports making repetition possible, not assuming every
-repeated sound improves a name. [3]
+- **Consonants dominate.** Consonant class explains .60–.64 of between-word
+  variance in sharp/round, hard/soft and exciting/calming; vowel frontness .00–.10.
+  Vowels matter about as much as consonants only for size, and carry most of
+  happy/sad.
+- **Valence is nearly flat across consonant classes.** Sound choice mostly moves
+  a name along one calm-light-soft ↔ strong-heavy-sharp axis. A review of the
+  brand-name literature reaches the same conclusion for evaluation and potency
+  and finds no consistent activity mapping. [2] Moods that share a region of
+  that axis (calm, airy, lyrical) therefore have to be separated by structure:
+  rhythm, endings, repetition, how much complexity a word may carry.
+- **Voicing interacts with manner.** Voicing raises activity for fricatives and
+  lowers it for stops, so "voiced" is not a usable dial on its own.
 
-The cross-cultural bouba/kiki study provides evidence for broad sound–shape
-correspondences across languages, but does not validate these three dials, their
-weights, or every generated name across cultures. [4]
+Finer distinctions inside a class come from weaker evidence and are used only
+as ordinal hints:
 
-## Controls and recipes
+| Hint | Source and strength |
+| --- | --- |
+| /l/ carries most of the sonorant round/soft/calm effect; /n/ is the most feminine | Per-phoneme regression on Sidhu's 40 word means; each phoneme occurs in 3–7 words, errors as large as effects [1] |
+| /z/ is sharp, fast, unusual; /v/ behaves closer to a sonorant but reads fast and (in one Japanese study) luxurious | Same regression; onset ratings of written nonwords [3]; luxury study [4] |
+| /k/ is the sharpest, hardest voiceless stop; /p/ is small and nearly neutral | Same regression; onset ratings [3] |
+| /g/ and /b/ read large; /b/ and /m/ read round | Onset ratings [3]; cue weights in a large nonword study [5] |
+| /i/ small, bright, positive; /a/ large; /o u/ round; a lone short "uh" is disliked | Size adjectives, vowel-valence experiments, top-brand corpus [6][7][8] |
+| Letters matter on the page: `x k t` sharp, `o m b u` round | Letter cue weights; letter curvature outweighs phonology for written stimuli [5][9] |
+| Bilabials /p b m/ and reduplication read cute | Japanese studies, read only in summary; treated as a heuristic [10] |
 
-| Mood | Energy | Weight | Novelty | Ending |
-| --- | ---: | ---: | ---: | --- |
-| calm | 1 | 3 | 2 | open |
-| airy | 3 | 0 | 3 | open |
-| grounded | 2 | 9 | 2 | closed |
-| bold | 9 | 9 | 4 | closed |
-| playful | 8 | 2 | 7 | open |
-| lyrical | 3 | 4 | 4 | open |
-| strange | 6 | 5 | 10 | either |
+### The sound table
 
-These values and labels are design proposals. They are not clusters extracted
-from a listener dataset. For example, grounded combines low activity with high
-potency; the model may have to compromise because the dimensions are correlated.
+Each abstract sound has a value on seven dimensions in `core/constants.json`:
+`energy`, `weight`, `novelty` (the three user dials, after Sidhu's activity,
+potency and novelty factors), plus `sharp`, `flow` (continuous/soft/mellow),
+`bright` (vowel brightness and happy/sad) and `bounce`.
 
-Apply controls in this order:
+The first five consonant columns follow the class deviations above, with the
+ordinal hints applied inside each class. `bright` for consonants and all of
+`bounce` are design values. The numbers are sampling preferences on a −1…+1
+scale, not predicted ratings.
 
-1. Choose the base mood, default `calm`.
-2. Optionally blend its three dial values with another mood.
-3. Override any individual dials.
-4. Set opening, syllables, and ending; then the character-length constraint.
-5. Choose seed, then domain lookup/filter behavior, then count and page.
+A token's fit is the dot product of its mean sound vector with the mood target,
+scaled by `beta`.
 
-`--blend playful:0.3` interpolates the numeric recipe values: 70% base recipe,
-30% playful recipe. It retains the base ending unless `--ending` overrides it.
-This is a blend of **sampling settings**, not proof that human impressions blend
-linearly. An equivalent final configuration produces the same sequence, regardless
-of which preset labels were used to reach it.
+### Mood recipes
 
-### Structure and pronunciation
+Each mood is a target on the seven dimensions plus a structural character.
+All of the character columns are design decisions informed by the sources, not
+fitted values.
 
-- `--opening vowel|consonant|cluster|any` constrains the initial sounds (default any).
-  Consonant means one sound, including sh/ch; cluster means multiple sounds.
-  It is independent of the dial settings and only constrains the beginning.
+| Mood | Energy | Weight | Novelty | Sharp | Flow | Bright | Bounce | Rhythm | Signature sounds |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| calm | 1 | 3.5 | 2 | 1 | 9 | 4 | 3 | −0.1 | l m n |
+| airy | 4 | 0.5 | 3 | 4 | 8 | 8 | 3 | −0.1 | f s h v |
+| grounded | 2.5 | 9.5 | 2 | 2.5 | 3 | 1 | 3.5 | −0.7 | b d g m n r |
+| bold | 9 | 8.5 | 5 | 8 | 1.5 | 3 | 4.5 | −0.8 | k t d g b z v r |
+| playful | 7.5 | 3 | 5.5 | 5 | 4 | 7 | 10 | −0.7 | p b k t d z j ch |
+| lyrical | 3 | 3 | 4 | 2 | 10 | 5 | 2 | +0.3 | l r v n s |
+| strange | 6 | 5 | 10 | 6 | 5 | 5 | 5 | −0.45 | z v k j x |
 
-- `--length 3..14` is an exact ASCII character count; default 6.
-- `--syllables 1..5` selects vowel groups in the grammar. Automatic mode prefers
-  simple alternating forms suited to the requested length.
-- `--ending open|closed|either` controls whether the spelling ends in a vowel or
-  consonant; its default comes from the mood.
-- Sounds can repeat. Different sounds are not mandatory.
-- The grammar uses onsets, middle consonant runs, vowel nuclei, and codas. Its
-  allowed clusters are explicit rather than arbitrary character combinations.
+- **Rhythm** shifts the preferred syllable count, which is
+  `1.1 + 0.27 × letters + rhythm` (about 2.7 at six letters, 3.3 at eight).
+  Bold and grounded names are denser; lyrical names have more syllables.
+- **Signature**: a name must contain one of the mood's signature sounds and
+  should open with one. The mood has to be audible, not merely uncontradicted.
+- **Budget**: how many complex elements (clusters, digraphs, doubled letters) a
+  word may carry: 0.5 for calm, 2.5 for playful. It grows by half an element
+  per letter beyond six.
+- **Repeat**: echoed sounds cost every mood except playful, where a repeated
+  syllable or consonant is rewarded. Repetition can lift affect in spoken
+  names [11]; we apply it only where it reads as intended.
+- **Tags, accents, endings**: per-mood log-weights for token styles (doubled
+  letters and `-zzl-` medials for playful, `y` and rare letters for strange),
+  for individual sounds, and for final tokens (`-a` and `-ia` for lyrical, `-x`
+  and `-r` for bold, `-n` and `-r` for grounded). Endings follow the linguistic
+  gender scale used by Pogacar et al.: final schwa-like `-a`, then other vowels,
+  then sonorants, fricatives and stops, from soft to hard. [12] Onset accents
+  such as `gl-`/`fl-` and `st-`/`gr-` are phonaestheme-flavoured taste.
+- All moods now default to `ending: either` with a soft preference; an explicit
+  `--ending` remains a hard constraint.
 
-Approximate intended vowel readings are a=ah, e=eh, i=ih, o=oh, u=oo, ee=ee,
-oo=oo, ai=ay. The ch and sh spellings are treated as individual consonants.
-English readers may pronounce these spellings differently. Thus syllables count
-**intended grammar nuclei**, not guaranteed spoken syllables. The program does
-not perform speech synthesis or validate pronunciation with listeners.
+Blending interpolates the dial targets and every numeric character value;
+`--energy`, `--weight` and `--novelty` then override their dimension. The
+dials keep their v1 meaning. A dial moved away from the mood's own recipe is an
+explicit request, so the offset has its own gain (`dialGain`) on top of the
+recipe: with it, moving lyrical's energy from 0 to 10 roughly halves the share
+of `l m n w` letters and multiplies `k t p z` several times over. Novelty additionally loosens the name
+prior and favours rare letters.
 
-The mappings for r/w, h, ch, the e/i/u spellings, and mixed clusters extend beyond
-the original experiment. Specifically, r/w inherit sonorant preferences, h
-inherits voiceless-fricative preferences, and ch approximates voiceless-stop
-preferences. Treat these as explicit heuristics, not measured per-phoneme effects.
-Letter digraphs and language-specific readings will need a richer pronunciation
-representation in a future version.
+## Name prior: what registered names look like
 
-## How the generator uses the evidence
+`scripts/sample-registrations.ts` drew raw, unselected proposals from every
+mood at 6, 7 and 8 letters and recorded whether each `.com` has NS records
+(DNS only; NXDOMAIN is a training label, never an availability claim).
+`data/registered-sample.tsv` holds 29,165 labels; 25,938 are spellable by the
+final grammar and are used.
 
-It centers each dial around 5, scales the reported class contrasts, and combines
-the resulting preferences into positive sound weights using an exponential.
-Consonant clusters use the mean of their constituent sound preferences and an
-additional hand-chosen frequency penalty; higher novelty relaxes that penalty.
-Vowels receive a front/back preference from energy and weight. Shape priors favor
-simple structures, while exact-length constraints remain mandatory.
+| Letters | Labels | Raw proposals already registered |
+| --- | ---: | ---: |
+| 6 | 13,128 | 51.7% |
+| 7 | 11,140 | 11.2% |
+| 8 | 4,897 | 1.5% |
 
-The strength multipliers, normalization, cluster penalty, structure priors, and
-recipe values are engineering choices. No listener data were used to tune these
-numbers, and they must not be described as an empirically fitted generator.
+`scripts/build-prior.ts` fits a logistic regression of registration on token
+identity per slot, whole-word structure and the mean letter-trigram surprise
+under the bundled CMU dictionary. Held-out AUC is **0.914**. Notable
+coefficients: one bit less trigram surprise multiplies the odds by about 9;
+vowel-initial names, clusters and repeated consonants lower them; open endings
+raise them. The inward-articulation ("in–out") preference reported in the
+laboratory [13] is absent in this data (coefficient −0.06), so the engine does
+not use it.
 
-The engine calculates valid completion counts and weight sums by dynamic
-programming. It then draws whole spellings **without replacement**, subtracting
-each selected spelling's weight from the relevant prefixes. This produces a
-finite, deterministic weighted ordering without enumerating every candidate
-up front or relying on collision-retry loops.
+The prior enters in three places:
 
-Every spelling has one decomposition into alternating consonant/vowel runs in
-this grammar. That allows an exact capacity and no repeated spellings within a
-sequence. Different spellings may still be homophones. Near numerical exhaustion,
-a small floating-point floor preserves access to remaining candidates; this can
-slightly perturb the intended weighting, while integer counts preserve uniqueness.
+1. **Proposal weights** use the per-token coefficients, tempered by novelty.
+2. **Selection** penalises only a shortfall below the lower quartile of
+   registered names. Credit above that line is small at six letters and full
+   from eight. The reason is a winner's curse: at six letters almost every
+   spelling the model loves is taken, so chasing the model's favourites selects
+   the ones registrants passed over. An early build with full credit produced
+   `Mumono`, `Sulolo`, `Kragra`.
+3. **Strictness** uses the model's estimate that a candidate is taken (its
+   intercept and per-length offsets are shipped) to decide how many candidates
+   each round passes. Crowded corners pass up to 16 of 256; at eight letters,
+   where nearly everything is free, only the best two or three pass.
 
-The sequence depends on effective dials, opening, length, syllables, ending, grammar
-version, and seed. Count and filtering do not change generation. A changed
-configuration gets separate browsing progress. Equivalent effective settings
-share a session, and the global domain cache remains shared.
+Registration is a behavioural proxy for "someone wanted this name". It reflects
+domain investors as well as brands, and it is English-internet specific.
 
-Early pages carry the strongest sampling preferences. Very late pages necessarily
-include less-favored candidates as preferred combinations are used up. Replaying
-later pages takes time and memory proportional to the visited prefix; the engine
-does not precompute or look up the whole space by default.
+## Teacher: distilled blind judgments
 
-## Verification and remaining research
+During development, batches of domain-filtered names were shuffled with
+names from other builds and given to a fresh LLM instance with no knowledge of
+their source. It labelled each name with one of the seven moods (defined in one
+neutral line each) and a 1–5 quality grade. `data/teacher-judgments.tsv` keeps
+the 3,091 judgments of 1,892 distinct names from rounds 1–6 (1,794 spellable
+by the final grammar). The prompt is `scripts/eval/judge-prompt.md`.
 
-Automated checks cover exact character lengths, all mood presets, complete
-exhaustion of small spaces, unique pages, page-size independence, seed behavior,
-invalid controls, blending, cache sharing, session separation, and failure/resume.
-Distribution checks verify that changing a dial shifts observable sound-class
-or vowel frequencies in the intended direction while other settings are fixed.
-These checks test software behavior, not perceived mood.
+`scripts/build-prior.ts` distils them into a compact model (sound counts, first
+sound, final token, style tags and structure):
 
-The next research task is independent listener evaluation of novel outputs:
-compare dial endpoints and combinations, measure intended impressions separately
-from liking/pronounceability, and use fresh listeners and words for validation.
-Test language/cultural groups explicitly. Keep domain availability filtering
-separate from the initial perceptual study.
+| Check | Value |
+| --- | ---: |
+| Two judges agree on a name's mood (613 names judged in two rounds) | 79% |
+| Model predicts a judge's mood for unseen names (5-fold by name) | 78% |
+| Two judges' quality grades correlate | r = 0.81 |
+| Model's quality prediction for unseen names | r = 0.50 |
 
-## Sources and tools inspected
+In selection the model adds the log-probability that a judge would read the
+intended mood (capped once it passes 85%, since more certainty only buys
+sameness) and twice the predicted quality.
 
-1. Sidhu, Vigliocco & Pexman (2022), **Higher order factors of sound symbolism**.
-   [UCL manuscript](https://discovery.ucl.ac.uk/id/eprint/10147434/),
-   [DOI](https://doi.org/10.1016/j.jml.2022.104323).
-   Methods, factor loadings, correlations, category results, and discussion inspected.
-2. [Open study materials](https://osf.io/gruqs/).
-   Supplementary analyses and shared R analysis source inspected. Analysis not rerun.
-3. Argo, Popa & Smith (2010), **The Sound of Brands**.
-   [DOI](https://doi.org/10.1509/jmkg.74.4.097). Publisher-supplied abstract inspected.
-4. **The bouba/kiki effect is robust across cultures and writing systems**.
-   [DOI](https://doi.org/10.1098/rstb.2020.0390). Publisher-supplied abstract inspected.
-5. [LEX-ICON](https://github.com/jjhsnail0822/sound-symbolism),
-   [paper](https://arxiv.org/abs/2511.10045).
-   Its constructed-word scoring inspired inspection of the original study. Its
-   generated labels are not independent validation of the same coefficient model.
-   No LEX-ICON code or data is bundled in this repo.
-6. [Lexifer grammar documentation](https://github.com/bbrk24/lexifer-ts/blob/master/docs/grammar.md)
-   and [Wuggy](https://github.com/WuggyCode/wuggy).
-   Relevant precedents for weighted rules and structural pseudoword generation;
-   their code is not incorporated into this implementation.
+This is the teacher-assisted route from the research direction. It is circular
+by construction: the same kind of judge that trained it also evaluates it. It
+measures agreement with an LLM's reading of names, not with listeners.
 
-All accessed 11 November 2026. The generator uses a small set of attributed
-reported numeric findings and original implementation code; its broader
-hypotheses are explicitly separated from those findings above.
+## Measured results
+
+Every batch is 30 names per mood taken from the real pipeline with the `.com`
+filter on, shuffled blind with the other batches of its round. Judges differ in
+harshness, so only numbers from the same round are comparable; from round 4 on
+the same earlier batch (the round-2 v2 build, "anchor") is included in every
+sheet for calibration.
+
+| Round | Batch | Letters | Mood read as intended | Quality (1–5) | Graded 4–5 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 | v1 engine | 6 | 27% | 1.95 | 2% |
+| 1 | first v2 prototype | 6 | 71% | 2.66 | 7% |
+| 2 | v1 engine | 6 | 30% | 1.91 | 0% |
+| 2 | v2 with registration prior (anchor) | 6 | 68% | 2.82 | 12% |
+| 5 | anchor | 6 | 65% | 2.37 | 1% |
+| 5 | v2 with teacher layer | 6 | 73% | 2.53 | 1% |
+| 5 | v2 with teacher layer | 7 | 84% | 2.70 | 7% |
+| 6 | anchor | 6 | 62% | 2.40 | 2% |
+| 6 | near-final | 6 | 79% | 2.55 | 2% |
+| 6 | near-final | 7 | 70% | 2.80 | 14% |
+| **7** | anchor | 6 | 64% | 2.38 | 2% |
+| **7** | **shipped build, default settings** | **7** | **81%** | **2.72** | **11%** |
+
+Round 7 was judged after the last retrain and is not part of the teacher data
+(`data/teacher-heldout.tsv`). Of its 210 names, 57 had never been judged
+before; on those alone the shipped build scored 82% and 2.60. Per mood in round
+7: calm 80%, airy 77%, grounded 93%, bold 87%, playful 87%, lyrical 87%,
+strange 60%; quality from 2.13 (strange) to 3.33 (lyrical).
+
+Mood agreement with a judge cannot be expected to pass the 79% at which two
+judges agree with each other. Quality is where the gap remains: no round
+produced more than a handful of names a judge would grade 5.
+
+What the judges consistently rewarded: one obvious pronunciation, clean
+consonant–vowel rhythm, an ending that resembles a real word family (`-an`,
+`-a`, `-or`, `-ix`), and one distinctive consonant moment. What they punished:
+vowel-initial stems with unclear stress, mid-word `y`, stacked clusters, clipped
+stop endings, near-duplicates, strings of only `l m n s` with nothing to
+remember, and resemblances to unfortunate words.
+
+## Limits
+
+- **Six letters is nearly mined out for soft names.** With the filter on, 2–8%
+  of calm or lyrical six-letter candidates are free, against 27–60% at seven
+  letters. The free six-letter names are what registrants left. Seven-letter
+  batches were graded higher in every round that compared them and fill a page
+  in seconds, so the default length is now 7.
+- **Selection costs CPU.** Each kept name is the best of roughly 15–130 scored
+  proposals. Bulk generation runs at about 1,400 names per second where v1
+  produced several hundred thousand. See [performance](performance.md).
+- **The teacher is circular.** It was trained on the kind of judge that
+  evaluates it, and its quality prediction is modest (r = 0.50).
+- No listener study has been run. LLM judgments and registrations are proxies.
+- English-reading assumptions throughout; Japanese and German findings are used
+  only as hints.
+- No stress model. Readings of vowel letters are nominal.
+- The recipes, accents, endings, budget and blocklist are taste. They are in
+  `core/constants.json` and are meant to be edited.
+
+## Rebuilding
+
+```sh
+npx tsx scripts/sample-registrations.ts --per=700 --lengths=6,7,8 --seed=N  # optional: more labels
+npx tsx scripts/build-prior.ts            # core/prior.json from data/
+npx tsx scripts/update-fixtures.ts        # refresh engine snapshots
+npx tsx scripts/refresh-web-fixtures.ts   # refresh browser workload fixtures
+npm test
+```
+
+The feedback loop used for every tuning step:
+
+```sh
+scripts/eval/batch.sh /tmp/bne-eval/new 30            # real pipeline, filter on
+python3 scripts/eval/blind.py make /tmp/bne-eval/r8 anchor=/tmp/bne-eval/old new=/tmp/bne-eval/new
+# give r8.sheet.txt to a fresh judge with scripts/eval/judge-prompt.md → r8.judged.json
+python3 scripts/eval/blind.py score /tmp/bne-eval/r8
+python3 scripts/eval/blind.py append /tmp/bne-eval/r8 8 data/teacher-judgments.tsv   # optional
+node dist/cli.mjs judge velora --mood lyrical         # why one name scores as it does
+```
+
+Any change to `core/constants.json` or `core/prior.json` changes `ENGINE_ID`,
+which keys saved searches, so retuned sequences never mix with old pages.
+
+## Sources
+
+Read or recomputed 13 November 2026 unless marked.
+
+1. Sidhu, Vigliocco & Pexman (2022), *Higher order factors of sound symbolism*.
+   [DOI](https://doi.org/10.1016/j.jml.2022.104323), [OSF data](https://osf.io/gruqs/).
+   Raw ratings downloaded; class means and per-phoneme regression recomputed.
+2. Motoki, Park, Pathak & Spence (2022), *The connotative meanings of sound
+   symbolism in brand names: A conceptual framework*. Manuscript read.
+3. Monaghan & Fletcher (2019), *Do sound symbolism effects for written words
+   relate to individual phonemes or to phoneme features?* Paper read; onset
+   means recomputed from the OSF data.
+4. Motoki et al., luxury brand names (Japanese sample). Manuscript read.
+5. Westbury, Hollis, Sidhu & Pexman (2018), *Weighing up the evidence for sound
+   symbolism*. Paper read; sparse cue weights only.
+6. Winter & Perlman (2021), size adjectives. Read in summary.
+7. Körner & Rummer (2022, 2023), vowel valence. Tables read by a delegated reader.
+8. Pogacar, Plant, Rosulek & Kouril (2015), *Sounds good: Phonetic sound
+   patterns in top brand names*. Paper read.
+9. Cuskley, Simner & Kirby (2017), letter shape and phonology. Read in summary.
+10. Kumagai; Kawahara and colleagues, cuteness and size. Search summaries only.
+11. Argo, Popa & Smith (2010), *The Sound of Brands*. Abstract.
+12. Pogacar, Angle, Lowrey, Shrum & Kardes (2021), *Is Nestlé a Lady?* Paper and
+    appendix read.
+13. Topolinski and colleagues, in–out effect; Motoki & Pathak replication read.
+
+Also read: Crystal (1995), *Phonaesthetically speaking*; Slepian & Galinsky
+(2016); Sidhu et al. (2019, 2021); McCormick et al. (2015); Knoeferle et al.
+(2017); Adelman, Estes & Cossu (2018); Aryani et al. (2018). Klink (2000, 2001),
+Klink & Athaide (2012), Yu et al. (2021) and Auracher et al. (2010) could not
+be retrieved in full and are not relied on.

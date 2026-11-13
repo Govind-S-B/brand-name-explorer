@@ -334,6 +334,47 @@ Raw evidence is outside the tree: `/private/tmp/bne-history-{before,after}/`,
 `bne-history-{memory-before,memory-final,visual,lighthouse}.json` and
 `bne-history-load-{before,after}.log` under `/private/tmp/`.
 
+## Sound engine v2 (2026-11-13)
+
+Compared with `6b4ac69`, same machine and harnesses. The engine now scores whole
+words and ships a learned prior, so it is larger and much slower per name; this
+is the price of the quality change recorded in [sound-dials.md](sound-dials.md).
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Entry JS gzip | 11,338 B | 11,409 B |
+| Lookup + analysis workers gzip | about 18.7 kB together | 40,119 B + 39,091 B |
+| All JS gzip | 33,590 B | 94,211 B |
+| CLI program, raw | 41,369 B | 104,241 B |
+| Cold usable names, CDP 4G / 4× CPU | 554 ms | 732 ms |
+| Cold LCP / observed TBT | 452 ms / 0 | 480 ms / 0 |
+| Repeat / offline usable names | 99 / 89 ms | 132 / 147 ms |
+| Generate 200 names (Node, median of 5) | 1.47 ms | 105 ms |
+| Generate 4,000 names | 12.76 ms | 2,887 ms |
+| Generate 10,000 names | 20.34 ms | 8,559 ms |
+| Exact inverter, 1,331 dial points | 28.21 ms | 414 ms |
+
+About 15 kB of each worker is the letter-trigram table; the teacher model adds
+4 kB. Both workers carry the engine. Coarser trigram quantisation would cut
+this but changes the fitted prior, so it was not done after validation.
+
+Each kept name is the best of 16–128 scored proposals, so throughput is about
+1,400 names per second at the default length. A filtered page of 20–200 names
+generates in well under a second; an unfiltered 4,000-name run takes about three
+seconds in the worker. Sampling dominates the profile (re-weighing the first
+three slots, which are revisited on every proposal); a dense child array for
+those slots and binary search for unvisited prefixes gave about 15% without
+changing any sequence.
+
+Real-provider search time depends on how crowded the corner is. In the batches
+behind the blind rounds, 30 available default-length names took 3–9 s per mood
+(34–113 candidates); 30 six-letter names took 8–61 s (64–727 candidates), with
+calm and lyrical slowest. These are single observations on one connection with
+a warm domain cache for repeated names.
+
+Memory and Lighthouse were not re-measured. Screenshots were not re-captured;
+no layout or style changed, only the default length field (7) and the names.
+
 ### Random feeling on reload (2026-11-13)
 
 Reload now selects another feeling as well as a fresh seed. It resets custom dials

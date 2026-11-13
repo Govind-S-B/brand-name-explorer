@@ -51,6 +51,24 @@ length are not established by desktop Chrome emulation. Internet benchmarks are
 individual observations with uncontrolled remote resolver/registry caches.
 Availability remains a timestamped RDAP observation, not a purchase guarantee.
 
+## Sound engine v2 (2026-11-13)
+
+- `npm test`: 150 pass. Engine outputs are regression snapshots refreshed by
+  `scripts/update-fixtures.ts`; `tests/engine.test.ts` adds behaviour checks
+  (exact length and constraints for every mood, determinism, dial directions,
+  blending, each mood's names most probable under their own recipe).
+- `core/prior.json` rebuilds byte-identically from `data/` with
+  `scripts/build-prior.ts`.
+- Browser suites `test:names`, `test:check`, `test:history`, `test:resume` and
+  `verify-feed` pass against the production build with zero axe violations.
+  Their fixed names moved to the new default sequence (Nisolan, Lathuno);
+  `scripts/refresh-web-fixtures.ts` re-records the workload fixtures. The
+  Goftu → Goftoo nearby-spelling example still holds.
+- `test:browser` (live providers, repository screenshots), `measure:memory`,
+  Lighthouse and the 200/4,000-name public-provider benchmarks were not rerun.
+- Blind judging: seven rounds, recorded in [sound-dials.md](sound-dials.md).
+  The harness is `scripts/eval/`; judgments are in `data/`.
+
 `test:names` exercises the shared name rows at 360, 390 and 1440 px with mocked
 providers: all entry points, direct favourites, nested modal Back/Close and focus,
 child configuration application, preserved reference readings and text-only

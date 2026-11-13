@@ -6,8 +6,11 @@ pronunciation dictionary loading and durable stores.
 
 | Boundary | Responsibility |
 | --- | --- |
-| `core/profile.ts` | Recipes, validated controls, blend/dial precedence; small UI import |
-| `core/generator.ts` | Weighted sampling without replacement; cached structural transitions and removed-prefix tree |
+| `core/profile.ts` | Dial recipes, validated controls, blend/dial precedence; small UI import |
+| `core/grammar.ts` | Spelling tokens by slot, run parsing, whole-word structure counts |
+| `core/generator.ts` | Weighted proposals without replacement, then whole-word selection: mood fit, learned name prior, distilled judge readings |
+| `core/constants.json`, `core/prior.json` | Hand-set sound table and mood character; data-built prior (regression weights, letter trigrams, teacher model) |
+| `scripts/build-prior.ts`, `sample-registrations.ts`, `update-fixtures.ts`, `eval/` | Rebuild the prior from `data/`, extend its labels, refresh snapshots, run the blind evaluation loop |
 | `core/random.ts` | Integer-seeded MT19937; fixed random sequence retained by golden fixtures |
 | `core/pronunciation.ts`, `dictionary.ts` | Explicit readings, ARPABET, lazily decoded binary CMU dictionary |
 | `core/inverter.ts`, `substitutions.ts` | Reverse reports, 1,331-point inverse grid and bounded substitution beam |
@@ -19,15 +22,20 @@ pronunciation dictionary loading and durable stores.
 
 ## Determinism and speed
 
-Generation precomputes feasible transitions for each depth and remaining length.
-A sparse prefix tree tracks consumed probability mass without rebuilding string
-keys for every candidate. Compensated sums, subtraction order, PRNG calls and
-spelling order remain identical to the frozen reference. Three 10,000-name
-sequences cover accumulated drift; 58 shorter cases cover controls and seeds.
-WASM was not needed: CPU profiling isolated avoidable TypeScript work.
+Proposals cache feasible transitions for each slot and remaining letters and
+syllables. A prefix tree tracks consumed probability mass so no spelling is
+proposed twice; never-visited prefixes pick by binary search. Selection scores
+rounds of 256 proposals and keeps the best few (see
+[sound engine](sound-dials.md)). The sequence depends only on settings, seed
+and engine data. `ENGINE_ID` fingerprints the constants and prior and keys saved
+searches, so a retuned engine never mixes into old pages. Engine outputs are
+regression snapshots (`scripts/update-fixtures.ts`): three 10,000-name
+sequences and 58 shorter cases; the PRNG and pronunciation fixtures remain the
+independently captured references. Behavioural tests cover constraints, dial
+directions, blending and mood separability.
 
-`profile.ts` is separate so the entry bundle does not carry generation code or
-sound inventories. Both checked and unchecked generation run in the lookup
+`profile.ts` is separate so the entry bundle does not carry generation code,
+sound inventories, mood character or the prior. Both checked and unchecked generation run in the lookup
 worker. The UI's generation request IDs reject stale results. The static shell
 is generated from `shell.ts` at build time; fonts activate after the initial
 render frame. Analysis views load on demand.

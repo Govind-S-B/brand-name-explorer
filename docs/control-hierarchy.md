@@ -6,16 +6,18 @@ explicit settings override only the property they name.
 
 ## 1. Mood: where to start
 
-`--mood calm` chooses defaults for energy, weight, novelty, and ending. Available
-recipes are calm, airy, grounded, bold, playful, lyrical, and strange.
+`--mood calm` chooses the three dial values and a character: which sounds
+carry the mood, how dense its rhythm is, how many clusters or doubled letters a
+word may hold, which endings it likes and whether echoes are welcome. Available
+recipes are calm, airy, grounded, bold, playful, lyrical, and strange. The
+[sound engine notes](sound-dials.md) list every value and its source.
 
-`--blend playful:0.3` mixes 30% of playful's dial settings into the base recipe.
-It retains the base mood's structural defaults. This is interpolation between
-sampling settings, not a measured percentage of emotion.
+`--blend playful:0.3` mixes 30% of playful's dials and character into the base
+recipe. This is interpolation between sampling settings, not a measured
+percentage of emotion.
 
-Mood is a convenience preset. An explicit energy value does not reset weight,
-novelty, or ending. Opening, automatic syllable selection, and length currently
-have shared base defaults rather than separate defaults for every mood.
+Mood is a starting recipe. An explicit energy value does not reset weight or
+novelty. Opening and length have shared defaults rather than one per mood.
 
 ## 2. Perceptual dials: what qualities to favor
 
@@ -26,7 +28,9 @@ have shared base defaults rather than separate defaults for every mood.
 | `--novelty` | Familiar-sounding | Unusual / buzzy |
 
 Five means no directional sampling preference from that dial. Explicit values
-replace the corresponding mood/blend values. These are soft preferences:
+replace the corresponding mood/blend values, and the distance from the mood's
+own value is applied with extra strength, so a moved dial is clearly audible
+while the rest of the mood's character stays. These are soft preferences:
 changing energy influences which permitted sounds are favored, not which
 opening or ending is mandatory.
 
@@ -58,10 +62,13 @@ energy setting; energy still acts on vowel selection and later consonants.
 
 ### Syllables and ending
 
-- `--syllables 1..5` selects intended vowel groups. If omitted, the grammar uses
-  an automatic preference informed by character length and ending.
+- `--syllables 1..5` selects intended spoken syllables (a vowel pair such as
+  `ia` counts two). If omitted, the mood's rhythm picks a count for the length:
+  about 2.7 at six letters and 3.3 at eight, fewer for bold and grounded, more
+  for lyrical.
 - `--ending open` requires a vowel ending; `closed` requires a consonant ending;
-  `either` permits both. If omitted, the base mood supplies this setting.
+  `either` permits both. If omitted, every mood allows both and leans one way:
+  grounded and bold mostly close, calm and playful mostly stay open.
 
 An explicit structural choice is a constraint. It is never relaxed just because
 a perceptual preference favors something else.
@@ -70,25 +77,26 @@ a perceptual preference favors something else.
 
 | Property | Current behavior | Why it has no separate flag yet |
 | --- | --- | --- |
-| Clusters | Fixed permitted inventories; frequency includes a novelty-dependent heuristic | A useful future control needs clear scope: initial, internal, final, or all. Opening already controls the initial case. |
-| Repetition | Sounds and syllables may recur | Sound recurrence, syllable reduplication, and doubled spelling are distinct concepts; one generic repetition switch would conflate them. |
+| Clusters | Fixed permitted inventories; each mood has a budget for complex elements | A useful future control needs clear scope: initial, internal, final, or all. Opening already controls the initial case. |
+| Repetition | Echoed sounds cost every mood except playful, which rewards them | Sound recurrence, syllable reduplication, and doubled spelling are distinct concepts; one generic repetition switch would conflate them. |
 | Stress | Not assigned | The generator needs an explicit pronunciation/stress representation before it can honestly promise stressed syllables. |
 
-This is not complete structural independence: novelty currently also influences
-cluster preference. That is documented as a design heuristic, not a research
-coefficient. The opening constraint takes priority at the beginning. The existing
-heuristic is retained in this cleanup to avoid changing all default sequences.
+These are mood character, not independent controls. The opening constraint
+takes priority at the beginning.
 
 ## 4. Spelling constraints: how the word is written
 
-`--length 3..14` gives an exact ASCII character count; the default is 6. It counts
+`--length 3..14` gives an exact ASCII character count; the default is 7. It counts
 letters, not sounds or syllables. Sh uses two characters while representing one
 consonant in our grammar. Vowel digraphs also affect the character budget.
+Seven is the default because six-letter `.com` names that sound soft are almost
+all registered; see the [engine notes](sound-dials.md#limits).
 
-There is no spelling-variant control. The current engine stores intended sound
-choices together with their spellings. A future feature that renders several
-spellings of the same pronunciation needs those representations separated first.
-The existence of u and oo in today's inventory does not constitute that feature.
+There is no spelling-variant control. Several spellings of one sound now exist
+(`k`/`c`, `f`/`ph`, single and doubled consonants, `u`/`oo`) and the mood
+chooses among them: playful likes doubled letters, strange likes `k`, `x` and
+`y`. Nearby spellings in the name sheet show up to two spellings per sound
+sequence.
 
 Structure and length are solved together. We do not generate a pronunciation and
 then trim it to fit the character limit. If the combination is impossible, the
@@ -114,19 +122,21 @@ This resolves to:
 | --- | --- | --- |
 | Mood | calm | Explicit recipe |
 | Energy | 8 | Explicit override |
-| Weight | 3 | Calm default |
+| Weight | 3.5 | Calm default |
 | Novelty | 2 | Calm default |
 | Opening | vowel | Explicit constraint |
 | Syllables | 3 intended vowel groups | Explicit constraint |
 | Ending | open | Explicit constraint |
 | Character length | 7 | Explicit constraint |
 
-The current seed-42 output begins **Ashedai, Eheshoo, Echifai**. These are generated
+The current seed-42 output begins **Allesha, Encossa, Ammenta**. These are generated
 spellings under an intended reading; different readers may pronounce them
 differently. This example skips domain checks.
 
 Append `--explain` to inspect resolved values and their sources without generating
 names or making lookups. Use `--help` to see the same control hierarchy.
+`node dist/cli.mjs judge allesha --mood calm` shows how one spelling scores:
+its mood fit, predicted quality, name prior and estimated chance of being taken.
 
 ## Run controls are separate
 
@@ -141,14 +151,14 @@ names or making lookups. Use `--help` to see the same control hierarchy.
 - **Pagination:** `--count` and `--page` slice the chosen results; they do not alter
   sound generation.
 
-The default remains calm, length 6, seed 42, checking .com, hiding registered
+The default is calm, length 7, seed 42, checking .com, hiding registered
 domains, 200 results, page 1. Opening defaults to any. A forced opening gets its
 own saved browsing progress while reusing the shared domain cache. Omitting the
 opening option, or explicitly choosing any, preserves existing mood sequences
 and session identities.
 
-The resolution order is **base defaults → mood → optional dial blend → explicit
-overrides → compatibility check → generation**. This is a hierarchy of meaning
+The resolution order is **base defaults → mood → optional blend → explicit
+overrides → compatibility check → proposals → whole-word selection**. This is a hierarchy of meaning
 and precedence, not a requirement to type flags in that order. Examples follow
 the hierarchy so they are easier to read. The sound engine is shared by the browser and Node CLI.
 

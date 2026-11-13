@@ -1,4 +1,30 @@
-# Pronunciation data
+# Data
+
+Three kinds of data feed the engine. `scripts/build-prior.ts` turns all of them
+into `core/prior.json`; nothing here is loaded at run time except the dictionary.
+
+## Registration sample
+
+`registered-sample.tsv`: 29,165 generated spellings (6–8 letters, raw proposals
+from every mood) and whether the `.com` had NS records when sampled on
+13 November 2026 (`1` delegated or present without delegation, `0` NXDOMAIN).
+Collected by `scripts/sample-registrations.ts` over public DNS-over-HTTPS at
+about ten queries per second; no RDAP. It is a training signal for what
+registered names look like. It is not an availability record and goes stale.
+
+## Blind judgments
+
+`teacher-judgments.tsv`: name, intended mood, batch label, judged mood, quality
+1–5, round. 3,091 judgments from six blind rounds, made by fresh LLM instances
+using `scripts/eval/judge-prompt.md`. Batch labels: `base` is the v1 engine;
+the rest are development builds of v2. These train the teacher layer.
+
+`teacher-heldout.tsv`: round 7, the same format. It was judged after the last
+retrain and is kept out of training so the published result stays checkable.
+
+These are a model's readings of names, not listener data.
+
+## Pronunciation data
 
 `cmudict.bin` contains all 126,052 words and their ordered alternate readings from
 CMUdict, distributed under [its BSD-style license](cmudict-LICENSE.txt).
