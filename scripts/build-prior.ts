@@ -109,7 +109,8 @@ const auc = (rows: typeof data) => {
 // 3. Teacher layer: blind judgments of generated names (data/teacher-judgments.tsv:
 // name, intended mood, batch, judged mood, quality 1-5, round). A compact
 // model of how a judge reads mood and rates quality, distilled for the scorer.
-const TEACHER_MOODS = ["calm", "airy", "grounded", "bold", "playful", "lyrical", "strange"];
+// Filled from the judgments below: every mood a judge has been offered.
+const TEACHER_MOODS: string[] = [];
 export function teacherFeatures(word: string): Map<string, number> | undefined {
   const f = new Map<string, number>();
   const add = (k: string, v = 1) => f.set(k, (f.get(k) || 0) + v);
@@ -150,6 +151,14 @@ const judged = readFileSync(new URL("data/teacher-judgments.tsv", root), "utf8")
   .trim()
   .split("\n")
   .map((line) => line.split("\t"));
+// Only moods that still exist are modelled; judgments naming a retired mood
+// still count toward quality.
+const current = Object.keys(
+  JSON.parse(readFileSync(new URL("core/constants.json", root), "utf8")).moods,
+);
+for (const row of judged)
+  if (current.includes(row[3]) && !TEACHER_MOODS.includes(row[3])) TEACHER_MOODS.push(row[3]);
+TEACHER_MOODS.sort((a, b) => current.indexOf(a) - current.indexOf(b));
 // Judges differ in harshness: centre quality within each round, then average repeats.
 const roundMean = new Map<string, number>();
 for (const round of new Set(judged.map((r) => r[5]))) {

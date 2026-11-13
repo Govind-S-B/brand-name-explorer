@@ -27,6 +27,7 @@ import "./style.css";
 import {
   MOODS,
   DIALS,
+  FRONT,
   resolveProfile,
   type Settings,
   type Ending,
@@ -173,6 +174,7 @@ function syncProfile() {
     `${mood}: tune mood and settings`,
   );
   setText($("#mood-summary"), label);
+  setText($("#more-moods-current"), FRONT.includes(mood) ? "" : cap(mood));
   setText(
     $("#sound-summary"),
     `${custom ? "Custom dials" : "From mood"} · ${select("syllables").value || "auto"} syllables`,

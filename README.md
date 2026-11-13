@@ -5,8 +5,8 @@ Explore names by their sound, with live **.com availability checks**.
 **[Open the web app](https://govind-s-b.github.io/brand-name-explorer/)**
 
 Start with a feed of possibly available names. Tap the mood chip in the heading
-to open **Tune** and choose a mood, blend recipes, change sound dials or adjust
-the spelling. Tap a name for its
+to open **Tune** and choose a mood (five up front, ten more under **More
+moods**), blend two, move the three sound dials or adjust the spelling. Tap a name for its
 sound breakdown and nearby spellings. Reverse finds settings for a name you
 like; Shortlist saves your favourites and offers a portable JSON backup.
 

@@ -15,12 +15,14 @@ registered names look like. It is not an availability record and goes stale.
 ## Blind judgments
 
 `teacher-judgments.tsv`: name, intended mood, batch label, judged mood, quality
-1–5, round. 3,091 judgments from six blind rounds, made by fresh LLM instances
-using `scripts/eval/judge-prompt.md`. Batch labels: `base` is the v1 engine;
+1–5, round. 4,450 judgments from ten blind rounds, made by fresh LLM instances
+using `scripts/eval/judge-prompt.md`. Rounds 1–6 offered seven moods; rounds
+8–11 offered 16–18 while the palette was curated, so they include moods that
+were later retired. Batch labels: `base` is the v1 engine;
 the rest are development builds of v2. These train the teacher layer.
 
-`teacher-heldout.tsv`: round 7, the same format. It was judged after the last
-retrain and is kept out of training so the published result stays checkable.
+`teacher-heldout.tsv`: rounds 7 and 12, the same format. Each was judged after
+a retrain and is kept out of training so the published results stay checkable.
 
 These are a model's readings of names, not listener data.
 

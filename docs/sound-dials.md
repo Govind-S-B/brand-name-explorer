@@ -16,7 +16,7 @@ A name is scored by three separate things, each with its own source:
 | --- | --- | --- |
 | **Mood** | Does it carry the requested feeling? | Published sound-symbolism ratings → a seven-dimension sound table; mood recipes and accents are design choices |
 | **Name prior** | Does it look like a name people want? | Our own sample of 29,165 generated spellings labelled by whether the `.com` is registered |
-| **Teacher** | Would a reader call it that mood, and call it good? | 3,091 blind judgments of generated names by an LLM acting as a naming consultant |
+| **Teacher** | Would a reader call it that mood, and call it good? | 4,450 blind judgments of generated names by an LLM acting as a naming consultant |
 
 Generation has two stages:
 
@@ -55,7 +55,7 @@ Spellings that an English reader would sound two ways are never shown: soft
 `c`/`g` before `e i y`, doubled consonants after a digraph, a second `y`. A
 `y` is only a clean vowel right after the opening consonant or at the very end;
 `i-`/`e-`/`u-` openings and long `-er` endings are marked down for unclear
-stress. A blocklist of about 560 fragments removes profanity and unfortunate resemblances
+stress. A blocklist of about 620 fragments removes profanity and unfortunate resemblances
 (`-noma`, `fist`, `vile`, `covid`…). It is deliberately broad: a false positive
 costs one candidate.
 
@@ -134,15 +134,28 @@ Each mood is a target on the seven dimensions plus a structural character.
 All of the character columns are design decisions informed by the sources, not
 fitted values.
 
-| Mood | Energy | Weight | Novelty | Sharp | Flow | Bright | Bounce | Rhythm | Signature sounds |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| calm | 1 | 3.5 | 2 | 1 | 9 | 4 | 3 | −0.1 | l m n |
-| airy | 4 | 0.5 | 3 | 4 | 8 | 8 | 3 | −0.1 | f s h v |
-| grounded | 2.5 | 9.5 | 2 | 2.5 | 3 | 1 | 3.5 | −0.7 | b d g m n r |
-| bold | 9 | 8.5 | 5 | 8 | 1.5 | 3 | 4.5 | −0.8 | k t d g b z v r |
-| playful | 7.5 | 3 | 5.5 | 5 | 4 | 7 | 10 | −0.7 | p b k t d z j ch |
-| lyrical | 3 | 3 | 4 | 2 | 10 | 5 | 2 | +0.3 | l r v n s |
-| strange | 6 | 5 | 10 | 6 | 5 | 5 | 5 | −0.45 | z v k j x |
+| Mood | Feels | Energy | Weight | Novelty | Sharp | Flow | Bright | Bounce | Rhythm | Signature |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| airy | light, breezy, delicate | 4 | 0.5 | 3 | 4 | 8 | 8 | 3 | −0.1 | f s h v |
+| lyrical | flowing, melodic, elegant | 3 | 3 | 4 | 2 | 10 | 5 | 2 | +0.3 | l r v n s |
+| grounded | solid, sturdy, dependable | 2.5 | 9.5 | 2 | 2.5 | 3 | 1 | 3.5 | −0.7 | b d g m n r |
+| playful | fun, bouncy, cute | 7.5 | 3 | 5.5 | 5 | 4 | 7 | 10 | −0.7 | p b k t d z j ch |
+| bold | powerful, forceful | 9 | 8.5 | 5 | 8 | 1.5 | 3 | 4.5 | −0.8 | k t d g b z v r |
+| calm | restful, soothing, gentle | 1 | 3.5 | 2 | 1 | 9 | 4 | 3 | −0.1 | l m n |
+| crisp | sharp, precise, clean-cut | 7 | 4 | 4.5 | 9.5 | 2 | 6 | 3 | −0.9 | k t p |
+| round | plump, soft-cornered, huggable | 2.5 | 7 | 3 | 0 | 6 | 2 | 6 | −0.3 | b m |
+| regal | stately, classical, noble | 4 | 7.5 | 3 | 4 | 6 | 3 | 2 | +0.1 | r l d v g |
+| zen | minimal, balanced, serene | 4 | 4.5 | 4 | 5.5 | 5 | 5 | 3 | +0.4 | k n t s m |
+| nordic | cool, clear, northern | 5 | 6 | 4 | 6 | 4 | 5 | 2 | −0.6 | sk sv st kv kl, nd ld lv, h |
+| future | high-tech, sci-fi, engineered | 6.5 | 5 | 8 | 7 | 4 | 6 | 3 | −0.4 | x z v k t |
+| mystic | mysterious, moonlit, enchanted | 3 | 6.5 | 7 | 4 | 6 | 1.5 | 2 | −0.2 | y as a vowel, th |
+| island | tropical, sunlit, easygoing | 3 | 3.5 | 4 | 3 | 8 | 6 | 5 | +0.5 | k l h n m p w |
+| strange | unusual, alien, otherworldly | 6 | 5 | 10 | 6 | 5 | 5 | 5 | −0.45 | z v k j x |
+
+The first five are the picker's first row; the rest sit under "More moods".
+A mood is a curated bundle: this dial position plus its signature, endings and
+style. A dial position alone is not a mood. See [The palette](#the-palette) for
+how each one earned its place.
 
 - **Rhythm** shifts the preferred syllable count, which is
   `1.1 + 0.27 × letters + rhythm` (about 2.7 at six letters, 3.3 at eight).
@@ -169,9 +182,60 @@ Blending interpolates the dial targets and every numeric character value;
 `--energy`, `--weight` and `--novelty` then override their dimension. The
 dials keep their v1 meaning. A dial moved away from the mood's own recipe is an
 explicit request, so the offset has its own gain (`dialGain`) on top of the
-recipe: with it, moving lyrical's energy from 0 to 10 roughly halves the share
+recipe. The energy dial carries sharpness and (inversely) flow with it, and
+weight carries darkness, because those dimensions move together in the rating
+data; a probe of all seven dimensions showed sharpness and weight change
+output most. The picker therefore labels the three dials Sharpness, Weight and
+Novelty; the setting keys are unchanged. For example, moving lyrical's energy from 0 to 10 roughly halves the share
 of `l m n w` letters and multiplies `k t p z` several times over. Novelty additionally loosens the name
 prior and favours rare letters.
+
+## The palette
+
+A mood enters the palette only if a blind judge, given one neutral line per
+mood, can pick its names out from all the others. Candidates were tuned and
+re-judged over five rounds (20 available names per mood, default length).
+
+| Mood | Read as intended, final round | Quality | What the judge keyed on |
+| --- | ---: | ---: | --- |
+| future | 100% | 2.95 | `-ex/-ix/-ax/-ox` endings with z, v, k |
+| regal | 95% | 3.05 | Latinate `-us/-or/-os/-um` on a d/v/r base |
+| island | 90% | 3.30 | vowel runs with only k, l, h, n, m, p |
+| round | 90% | 2.70 | b, m, l with o and a final `-o` |
+| playful | 85% | 2.75 | doubled consonants, `-o/-i/-y` bounce |
+| grounded | 80% | 2.55 | d, g, m, n with closed `-an/-on/-orn` |
+| nordic | 75% | 2.90 | `sv-/kv-/st-/kl-` onsets, `-vik/-en/-ind` |
+| airy | 70% | 2.75 | f, ph, s, l with light e/i |
+| crisp | 70% | 2.45 | t, k, c stops with i/e, short `-ca/-ta` |
+| zen | 70% | 2.95 | open consonant–vowel syllables ending `-o` |
+| bold | 65% | 2.60 | hard k, g, z, r clusters, stressed a/o |
+| calm | 60% | 2.95 | soft s, n, l, m, gentle `-an/-en/-a` |
+| mystic | 60% | 2.90 | y as a vowel, `my-/ny-` openings, `-ys/-yr` |
+| lyrical | 55% | 3.05 | l, r, v liquids, `-ia/-io` |
+| strange | 50% | 2.05 | x/q/j openings; partly a bin for odd names |
+
+Overall 74% across fifteen moods (chance is 6.7%), quality 2.79. This round is
+held out (`data/teacher-heldout.tsv`, round 12).
+
+Three clusters remain hard to split and always will be to some degree:
+calm / lyrical / airy, round / playful, and grounded / regal / nordic / bold.
+Strange is the weakest mood on both counts; future took over the part of it
+that worked.
+
+Candidates that were tried and retired:
+
+| Candidate | Idea | Why it went |
+| --- | --- | --- |
+| swift | z, v, s, f for motion | 25–55% over four rounds; read as airy, then future, then strange |
+| velvet | sh, v, l for a hush | 15%; indistinguishable from calm and lyrical |
+| sunny | bright a/i vowels | 0%; no cue a reader could find |
+| rugged | g, k, r clusters | 85%, but it took bold down to 40%; the two are one mood |
+| zesty | Italianate doubles, `-etto/-ino` | 35%; read as playful |
+
+Three engine additions support curated moods. `focus` lets a mood outweigh the
+mood-independent prior. Rime endings (`$us`, `$ix`, `$en`) score the final
+vowel and consonant together during selection. Signatures may name whole
+tokens (`=sk`, `=y`) as well as sounds.
 
 ## Name prior: what registered names look like
 
@@ -219,8 +283,10 @@ During development, batches of domain-filtered names were shuffled with
 names from other builds and given to a fresh LLM instance with no knowledge of
 their source. It labelled each name with one of the seven moods (defined in one
 neutral line each) and a 1–5 quality grade. `data/teacher-judgments.tsv` keeps
-the 3,091 judgments of 1,892 distinct names from rounds 1–6 (1,794 spellable
-by the final grammar). The prompt is `scripts/eval/judge-prompt.md`.
+the 4,450 judgments from rounds 1–6 (seven moods) and 8–11 (the palette
+rounds, 16–18 moods each); 2,512 distinct names are spellable by the final
+grammar. The prompt is `scripts/eval/judge-prompt.md`, generated for the
+current mood list by `scripts/eval/judge-prompt.py`.
 
 `scripts/build-prior.ts` distils them into a compact model (sound counts, first
 sound, final token, style tags and structure):
@@ -228,9 +294,10 @@ sound, final token, style tags and structure):
 | Check | Value |
 | --- | ---: |
 | Two judges agree on a name's mood (613 names judged in two rounds) | 79% |
-| Model predicts a judge's mood for unseen names (5-fold by name) | 78% |
+| Model predicts a judge's mood for unseen names, seven moods (5-fold by name) | 78% |
+| Same, after the palette rounds (fifteen moods) | 71% |
 | Two judges' quality grades correlate | r = 0.81 |
-| Model's quality prediction for unseen names | r = 0.50 |
+| Model's quality prediction for unseen names | r = 0.48 |
 
 In selection the model adds the log-probability that a judge would read the
 intended mood (capped once it passes 85%, since more certainty only buys
@@ -291,7 +358,7 @@ remember, and resemblances to unfortunate words.
   proposals. Bulk generation runs at about 1,400 names per second where v1
   produced several hundred thousand. See [performance](performance.md).
 - **The teacher is circular.** It was trained on the kind of judge that
-  evaluates it, and its quality prediction is modest (r = 0.50).
+  evaluates it, and its quality prediction is modest (r = 0.48).
 - No listener study has been run. LLM judgments and registrations are proxies.
 - English-reading assumptions throughout; Japanese and German findings are used
   only as hints.

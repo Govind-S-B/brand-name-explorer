@@ -352,6 +352,36 @@ svg {
 .mood-strange {
   background: #6f7be0;
 }
+.mood-swift {
+  background: #3fb6c8;
+}
+.mood-crisp {
+  background: #9aa7b8;
+}
+.mood-round {
+  background: #e8a9a0;
+}
+.mood-mystic {
+  background: #5b4a8a;
+}
+.mood-regal {
+  background: #8c2f4b;
+}
+.mood-zen {
+  background: #c9c2a6;
+}
+.mood-nordic {
+  background: #7fa3b3;
+}
+.mood-future {
+  background: #2f3a5c;
+}
+.mood-island {
+  background: #2fb89a;
+}
+.mood-zesty {
+  background: #ef8f2f;
+}
 
 /* Status, progress and the feed. */
 .statusline {
@@ -1026,6 +1056,43 @@ svg {
   background: var(--ink);
   border-color: var(--ink);
   color: #fff;
+}
+
+/* More moods: the wider curated palette, one line of feeling each. */
+.more-moods {
+  margin: -4px 0 16px;
+}
+.mood-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  padding-bottom: 8px;
+}
+.mood-row {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  column-gap: 10px;
+  align-items: center;
+  min-height: 56px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: left;
+  font: 600 15px/20px var(--text);
+}
+.mood-row small {
+  grid-column: 2;
+  color: var(--ink-3);
+  font: 400 13px/18px var(--text);
+}
+.mood-row[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.mood-row[aria-pressed="true"] small {
+  color: rgb(255 255 255 / 0.75);
 }
 
 /* Fields. */

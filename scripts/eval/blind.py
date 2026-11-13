@@ -14,7 +14,7 @@ Always include one earlier batch as an anchor: judges differ in harshness, so
 only numbers from the same sheet are comparable.
 """
 import sys, json, random, collections
-MOODS = ["calm", "airy", "grounded", "bold", "playful", "lyrical", "strange"]
+import glob, os
 cmd, prefix, rest = sys.argv[1], sys.argv[2], sys.argv[3:]
 if cmd == "make":
     n, items = 30, []
@@ -23,7 +23,7 @@ if cmd == "make":
             n = int(a[4:])
             continue
         label, batch = a.split("=")
-        for mood in MOODS:
+        for mood in sorted(os.path.basename(f)[len(os.path.basename(batch)) + 1:-4] for f in glob.glob(batch + "-*.txt")):
             names = [x.strip().capitalize() for x in open(f"{batch}-{mood}.txt") if x.strip()][:n]
             items += [{"name": x, "mood": mood, "system": label} for x in names]
     random.Random(prefix).shuffle(items)
@@ -58,8 +58,10 @@ else:
         s["all:q"].append(j["quality"])
         confusion[k["system"]][k["mood"]][j["mood"]] += 1
     mean = lambda xs: sum(xs) / max(1, len(xs))
+    MOODS = sorted({k["mood"] for k in key.values()} | {j["mood"] for j in judged})
     for system, s in stats.items():
         print(f"\n[{system}] mood read as intended {mean(s['all:hit']):.2f}  quality {mean(s['all:q']):.2f}  graded 4-5 {mean([q >= 4 for q in s['all:q']]):.2f}  n={len(s['all:q'])}")
         for mood in MOODS:
-            row = " ".join(f"{t[:4]}:{confusion[system][mood][t]:2d}" for t in MOODS)
-            print(f"  {mood:9s} {mean(s[mood + ':hit']):.2f} q {mean(s[mood + ':q']):.2f} | {row}")
+            if not s[mood + ":q"]: continue
+            row = " ".join(f"{t[:4]}:{n}" for t, n in confusion[system][mood].most_common(5))
+            print(f"  {mood:9s} {mean(s[mood + ':hit']):.2f} q {mean(s[mood + ':q']):.2f} n={len(s[mood + ':q']):2d} | {row}")

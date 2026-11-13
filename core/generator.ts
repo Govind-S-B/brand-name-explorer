@@ -80,6 +80,8 @@ interface Character {
   accent: Record<string, number>;
   /** Sounds that carry the mood; a name needs one, ideally in its first consonant. */
   signature: string[];
+  /** How strongly the mood outweighs the mood-independent name prior (1 = as tuned for the first seven). */
+  focus?: number;
 }
 const NUMERIC = [
   "sharp",
@@ -278,12 +280,15 @@ export class MoodSpace {
     this.lengthOffset = lengthOffset(length);
     const blend = blendOf(settings),
       own = TEACHER.indexOf(settings.mood ?? "calm");
-    this.reading = blend
-      ? [
-          [own, 1 - blend.amount],
-          [TEACHER.indexOf(blend.mood), blend.amount],
-        ]
-      : [[own, 1]];
+    // Moods the teacher has no judgments for yet simply have no reading term.
+    this.reading = (
+      blend
+        ? [
+            [own, 1 - blend.amount],
+            [TEACHER.indexOf(blend.mood), blend.amount],
+          ]
+        : [[own, 1]]
+    ).filter(([k]) => k >= 0) as [number, number][];
     this.length = length;
     this.seed = seed;
     this.opening = opening;
@@ -305,6 +310,18 @@ export class MoodSpace {
         this.profile.weight - recipe.weight,
         this.profile.novelty - recipe.novelty,
       ].map((v) => v / 5);
+    // Sharp/flow move with energy and brightness against weight in the rating
+    // data, so the three dials carry those dimensions with them. This makes
+    // them the three highest-impact, least-overlapping controls.
+    const shift = [
+      offset[0],
+      offset[1],
+      offset[2],
+      0.8 * offset[0],
+      -0.6 * offset[0],
+      -0.6 * offset[1],
+      0,
+    ];
     // Novelty loosens the pull toward familiar, much-registered patterns.
     const familiarity = 1 - 0.5 * Math.max(0, target[2]);
     const tokens = (position: Position): Token[] =>
@@ -316,7 +333,7 @@ export class MoodSpace {
           for (const s of u.sounds) mean += sound[s][d];
           mean /= u.sounds.length;
           fit += target[d] * mean;
-          if (d < 3) style += constants.dialGain * offset[d] * mean;
+          style += constants.dialGain * shift[d] * mean;
         }
         if (rareLetters(u.text)) style += constants.dialGain * 0.5 * offset[2];
         for (const tag of u.tags) style += c.tags[tag] ?? 0;
@@ -328,7 +345,7 @@ export class MoodSpace {
         if (position === "f" || position === "c")
           style += c.endings[u.text] ?? 0;
         const base = priorTokens[position]?.[u.text] ?? -1,
-          mood = constants.beta * fit + style,
+          mood = (c.focus ?? 1) * (constants.beta * fit + style),
           lesson = new Float64Array(lessons.length);
         for (const s of new Set(u.sounds)) taught("s:" + s, 1, lesson);
         if (position === "o" || position === "i")
@@ -605,6 +622,11 @@ export class MoodSpace {
       opens = false;
     for (let i = 0, first = true; i < parts.length; i++) {
       const p = parts[i];
+      // "=text" entries name a whole token (a cluster, or y as a vowel).
+      if (c.signature.includes("=" + p.text)) {
+        carried++;
+        if (first && !p.vowel) opens = true;
+      }
       if (p.vowel) continue;
       for (const s of p.sounds)
         if (c.signature.includes(s)) {
@@ -615,17 +637,30 @@ export class MoodSpace {
     }
     const signature = carried ? (opens ? 0 : -0.7) : -2;
     // Reading clarity: y is only a clean vowel right after the opening
-    // consonant or at the very end; i/e/u openings and -er endings blur stress.
+    // consonant, before the final consonant (-ys, -yn) or at the very end; i/e/u openings and -er endings blur stress.
     let unclear = 0;
     for (let i = 1; i < parts.length - 1; i++)
-      if (parts[i].text === "y" && (i !== 1 || parts[0].vowel)) unclear += 1.5;
+      if (
+        parts[i].text === "y" &&
+        (i !== 1 || parts[0].vowel) &&
+        i !== parts.length - 2
+      )
+        unclear += 1.5;
     if (parts[0].vowel && parts[0].text.length > 1) unclear += 1;
     else if (/^[ieu]/.test(text)) unclear += 0.5;
     if (parts.length > 4 && /[^aeiou]er$/.test(text)) unclear += 0.7;
     const echo = 0.7 * t.echoC + 1.0 * t.echoV + 1.5 * t.redup;
     const manner = t.manners === 1 ? -0.9 : t.manners === 3 ? 0.3 : 0;
+    // Rimes: the final vowel and consonant together (-us, -ix, -en) carry
+    // more flavour than either token alone. Keys look like "$us".
+    const last = parts.length - 1,
+      rime =
+        last > 0
+          ? (c.endings["$" + parts[last - 1].text + parts[last].text] ?? 0)
+          : 0;
     const mood =
       total / weight +
+      (c.focus ?? 1) * rime +
       constants.kappa * worst +
       (c.repeat - 1) * echo +
       manner +
@@ -683,9 +718,15 @@ export class MoodSpace {
     for (let k = 0; k < TEACHER.length; k++) total2 += Math.exp(lesson[k] - top);
     const norm = top + Math.log(total2);
     let read = 0;
-    for (const [k, share] of this.reading) read += share * (lesson[k] - norm);
+    let known = 0;
+    for (const [k, share] of this.reading) {
+      read += share * (lesson[k] - norm);
+      known += share;
+    }
     // Past "clearly reads as the mood" more certainty buys only sameness.
-    const reading = constants.gamma * Math.min(read, Math.log(0.85)),
+    const reading = known
+        ? constants.gamma * Math.min(read / known, Math.log(0.85))
+        : 0,
       quality = constants.tau * lesson[TEACHER.length];
     return {
       name,

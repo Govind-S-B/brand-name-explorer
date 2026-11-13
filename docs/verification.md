@@ -66,7 +66,12 @@ Availability remains a timestamped RDAP observation, not a purchase guarantee.
   Goftu → Goftoo nearby-spelling example still holds.
 - `test:browser` (live providers, repository screenshots), `measure:memory`,
   Lighthouse and the 200/4,000-name public-provider benchmarks were not rerun.
-- Blind judging: seven rounds, recorded in [sound-dials.md](sound-dials.md).
+- Mood palette (later the same day): 150 tests pass; `test:names`,
+  `test:check`, `test:history`, `test:resume` and `verify-feed` pass with the
+  five-mood first row and the More moods fold. Fixed names are now Nisolan and
+  Limesha.
+- Blind judging: seven engine rounds and five palette rounds, recorded in
+  [sound-dials.md](sound-dials.md).
   The harness is `scripts/eval/`; judgments are in `data/`.
 
 `test:names` exercises the shared name rows at 360, 390 and 1440 px with mocked

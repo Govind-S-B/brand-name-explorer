@@ -84,7 +84,7 @@ export function renderHistory(
         ],
         [
           "Dials",
-          `Energy ${c.energy} · weight ${c.weight} · novelty ${c.novelty}`,
+          `Sharpness ${c.energy} · weight ${c.weight} · novelty ${c.novelty}`,
         ],
         ["Custom dials", String(c.explicit || "From mood")],
         [

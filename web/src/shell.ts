@@ -1,8 +1,9 @@
 /* Static app shell, rendered into index.html at build time (see vite.config.ts)
    so the first screen paints before any JavaScript runs. main.ts wires it up.
    Information architecture: docs/ux-v2.md. */
-import { MOODS, DIALS } from "../../core/profile";
+import { MOODS, DIALS, FRONT, FEEL, DIAL_LABELS } from "../../core/profile";
 const moods = Object.keys(MOODS);
+const more = moods.filter((m) => !FRONT.includes(m));
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 const close = `<button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>`;
 const fold = (id: string, title: string, value: string, body: string, open = false) =>
@@ -13,7 +14,7 @@ const field = (label: string, control: string) => `<label>${label}${control}</la
 const number = (id: string, min: number, max: number, value: number) =>
   `<input id="${id}" type="number" min="${min}" max="${max}" value="${value}">`;
 const ends = [
-  ["Restful", "Energetic"],
+  ["Soft", "Sharp"],
   ["Light", "Heavy"],
   ["Familiar", "Unusual"],
 ];
@@ -25,12 +26,16 @@ ${fold(
   "mood-controls",
   "Mood",
   "Calm",
-  `<div class="moods" role="group" aria-label="Mood">${moods
+  `<div class="moods" role="group" aria-label="Mood">${FRONT.map(
+    (m) =>
+      `<button type="button" class="chip" data-mood="${m}" aria-pressed="false"><i class="swatch mood-${m}" aria-hidden="true"></i>${cap(m)}</button>`,
+  ).join("")}</div>
+<details id="more-moods" class="subfold more-moods"><summary>More moods<span class="fold-value" id="more-moods-current"></span></summary><div class="mood-list" role="group" aria-label="More moods">${more
     .map(
-      (m, i) =>
-        `<button type="button" class="chip" data-mood="${m}" aria-pressed="${i === 0}"><i class="swatch mood-${m}" aria-hidden="true"></i>${cap(m)}</button>`,
+      (m) =>
+        `<button type="button" class="mood-row" data-mood="${m}" aria-pressed="${m === "calm"}"><i class="swatch mood-${m}" aria-hidden="true"></i><b>${cap(m)}</b><small>${FEEL[m]}</small></button>`,
     )
-    .join("")}</div>
+    .join("")}</div></details>
 <div class="form-grid">${field(
     "Blend with",
     `<select id="blend"><option value="">Nothing</option>${moods.map((m) => `<option value="${m}">${cap(m)}</option>`).join("")}</select>`,
@@ -43,7 +48,7 @@ ${fold(
   "From mood · auto syllables",
   `<div class="dials">${DIALS.map(
     (d, i) =>
-      `<label class="dial" for="${d}"><span class="dial-name">${cap(d)}</span><output id="${d}-value" for="${d}">${[1, 3, 2][i]}</output><input id="${d}" type="range" min="0" max="10" step="0.1" value="${[1, 3, 2][i]}"><span class="dial-ends"><small>${ends[i][0]}</small><small>${ends[i][1]}</small></span></label>`,
+      `<label class="dial" for="${d}"><span class="dial-name">${DIAL_LABELS[d]}</span><output id="${d}-value" for="${d}">${[1, 3, 2][i]}</output><input id="${d}" type="range" min="0" max="10" step="0.1" value="${[1, 3, 2][i]}"><span class="dial-ends"><small>${ends[i][0]}</small><small>${ends[i][1]}</small></span></label>`,
   ).join("")}<button type="button" id="reset-dials" class="text-btn">Reset dials to mood</button></div>
 <div class="form-grid">${field(
     "Syllables",

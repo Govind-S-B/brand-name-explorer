@@ -1,5 +1,11 @@
 import constants from "./constants.json";
 export const MOODS = constants.moods;
+/** Moods shown in the first row of the picker; the rest sit under "More moods". */
+export const FRONT: readonly string[] = constants.front;
+/** One plain line per mood: how its names are meant to feel. */
+export const FEEL = constants.feel as Record<string, string>;
+/** Display names for the three dials (the setting keys stay energy/weight/novelty). */
+export const DIAL_LABELS = { energy: "Sharpness", weight: "Weight", novelty: "Novelty" } as const;
 export const DIALS = ["energy", "weight", "novelty"] as const;
 export type Dial = (typeof DIALS)[number];
 export type Opening = "any" | "vowel" | "consonant" | "cluster";

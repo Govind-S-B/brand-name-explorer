@@ -8,9 +8,13 @@ explicit settings override only the property they name.
 
 `--mood calm` chooses the three dial values and a character: which sounds
 carry the mood, how dense its rhythm is, how many clusters or doubled letters a
-word may hold, which endings it likes and whether echoes are welcome. Available
-recipes are calm, airy, grounded, bold, playful, lyrical, and strange. The
-[sound engine notes](sound-dials.md) list every value and its source.
+word may hold, which endings it likes and whether echoes are welcome. The
+picker's first row is airy, lyrical, grounded, playful and bold. "More moods"
+opens the rest of the curated palette, each with one line saying how it feels:
+calm, crisp, round, regal, zen, nordic, future, mystic, island and strange. A
+fresh visit opens on a first-row mood. The
+[sound engine notes](sound-dials.md) list every value, its source and how each
+mood earned its place.
 
 `--blend playful:0.3` mixes 30% of playful's dials and character into the base
 recipe. This is interpolation between sampling settings, not a measured
@@ -23,7 +27,7 @@ novelty. Opening and length have shared defaults rather than one per mood.
 
 | Control | Low (0) | High (10) |
 | --- | --- | --- |
-| `--energy` | Restful | Energetic |
+| `--energy` (shown as Sharpness) | Soft, round | Sharp, forceful |
 | `--weight` | Light / delicate | Heavy / substantial |
 | `--novelty` | Familiar-sounding | Unusual / buzzy |
 
