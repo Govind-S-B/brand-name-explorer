@@ -470,13 +470,22 @@ function runState(state: RunState) {
   if (state === "done" || state === "idle") requestAnimationFrame(endOfFeed);
 }
 /**
- * The feed loads its next page when its end scrolls into view. The button is
- * only a fallback for when that cannot happen: the end is already on screen
- * once a page has finished (a short list, or a page that added nothing).
+ * The feed loads its next page when its end scrolls into view. If the end is
+ * already on screen when a page finishes (a short list on a tall window), the
+ * next page loads straight away so the screen fills; a page that added
+ * nothing stops there.
  */
 function endOfFeed() {
-  const end = $("#feed-end").getBoundingClientRect();
-  $("#stage").classList.toggle("ends-in-view", end.top < innerHeight);
+  const state = $("#stage").dataset.state;
+  if (
+    !running &&
+    (state === "done" || state === "idle") &&
+    !$("#panel-explore").hidden &&
+    !document.hidden &&
+    feed.length > pageStart &&
+    $("#feed-end").getBoundingClientRect().top < innerHeight
+  )
+    run(true);
 }
 function meter() {
   $("#meter").style.width =

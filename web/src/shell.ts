@@ -100,13 +100,12 @@ export const shell = () => `<main>
 <div class="page-head"><h1 id="feed-title">Names that feel <button type="button" class="chip mood-picker" id="mood-picker" aria-label="calm: tune mood and settings" aria-haspopup="dialog" aria-controls="tune" aria-expanded="false"><i class="swatch mood-calm" id="mood-swatch" aria-hidden="true"></i><span id="mood-label">calm</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button></h1></div>
 ${tune}
 <div class="stage" id="stage" data-state="loading">
-<div class="statusline"><p id="run-status" role="status" aria-live="polite">Finding available .com names…</p><button id="pause" type="button" class="text-btn" hidden>Pause</button><button id="resume" type="button" class="text-btn" hidden>Resume</button></div>
-<div class="meter" aria-hidden="true"><i id="meter"></i></div>
 <h2 class="sr-only">Names</h2><ul id="results" class="feed" aria-label="Names" data-filtered="true"></ul>
 <div class="skeletons" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 <div class="empty"><p><b>No available names on this page.</b></p><p>Tap the mood above to change settings, or load the next page.</p></div>
 <div id="feed-end" aria-hidden="true"></div>
-<button id="next" type="button" class="secondary wide">Load more names</button>
+<button id="next" type="button" class="sr-only">Load more names</button>
+<div class="feed-status"><div class="meter" aria-hidden="true"><i id="meter"></i></div><div class="statusline"><p id="run-status" role="status" aria-live="polite">Finding available .com names…</p><button id="pause" type="button" class="text-btn" hidden>Pause</button><button id="resume" type="button" class="text-btn" hidden>Resume</button></div></div>
 </div>
 </section>
 ${panel(

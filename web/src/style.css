@@ -643,19 +643,31 @@ svg {
   margin: 20px 0 8px;
 }
 /* The feed loads on scroll. Placeholder rows hold the end of the list while
-   the next page arrives; the button appears only when the end is already on
-   screen and scrolling cannot trigger a load. */
+   the next page arrives. */
 .stage[data-state="running"] .skeletons {
   display: block;
 }
 #feed-end {
   height: 1px;
 }
-#next {
-  display: none;
+/* Search status is the feed's loader: it rides the bottom edge of the screen
+   while the list scrolls and settles under the last name at the end. */
+.feed-status {
+  position: sticky;
+  z-index: 5;
+  bottom: var(--tabbar);
+  margin: 12px -16px 0;
+  padding: 0 16px 12px;
+  background: rgb(251 251 249 / 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
-.stage.ends-in-view:is([data-state="done"], [data-state="idle"]) #next {
-  display: inline-flex;
+.feed-status .meter {
+  margin: 0 -16px;
+  border-radius: 0;
+}
+.feed-status .statusline {
+  margin-top: 12px;
 }
 
 /* Buttons. */
