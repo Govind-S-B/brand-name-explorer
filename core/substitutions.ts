@@ -1,11 +1,8 @@
 import {
-  CODAS,
-  CONSONANT_PHONES,
-  MIDDLES,
   MoodSpace,
-  ONSETS,
-  VOWEL_PHONES,
   capitalize,
+  spellingBits,
+  unitPhones,
 } from "./generator";
 import { base, isVowel, type Pronunciation } from "./pronunciation";
 import { parseSpelling, spellingPhoneSequence } from "./inverter";
@@ -19,15 +16,6 @@ const manner: Record<string, number> = {};
   "W Y",
   "HH",
 ].forEach((group, i) => group.split(" ").forEach((p) => (manner[p] = i)));
-const tokenPhones: Record<string, string[]> = {
-  ...Object.fromEntries(
-    [...ONSETS, ...MIDDLES, ...CODAS].map(([text, sounds]) => [
-      text,
-      sounds.map((s) => CONSONANT_PHONES[s]),
-    ]),
-  ),
-  ...Object.fromEntries(Object.entries(VOWEL_PHONES).map(([t, p]) => [t, [p]])),
-};
 export function replacementCost(a: string, b: string) {
   return a === b
     ? 0
@@ -132,23 +120,25 @@ export function suggest(
         continue;
       }
       for (const shape of space.shapes) {
-        let beam: [string, number[], number][] = [
+        let beam: [string, number[], number, number][] = [
           [
             "",
             Array.from({ length: source.length + 1 }, (_, i) => 2 * i),
             length,
+            shape.syllables,
           ],
         ];
         for (let depth = 0; depth < shape.slots.length; depth++) {
-          const expanded: [string, number[], number][] = [];
-          for (const [prefix, row, left] of beam)
+          const expanded: [string, number[], number, number][] = [];
+          for (const [prefix, row, left, syllablesLeft] of beam)
             for (const token of shape.slots[depth]) {
-              const rest = left - token.text.length;
-              if (!shape.partition(depth + 1, rest)[0]) continue;
+              const rest = left - token.text.length,
+                after = syllablesLeft - token.syllables;
+              if (!shape.partition(depth + 1, rest, after)[0]) continue;
               let updated = row;
-              for (const p of tokenPhones[token.text])
+              for (const p of unitPhones(token))
                 updated = advance(updated, source, p);
-              expanded.push([prefix + token.text, updated, rest]);
+              expanded.push([prefix + token.text, updated, rest, after]);
             }
           const final = depth === shape.slots.length - 1;
           expanded.sort(
@@ -164,22 +154,31 @@ export function suggest(
           if (word !== reference) candidates.set(word, row.at(-1)!);
       }
     }
+  // Among equally close sounds, prefer few letter changes and familiar spellings.
+  const rank = new Map(
+    [...candidates.keys()].map((word) => [
+      word,
+      spellingDistance(reference, word) + spellingBits(word),
+    ]),
+  );
   const ordered = [...candidates.keys()].sort(
     (a, b) =>
       candidates.get(a)! - candidates.get(b)! ||
-      spellingDistance(reference, a) - spellingDistance(reference, b) ||
+      rank.get(a)! - rank.get(b)! ||
       Math.abs(a.length - reference.length) -
         Math.abs(b.length - reference.length) ||
       (a < b ? -1 : a > b ? 1 : 0),
   );
+  // The same sounds can be spelled several ways (u/oo, k/c); show at most two.
   const results = [],
-    seen = new Set<string>();
+    seen = new Map<string, number>();
   for (const word of ordered) {
     const parsed = parseSpelling(word),
       phones = spellingPhoneSequence(parsed),
       key = phones.join(" ");
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const spellings = seen.get(key) || 0;
+    if (spellings >= 2) continue;
+    seen.set(key, spellings + 1);
     const original = { length: reference.length, ...pronunciation.structure };
     const structureChanges = Object.entries(original)
       .filter(([k, v]) => v !== parsed.structure[k as keyof typeof original])

@@ -24,12 +24,13 @@ bne [options]                     generate and check names
 bne reverse WORD [--reading ... | --phones ...]
 bne invert WORD                  fit exact spelling to sound dials
 bne substitute WORD [--reading ... | --phones ...]
+bne judge WORD [--mood calm ...]   score one spelling under a mood
 
 --mood calm                       recipe; --list-moods lists all seven
 --blend playful:0.3                blend recipe dials
 --energy N --weight N --novelty N   explicit 0–10 dials
 --opening any|vowel|consonant|cluster --syllables 1..5
---ending open|closed|either --length 3..14 (default 6)
+--ending open|closed|either --length 3..14 (default 7)
 --seed 42 --count 200 --page 1
 --[no-]check-com --[no-]hide-registered (both on)
 --[no-]dns --refresh --cache PATH (default .cache/names.sqlite)
@@ -97,7 +98,7 @@ async function main() {
   }
   if (v["list-dials"]) {
     console.log(
-      "energy: smooth → percussive\nweight: light → heavy\nnovelty: familiar → unusual\nAll dials accept 0–10; 5 is neutral.",
+      "energy: restful → energetic\nweight: light → heavy\nnovelty: familiar → unusual\nAll dials accept 0–10; 5 is neutral.",
     );
     return;
   }
@@ -115,11 +116,34 @@ async function main() {
     if (
       !word ||
       extra.length ||
-      !["reverse", "invert", "substitute"].includes(mode)
+      !["reverse", "invert", "substitute", "judge"].includes(mode)
     )
       throw new Error(
-        "Use reverse, invert, or substitute followed by one word",
+        "Use reverse, invert, substitute, or judge followed by one word",
       );
+    if (mode === "judge") {
+      const settings: Settings = {
+        mood: String(v.mood || "calm"),
+        length: word.length,
+      };
+      if (v.blend !== undefined) settings.blend = String(v.blend);
+      for (const d of DIALS) if (v[d] !== undefined) settings[d] = Number(v[d]);
+      const scored = new MoodSpace(settings).judge(word);
+      if (!scored)
+        throw new Error(`'${word}' cannot be spelled by the generator grammar`);
+      console.log(
+        JSON.stringify(
+          {
+            ...scored,
+            shown: scored.score > -Infinity,
+            note: "score = mood (incl. judged mood reading) + quality + name prior shortfall; higher is better within one mood and length",
+          },
+          (_, value) => (value === -Infinity ? null : value),
+          2,
+        ),
+      );
+      return;
+    }
     setDictionaryLoader(async () =>
       installDictionary(
         await readFile(new URL("./cmudict.bin", import.meta.url)),
@@ -149,7 +173,7 @@ async function main() {
   }
   const settings: Settings = {
     mood: String(v.mood || "calm"),
-    length: numeric(v.length, 6),
+    length: numeric(v.length, 7),
     seed: String(v.seed ?? "42"),
     opening: (v.opening || "any") as Settings["opening"],
     syllables: v.syllables === undefined ? null : Number(v.syllables),

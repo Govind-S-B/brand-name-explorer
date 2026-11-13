@@ -22,25 +22,38 @@ export interface Settings {
   ending?: Ending;
   opening?: Opening;
 }
+/** Parsed `--blend mood:fraction`, or undefined when no blend was requested. */
+export function blendOf(settings: Settings) {
+  if (!settings.blend) return;
+  const parts = settings.blend.split(":"),
+    amount = Number(parts[1]);
+  if (
+    parts.length !== 2 ||
+    !parts[1].trim() ||
+    !Object.hasOwn(MOODS, parts[0]) ||
+    !Number.isFinite(amount) ||
+    amount < 0 ||
+    amount > 1
+  )
+    throw new Error("Blend needs a known mood and a fraction from 0 to 1");
+  return { mood: parts[0], amount };
+}
 export function resolveProfile(settings: Settings = {}): Profile {
-  const { mood = "calm", blend, ending } = settings;
+  const { mood = "calm", ending } = settings;
   if (!Object.hasOwn(MOODS, mood)) throw new Error(`unknown mood: ${mood}`);
-  const result = { ...MOODS[mood as keyof typeof MOODS] } as Profile;
+  const base = MOODS[mood as keyof typeof MOODS];
+  const result: Profile = {
+    energy: base.energy,
+    weight: base.weight,
+    novelty: base.novelty,
+    ending: base.ending as Ending,
+  };
+  const blend = blendOf(settings);
   if (blend) {
-    const parts = blend.split(":");
-    const amount = Number(parts[1]);
-    if (
-      parts.length !== 2 ||
-      !parts[1].trim() ||
-      !Object.hasOwn(MOODS, parts[0]) ||
-      !Number.isFinite(amount) ||
-      amount < 0 ||
-      amount > 1
-    )
-      throw new Error("Blend needs a known mood and a fraction from 0 to 1");
-    const other = MOODS[parts[0] as keyof typeof MOODS];
+    const other = MOODS[blend.mood as keyof typeof MOODS];
     for (const dial of DIALS)
-      result[dial] = (1 - amount) * result[dial] + amount * other[dial];
+      result[dial] =
+        (1 - blend.amount) * result[dial] + blend.amount * other[dial];
   }
   for (const dial of DIALS) {
     const v = settings[dial];

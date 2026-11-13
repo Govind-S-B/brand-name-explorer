@@ -61,13 +61,13 @@ try {
       const domain = route.request().url().split("/").at(-1);
       await new Promise((r) => setTimeout(r, 250));
       await route.fulfill({
-        status: domain === "ralmoo.com" ? 200 : 404,
+        status: domain === "lathuno.com" ? 200 : 404,
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Content-Type": "application/rdap+json",
         },
         body:
-          domain === "ralmoo.com" ? JSON.stringify({ ldhName: domain }) : "",
+          domain === "lathuno.com" ? JSON.stringify({ ldhName: domain }) : "",
       });
     });
     await context.addInitScript(() => localStorage.setItem("bne.settings.v1", JSON.stringify({ randomSeed: false })));
@@ -347,12 +347,12 @@ try {
     await shot("reference");
     await close();
     // Background feed checks synchronize status with duplicate rows and the modal.
-    await reverse("lemoru");
+    await reverse("nisolan");
     await page.locator("#tab-explore").click();
     await page.locator("#mood-picker").click();
     await page.locator("[data-mood=calm]").click();
     await page.locator("#spelling-controls").evaluate((e) => (e.open = true));
-    await page.locator("#length").fill("6");
+    await page.locator("#length").fill("7");
     await page.locator("#sound-controls").evaluate((e) => (e.open = true));
     await page.locator("#syllables").selectOption("");
     await page.locator("#opening").selectOption("any");
@@ -363,7 +363,7 @@ try {
     await page.locator("#generate").click();
     await page.locator("#tab-reverse").click();
     await page.locator(".reference-name .name-open").click();
-    await sheetName("Lemoru");
+    await sheetName("Nisolan");
     await page.waitForFunction(
       () =>
         document.querySelector("#ns-status").textContent ===
@@ -379,12 +379,12 @@ try {
     );
     assert.equal(await page.locator("#results .name-card").count(), 20);
     await page.locator("#tab-explore").click();
-    await row("#results", "Ralmoo").locator(".name-open").click();
-    await sheetName("Ralmoo");
+    await row("#results", "Lathuno").locator(".name-open").click();
+    await sheetName("Lathuno");
     assert.equal(await page.locator("#ns-status").textContent(), "Registered");
     assert.equal(
       await page.locator("#ns-open").getAttribute("href"),
-      "https://ralmoo.com",
+      "https://lathuno.com",
     );
     await close();
     assert.deepEqual(errors, []);

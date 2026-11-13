@@ -1,4 +1,4 @@
-import type { Settings } from "../core/generator";
+import { ENGINE_ID, type Settings } from "../core/generator";
 export type Status = "registered" | "possibly available";
 export interface DomainRow {
   domain: string;
@@ -54,7 +54,7 @@ export async function sessionId(settings: Settings) {
         )
       : value;
   const data = new TextEncoder().encode(
-    JSON.stringify(sort({ version: 1, ...settings })),
+    JSON.stringify(sort({ version: ENGINE_ID, ...settings })),
   );
   return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", data)))
     .map((b) => b.toString(16).padStart(2, "0"))

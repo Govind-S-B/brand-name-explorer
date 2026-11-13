@@ -60,7 +60,7 @@ ${fold(
   "spelling-controls",
   "Spelling",
   "6 letters",
-  `<label class="stepper-field" for="length">Letters</label><div class="stepper"><button type="button" data-step="-1" aria-label="Fewer letters">−</button><input id="length" type="number" min="3" max="14" value="6" required><button type="button" data-step="1" aria-label="More letters">+</button></div>`,
+  `<label class="stepper-field" for="length">Letters</label><div class="stepper"><button type="button" data-step="-1" aria-label="Fewer letters">−</button><input id="length" type="number" min="3" max="14" value="7" required><button type="button" data-step="1" aria-label="More letters">+</button></div>`,
 )}
 ${fold(
   "domain-controls",

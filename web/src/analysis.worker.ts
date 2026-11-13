@@ -3,7 +3,6 @@ import {
   fitProfiles,
   parseSpelling,
   spellingPhoneSequence,
-  closestRecipe,
 } from "../../core/inverter";
 import {
   readReference,
@@ -60,7 +59,7 @@ function spellingFit(word: string) {
     parsed,
     phones: spellingPhoneSequence(parsed),
     fits: fits.slice(0, 10),
-    nearest_recipe: closestRecipe(fits[0][1]),
-    note: "Integer dial-grid fits with neutral regularization, not recovered original settings.",
+    nearest_recipe: fits[0][2],
+    note: "Most probable mood, then integer dial-grid fits regularized toward that mood's recipe; not recovered original settings.",
   };
 }

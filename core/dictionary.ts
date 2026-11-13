@@ -39,6 +39,23 @@ export class Dictionary {
       this.data.subarray(start + 2, start + 2 + this.data[start + 1]),
     );
   }
+  /** Every headword in dictionary order (used by offline build scripts). */
+  *words(): Generator<string> {
+    for (let block = 0; block < this.offsets.length / 2 - 1; block++) {
+      let at = this.offsets[block * 2],
+        previous = "";
+      const end = this.offsets[(block + 1) * 2];
+      while (at < end) {
+        const prefix = this.data[at++],
+          length = this.data[at++];
+        previous =
+          previous.slice(0, prefix) +
+          this.decoder.decode(this.data.subarray(at, at + length));
+        at += length;
+        yield previous;
+      }
+    }
+  }
   get(word: string): string[][] | undefined {
     let low = 0,
       high = this.offsets.length / 2 - 2;

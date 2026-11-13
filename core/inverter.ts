@@ -1,20 +1,18 @@
 import {
-  CODAS,
   CONSONANT_PHONES,
   DIALS,
-  MIDDLES,
   MOODS,
   MoodSpace,
-  ONSETS,
-  VOWELS,
   VOWEL_PHONES,
   generate,
   sum,
+  unitPhones,
   type Profile,
   type Settings,
   type Opening,
   type Ending,
 } from "./generator";
+import { UNITS, runs, unit, type Position, type Unit } from "./grammar";
 import {
   base,
   isVowel,
@@ -30,168 +28,176 @@ export interface Structure {
 export interface Parsed {
   reading: string;
   parts: string[];
+  units: Unit[];
   consonants: [string, string[]][];
   vowels: string[];
   structure: Structure;
 }
+const PLACES: Record<Position, string> = {
+  o: "opening",
+  m: "internal",
+  c: "ending",
+  i: "opening",
+  n: "internal",
+  f: "ending",
+};
 export function parseSpelling(reading: string): Parsed {
   reading = reading.trim().toLowerCase();
   if (!/^[a-z]{3,14}$/.test(reading))
     throw new Error("generator spelling must be 3–14 ASCII letters");
-  const parts = reading.match(/[aeiou]+|[^aeiou]+/g)!,
-    consonants: [string, string[]][] = [],
-    vowels: string[] = [];
-  for (const [index, part] of parts.entries()) {
-    if ("aeiou".includes(part[0])) {
-      if (!VOWELS.includes(part))
-        throw new Error(
-          `unsupported vowel group '${part}'; allowed: ${VOWELS.join(", ")}`,
-        );
-      vowels.push(part);
-    } else {
-      const [location, inventory] =
-        index === 0
-          ? ["opening", ONSETS]
-          : index === parts.length - 1
-            ? ["ending", CODAS]
-            : ["internal", MIDDLES];
-      const phones = (inventory as typeof ONSETS).find(
-        ([t]) => t === part,
-      )?.[1];
-      if (!phones)
-        throw new Error(`unsupported ${location} consonant group '${part}'`);
-      consonants.push([part, phones]);
-    }
-  }
-  if (vowels.length < 1 || vowels.length > 5)
+  const units = runs(reading).map(({ text, position }) => {
+    const found = unit(position, text);
+    if (!found)
+      throw new Error(
+        `unsupported ${PLACES[position]} ${"inf".includes(position) ? "vowel" : "consonant"} group '${text}'`,
+      );
+    return found;
+  });
+  const vowels = units.filter((u) => u.vowel),
+    syllables = sum(vowels.map((u) => u.syllables));
+  if (!vowels.length || syllables > 5 || (units.length === 1 && vowels.length))
     throw new Error(
-      "reading needs 1–5 vowel groups separated by supported consonants",
+      "reading needs 1–5 syllables separated by supported consonants",
     );
   return {
     reading,
-    parts,
-    consonants,
-    vowels,
+    parts: units.map((u) => u.text),
+    units,
+    consonants: units.filter((u) => !u.vowel).map((u) => [u.text, u.sounds]),
+    vowels: vowels.map((u) => u.text),
     structure: {
       length: reading.length,
-      syllables: vowels.length,
-      opening: "aeiou".includes(parts[0][0])
+      syllables,
+      opening: units[0].vowel
         ? "vowel"
-        : ONSETS.find(([t]) => t === parts[0])![1].length === 1
+        : units[0].sounds.length === 1
           ? "consonant"
           : "cluster",
-      ending: "aeiou".includes(parts.at(-1)![0]) ? "open" : "closed",
+      ending: units.at(-1)!.vowel ? "open" : "closed",
     },
   };
 }
+/** Log probability of a spelling among proposals with its exact structure. */
 export function logProbability(space: MoodSpace, parts: string[]): number {
-  if (space.shapes.length !== 1)
-    throw new Error(
-      "reverse scoring requires an exact opening, syllables, and ending",
-    );
-  const shape = space.shapes[0];
-  if (
-    parts.length !== shape.slots.length ||
-    sum(parts.map((p) => p.length)) !== space.length
-  )
+  const length = sum(parts.map((p) => p.length));
+  if (length !== space.length)
     throw new Error("reading does not match the supplied structure");
-  let result = -Math.log(shape.mass);
-  for (let i = 0; i < parts.length; i++) {
-    const token = shape.slots[i].find((t) => t.text === parts[i]);
-    if (!token)
-      throw new Error(`'${parts[i]}' does not fit the supplied structure`);
-    result += Math.log(token.weight);
+  for (const shape of space.shapes) {
+    if (shape.slots.length !== parts.length) continue;
+    let result = -Math.log(shape.mass),
+      syllables = 0,
+      fits = true;
+    for (let i = 0; i < parts.length && fits; i++) {
+      const token = shape.slots[i].find((t) => t.text === parts[i]);
+      if (!token) fits = false;
+      else {
+        result += Math.log(token.weight);
+        syllables += token.syllables;
+      }
+    }
+    if (fits && syllables === shape.syllables) return result;
   }
-  return result;
+  throw new Error("reading does not fit the supplied structure");
 }
 export type Dials = Pick<Profile, "energy" | "weight" | "novelty">;
-export type Fit = [number, Dials];
-export function fitProfiles(parsed: Parsed): Fit[] {
-  const fits: Fit[] = [];
+/** A dial fit: score, dials, and the base mood they were fitted within. */
+export type Fit = [number, Dials, string];
+/** Moods ranked by how probable the spelling is under each recipe. */
+export function rankMoods(parsed: Parsed): [number, string][] {
+  return Object.keys(MOODS)
+    .map((mood): [number, string] => [
+      logProbability(
+        new MoodSpace({ ...parsed.structure, mood }),
+        parsed.parts,
+      ),
+      mood,
+    ])
+    .sort((a, b) => b[0] - a[0]);
+}
+export function fitProfiles(
+  parsed: Parsed,
+  mood = rankMoods(parsed)[0][1],
+): Fit[] {
+  const fits: Fit[] = [],
+    recipe = MOODS[mood as keyof typeof MOODS];
   for (let energy = 0; energy <= 10; energy++)
     for (let weight = 0; weight <= 10; weight++)
       for (let novelty = 0; novelty <= 10; novelty++) {
         const dials = { energy, weight, novelty },
-          space = new MoodSpace({ ...parsed.structure, ...dials }),
+          space = new MoodSpace({ ...parsed.structure, mood, ...dials }),
           penalty =
-            0.5 * sum([energy, weight, novelty].map((v) => ((v - 5) / 5) ** 2));
-        fits.push([logProbability(space, parsed.parts) - penalty, dials]);
+            0.5 * sum(DIALS.map((d) => ((dials[d] - recipe[d]) / 5) ** 2));
+        fits.push([logProbability(space, parsed.parts) - penalty, dials, mood]);
       }
   return fits.sort((a, b) => b[0] - a[0]);
 }
 export function spellingPhoneSequence(parsed: Parsed): string[] {
-  const consonants = Object.fromEntries(parsed.consonants);
-  return parsed.parts.flatMap((p) =>
-    p in VOWEL_PHONES
-      ? [VOWEL_PHONES[p]]
-      : consonants[p].map((s) => CONSONANT_PHONES[s]),
-  );
+  return parsed.units.flatMap(unitPhones);
 }
+/** Dictionary phone → engine sound; several English vowels share one letter quality. */
+const SOUND_OF: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(CONSONANT_PHONES).map(([s, p]) => [p, s]),
+  ),
+  ...Object.fromEntries(Object.entries(VOWEL_PHONES).map(([s, p]) => [p, s])),
+  AE: "a",
+  AH: "a",
+  AO: "o",
+  EY: "e",
+  IY: "i",
+  UH: "u",
+};
 export function generatorProjection(
   pronunciation: Pronunciation,
   preferred?: string,
 ): { parsed: Parsed | null; gaps: string[] } {
   const phones = pronunciation.phones.map(base),
-    mapping = {
-      ...Object.fromEntries(
-        Object.entries(CONSONANT_PHONES).map(([s, p]) => [p, s]),
-      ),
-      ...Object.fromEntries(
-        Object.entries(VOWEL_PHONES).map(([s, p]) => [p, s]),
-      ),
-      UW: "u",
-    } as Record<string, string>;
-  const gaps: string[] = [];
+    gaps: string[] = [];
   for (const p of new Set(phones))
-    if (!(p in mapping))
+    if (!(p in SOUND_OF))
       gaps.push(`sound ${p} is absent from the generator sound inventory`);
-  if (phones.some((p, i) => i > 0 && isVowel(p) && isVowel(phones[i - 1])))
-    gaps.push(
-      "adjacent vowel nuclei (hiatus) require a consonant between them in the current grammar",
-    );
-  let index = 0;
-  while (index < phones.length) {
-    if (isVowel(phones[index])) {
-      index++;
-      continue;
-    }
+  const sounds = phones.map((p) => SOUND_OF[p]);
+  let spelling = "",
+    index = 0;
+  while (index < phones.length && !gaps.length) {
+    const vowel = isVowel(phones[index]);
     let end = index;
-    while (end < phones.length && !isVowel(phones[end])) end++;
-    const [label, inventory] =
-      index === 0
-        ? ["opening", ONSETS]
+    while (end < phones.length && isVowel(phones[end]) === vowel) end++;
+    const position: Position = vowel
+      ? end === phones.length && index > 0
+        ? "f"
+        : index === 0
+          ? "i"
+          : "n"
+      : index === 0
+        ? "o"
         : end === phones.length
-          ? ["ending", CODAS]
-          : ["internal", MIDDLES];
-    const group = phones.slice(index, end).join(" ");
-    if (
-      !(inventory as typeof ONSETS).some(
-        ([, sounds]) =>
-          sounds.map((s) => CONSONANT_PHONES[s]).join(" ") === group,
-      )
-    )
-      gaps.push(`${label} group ${group} is outside the generator grammar`);
+          ? "c"
+          : "m";
+    const group = sounds.slice(index, end).join(" "),
+      match = UNITS[position].find((u) => u.sounds.join(" ") === group);
+    if (!match)
+      gaps.push(
+        vowel
+          ? `adjacent vowel sounds ${phones.slice(index, end).join(" ")} have no ${PLACES[position]} vowel group in the current grammar`
+          : `${PLACES[position]} group ${phones.slice(index, end).join(" ")} is outside the generator grammar`,
+      );
+    else spelling += match.text;
     index = end;
   }
   let parsed: Parsed | null = null;
   if (!gaps.length) {
-    let spelling = phones.map((p) => mapping[p]).join("");
-    if (preferred) {
-      try {
-        const candidate = parseSpelling(preferred);
-        if (spellingPhoneSequence(candidate).join(" ") === phones.join(" "))
-          spelling = preferred;
-      } catch {
-        /* use the representable projection */
-      }
-    }
+    const same = (candidate: Parsed) =>
+      candidate.units.flatMap((u) => u.sounds).join(" ") === sounds.join(" ");
     try {
       parsed = parseSpelling(spelling);
-      if (spellingPhoneSequence(parsed).join(" ") !== phones.join(" ")) {
-        gaps.push(
-          "spelling merges distinct sound tokens in the current grammar",
-        );
-        parsed = null;
+      if (preferred) {
+        try {
+          const candidate = parseSpelling(preferred);
+          if (same(candidate)) parsed = candidate;
+        } catch {
+          /* use the representable projection */
+        }
       }
     } catch (error) {
       gaps.push((error as Error).message);
@@ -241,12 +247,13 @@ export function generatorCommand(
   structure: Structure,
   dials: Dials,
   seed: string | number,
+  mood = closestRecipe(dials),
 ): string {
   return [
     "node",
     "dist/cli.mjs",
     "--mood",
-    closestRecipe(dials),
+    mood,
     ...Object.entries(dials).flatMap(([d, v]) => ["--" + d, String(v)]),
     ...["opening", "syllables", "ending", "length"].flatMap((k) => [
       "--" + k,
@@ -298,16 +305,16 @@ export async function report(
       Math.min(...nearby.map((p) => p[d])),
       Math.max(...nearby.map((p) => p[d])),
     ];
-  for (const [score, dials] of inverse.fits.slice(0, 3)) {
+  for (const [score, dials, mood] of inverse.fits.slice(0, 3)) {
     result.candidates.push({
       dials,
-      nearest_recipe: closestRecipe(dials),
+      nearest_recipe: mood,
       fit_gap: Number((best - score).toFixed(6)),
       samples: generate(
-        { ...inverse.generation, ...dials, seed } as Settings,
+        { ...inverse.generation, mood, ...dials, seed } as Settings,
         5,
       ),
-      command: generatorCommand(inverse.generation!, dials, seed),
+      command: generatorCommand(inverse.generation!, dials, seed, mood),
     });
   }
   return result;
