@@ -467,6 +467,10 @@ function status(text: string) {
 type RunState = "idle" | "running" | "paused" | "done" | "error" | "offline";
 function runState(state: RunState) {
   $("#stage").dataset.state = state;
+  const busy = state === "running",
+    next = $<HTMLButtonElement>("#next");
+  next.disabled = busy;
+  setText(next, busy ? "Finding more names…" : "Load more names");
 }
 function meter() {
   $("#meter").style.width =

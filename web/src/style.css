@@ -644,14 +644,16 @@ svg {
 #next {
   margin: 20px 0 8px;
 }
-.stage:is(
-    [data-state="loading"],
-    [data-state="running"],
-    [data-state="paused"],
-    [data-state="error"]
-  )
-  #next {
+.stage:is([data-state="paused"], [data-state="error"]) #next,
+.stage:is([data-state="loading"], [data-state="running"])
+  #results:empty
+  ~ #next {
   display: none;
+}
+/* While more names load, the button stays in place as the progress line, so
+   the end of the list neither jumps nor goes blank. */
+#next:disabled {
+  animation: shimmer 1.4s ease-in-out infinite;
 }
 
 /* Buttons. */
