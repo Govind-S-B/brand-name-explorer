@@ -638,6 +638,20 @@ document.addEventListener("click", (event) => {
     const item = rowName(save) || activeView?.item;
     if (!item) return;
     toggleSave(item);
+    // Count which generated names people keep. Names typed into Reverse are
+    // the visitor's own words and are never sent.
+    if (
+      saved[nameKey(item)] &&
+      /^[a-z]{3,14}\.com$/.test(item.domain || "") &&
+      !save.closest(".reference-name")
+    )
+      (
+        window as { goatcounter?: { count?: (hit: object) => void } }
+      ).goatcounter?.count?.({
+        path: "save/" + item.name.toLowerCase(),
+        title: "Saved name",
+        event: true,
+      });
     save.classList.remove("pop");
     void save.offsetWidth;
     save.classList.add("pop");
