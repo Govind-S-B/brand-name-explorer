@@ -288,6 +288,12 @@ document.querySelectorAll<HTMLButtonElement>("[data-mood]").forEach((b) => {
   b.setAttribute("aria-pressed", String(b.dataset.mood === mood));
   b.onclick = () => {
     setMood(b.dataset.mood!);
+    // Picking from the extra list closes it; the chip then names the choice.
+    if (b.closest("#more-moods")) {
+      $("#more-moods").hidden = true;
+      $("#more-moods-toggle").setAttribute("aria-expanded", "false");
+      $("#more-moods-toggle").focus({ preventScroll: true });
+    }
     input("page").value = "1";
     savePreferences();
     dirty = true;
