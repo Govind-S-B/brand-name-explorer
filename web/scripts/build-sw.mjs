@@ -27,7 +27,11 @@ if (worker) {
   );
 }
 const all = await walk(root),
-  precache = all.filter((p) => !p.endsWith(".bin") && !p.endsWith(".map"));
+  // The link-preview image is for crawlers, not for offline use.
+  precache = all.filter(
+    (p) =>
+      !p.endsWith(".bin") && !p.endsWith(".map") && p !== "social-preview.png",
+  );
 const hash = createHash("sha256");
 for (const file of precache.sort())
   hash.update(file).update(await readFile(new URL(file, root)));

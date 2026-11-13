@@ -134,6 +134,8 @@ await page.locator("#check-domains").uncheck();
 await page.locator("#advanced-controls").evaluate((el) => (el.open = true));
 await page.locator("#generate").click();
 await page.waitForSelector("#results .name-card");
+// Let the unchecked page finish and Tune hand focus back before using the tabs.
+await stage("idle");
 await page.locator("#tab-reverse").focus();
 await page.keyboard.press("ArrowRight");
 assert.equal(

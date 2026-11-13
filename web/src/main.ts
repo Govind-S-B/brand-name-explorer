@@ -174,12 +174,12 @@ function syncProfile() {
     `${mood}: tune mood and settings`,
   );
   setText($("#mood-summary"), label);
-  // The "+ More" chip stands in for whichever extra mood is selected.
+  // A mood picked from the extra list gets its own selected chip in the row;
+  // "+ More" stays a separate control that only opens and closes the list.
   const extra = !FRONT.includes(mood);
-  setText($("#more-moods-current"), extra ? cap(mood) : "+ More");
-  $("#more-moods-toggle").setAttribute("aria-pressed", String(extra));
-  $("#more-moods-swatch").hidden = !extra;
-  $("#more-moods-swatch").className = "swatch mood-" + mood;
+  $("#extra-mood").hidden = !extra;
+  setText($("#extra-mood-label"), cap(mood));
+  $("#extra-mood-swatch").className = "swatch mood-" + mood;
   setText(
     $("#sound-summary"),
     `${custom ? "Custom dials" : "From mood"} · ${select("syllables").value || "auto"} syllables`,
