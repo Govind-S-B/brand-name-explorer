@@ -9,10 +9,10 @@ explicit settings override only the property they name.
 `--mood calm` chooses the three dial values and a character: which sounds
 carry the mood, how dense its rhythm is, how many clusters or doubled letters a
 word may hold, which endings it likes and whether echoes are welcome. The
-picker's first row is airy, lyrical, grounded, playful and bold. "More moods"
-opens the rest of the curated palette, each with one line saying how it feels:
-calm, crisp, round, regal, zen, nordic, future, mystic, island and strange. A
-fresh visit opens on a first-row mood. The
+picker's first row is airy, lyrical, playful and bold. A "+ More" chip in the
+same row opens the rest of the curated palette, each with one line saying how
+it feels: grounded, calm, crisp, round, regal, zen, nordic, future, mystic,
+island and strange. A fresh visit opens on any of the fifteen. The
 [sound engine notes](sound-dials.md) list every value, its source and how each
 mood earned its place.
 

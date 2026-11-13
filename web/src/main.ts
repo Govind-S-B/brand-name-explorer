@@ -174,7 +174,12 @@ function syncProfile() {
     `${mood}: tune mood and settings`,
   );
   setText($("#mood-summary"), label);
-  setText($("#more-moods-current"), FRONT.includes(mood) ? "" : cap(mood));
+  // The "+ More" chip stands in for whichever extra mood is selected.
+  const extra = !FRONT.includes(mood);
+  setText($("#more-moods-current"), extra ? cap(mood) : "+ More");
+  $("#more-moods-toggle").setAttribute("aria-pressed", String(extra));
+  $("#more-moods-swatch").hidden = !extra;
+  $("#more-moods-swatch").className = "swatch mood-" + mood;
   setText(
     $("#sound-summary"),
     `${custom ? "Custom dials" : "From mood"} · ${select("syllables").value || "auto"} syllables`,
@@ -274,6 +279,11 @@ if (appSettings.randomSeed) {
   select("blend").value = "";
   setMood(freshMood(mood));
 }
+$("#more-moods-toggle").onclick = () => {
+  const list = $("#more-moods");
+  list.hidden = !list.hidden;
+  $("#more-moods-toggle").setAttribute("aria-expanded", String(!list.hidden));
+};
 document.querySelectorAll<HTMLButtonElement>("[data-mood]").forEach((b) => {
   b.setAttribute("aria-pressed", String(b.dataset.mood === mood));
   b.onclick = () => {

@@ -29,13 +29,13 @@ ${fold(
   `<div class="moods" role="group" aria-label="Mood">${FRONT.map(
     (m) =>
       `<button type="button" class="chip" data-mood="${m}" aria-pressed="false"><i class="swatch mood-${m}" aria-hidden="true"></i>${cap(m)}</button>`,
-  ).join("")}</div>
-<details id="more-moods" class="subfold more-moods"><summary>More moods<span class="fold-value" id="more-moods-current"></span></summary><div class="mood-list" role="group" aria-label="More moods">${more
+  ).join("")}<button type="button" class="chip" id="more-moods-toggle" aria-expanded="false" aria-controls="more-moods" aria-pressed="false"><i class="swatch" id="more-moods-swatch" aria-hidden="true" hidden></i><span id="more-moods-current">+ More</span></button></div>
+<div id="more-moods" class="more-moods" hidden><div class="mood-list" role="group" aria-label="More moods">${more
     .map(
       (m) =>
         `<button type="button" class="mood-row" data-mood="${m}" aria-pressed="${m === "calm"}"><i class="swatch mood-${m}" aria-hidden="true"></i><b>${cap(m)}</b><small>${FEEL[m]}</small></button>`,
     )
-    .join("")}</div></details>
+    .join("")}</div></div>
 <div class="form-grid">${field(
     "Blend with",
     `<select id="blend"><option value="">Nothing</option>${moods.map((m) => `<option value="${m}">${cap(m)}</option>`).join("")}</select>`,

@@ -1,4 +1,4 @@
-import { DIALS, FRONT, MOODS } from "../../core/profile";
+import { DIALS, MOODS } from "../../core/profile";
 
 export const HISTORY_KEY = "bne.history.v1";
 export const APP_SETTINGS_KEY = "bne.settings.v1";
@@ -66,8 +66,7 @@ export function freshMood(
   previous: string,
   value = crypto.getRandomValues(new Uint32Array(1))[0],
 ): string {
-  // A fresh visit opens on one of the first-row moods.
-  const moods = FRONT.filter((mood) => mood !== previous);
+  const moods = choices.mood.filter((mood) => mood !== previous);
   return moods[value % moods.length];
 }
 export function validControls(value: unknown): value is Controls {

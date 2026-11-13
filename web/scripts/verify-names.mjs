@@ -350,7 +350,7 @@ try {
     await reverse("nisolan");
     await page.locator("#tab-explore").click();
     await page.locator("#mood-picker").click();
-    await page.locator("#more-moods").evaluate((d) => (d.open = true));
+    await page.locator("#more-moods").evaluate((d) => (d.hidden = false));
     await page.locator("[data-mood=calm]").click();
     await page.locator("#spelling-controls").evaluate((e) => (e.open = true));
     await page.locator("#length").fill("7");

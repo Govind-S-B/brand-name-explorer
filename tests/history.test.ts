@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { FRONT, MOODS } from "../core/profile";
+import { MOODS } from "../core/profile";
 import {
   addHistory,
   readHistory,
@@ -101,16 +101,19 @@ test("Fresh seeds remain integers, differ from the previous seed and default on"
     randomSeed: false,
   });
 });
-test("Reload picks another first-row feeling without repeating the current one", () => {
-  for (const previous of Object.keys(MOODS)) {
-    const others = FRONT.filter((mood) => mood !== previous),
-      selected = new Set(
-        Array.from({ length: others.length }, (_, value) =>
-          freshMood(previous, value),
-        ),
-      );
-    assert.deepEqual(selected, new Set(others));
+test("Reload can choose every other feeling without repeating the current one", () => {
+  const moods = Object.keys(MOODS);
+  for (const previous of moods) {
+    const selected = new Set(
+      Array.from({ length: moods.length - 1 }, (_, value) =>
+        freshMood(previous, value),
+      ),
+    );
+    assert.deepEqual(
+      selected,
+      new Set(moods.filter((mood) => mood !== previous)),
+    );
     assert.notEqual(freshMood(previous, 0xffffffff), previous);
-    assert.ok(FRONT.includes(freshMood(previous)));
+    assert.ok(moods.includes(freshMood(previous)));
   }
 });

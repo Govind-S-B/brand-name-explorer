@@ -1061,6 +1061,7 @@ svg {
 /* More moods: the wider curated palette, one line of feeling each. */
 .more-moods {
   margin: -4px 0 16px;
+  animation: rise 0.22s var(--ease);
 }
 .mood-list {
   display: grid;

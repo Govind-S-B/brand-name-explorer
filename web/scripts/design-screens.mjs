@@ -126,7 +126,7 @@ for (const name of only) {
   // Error: a second tab cannot check while this one holds the lookup lock.
   delay = 20000;
   await page.locator("#mood-picker").click();
-  await page.locator("#more-moods").evaluate((d) => (d.open = true));
+  await page.locator("#more-moods").evaluate((d) => (d.hidden = false));
   await page.locator("[data-mood=strange]").click();
   await page.locator("#generate").click();
   const second = await context.newPage();
@@ -138,7 +138,7 @@ for (const name of only) {
   await second.close();
   delay = 40;
   await page.locator("#mood-picker").click();
-  await page.locator("#more-moods").evaluate((d) => (d.open = true));
+  await page.locator("#more-moods").evaluate((d) => (d.hidden = false));
   await page.locator("[data-mood=calm]").click();
   await page.locator("#generate").click();
   await state(page, "done");

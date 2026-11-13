@@ -152,7 +152,8 @@ fitted values.
 | island | tropical, sunlit, easygoing | 3 | 3.5 | 4 | 3 | 8 | 6 | 5 | +0.5 | k l h n m p w |
 | strange | unusual, alien, otherworldly | 6 | 5 | 10 | 6 | 5 | 5 | 5 | −0.45 | z v k j x |
 
-The first five are the picker's first row; the rest sit under "More moods".
+Airy, lyrical, playful and bold are the picker's first row; the rest open from
+its "+ More" chip.
 A mood is a curated bundle: this dial position plus its signature, endings and
 style. A dial position alone is not a mood. See [The palette](#the-palette) for
 how each one earned its place.

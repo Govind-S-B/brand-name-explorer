@@ -68,7 +68,7 @@ Availability remains a timestamped RDAP observation, not a purchase guarantee.
   Lighthouse and the 200/4,000-name public-provider benchmarks were not rerun.
 - Mood palette (later the same day): 150 tests pass; `test:names`,
   `test:check`, `test:history`, `test:resume` and `verify-feed` pass with the
-  five-mood first row and the More moods fold. Fixed names are now Nisolan and
+  four-mood first row and its "+ More" chip. Fixed names are now Nisolan and
   Limesha.
 - Blind judging: seven engine rounds and five palette rounds, recorded in
   [sound-dials.md](sound-dials.md).
